@@ -34,6 +34,9 @@ python3 scripts/load_coaching_and_offense.py  # loads coach_table/team_offense_
                                    # player_offense_rank/coach_tenure_segments
                                    # from data/coaching_and_offense/ (a separate
                                    # Cowork session's v13-v18 research export)
+python3 scripts/build_arbitrage_signals.py  # computes the buy-low/sell-high
+                                   # signal (dynasty vs. redraft ECR percentile
+                                   # gap) from fp_ecr_history into app.db
 ```
 
 Re-run either script any time to refresh -- both are safe to run repeatedly
@@ -107,6 +110,18 @@ These five tables replaced a thinner, `load_nflverse.py`-derived version of
 coaches, no Super Bowl odds) once this richer, PFR-sourced export arrived --
 `load_nflverse.py` now only handles `play_by_play`.
 
+Loaded by `build_arbitrage_signals.py` (ported from `pipeline/
+build_comparison_model.py`, a prior Cowork session's prototype that computed
+the same signal but wrote to a standalone JSON file instead of `app.db`):
+- `arbitrage_signals` (SQLite) -- dynasty-vs-redraft ECR percentile gap, per
+  player per format (905 player-format rows as of the 2026-08-14 ECR
+  snapshot: 52 `BUY_LOW`, 65 `SELL_HIGH`, 788 `FAIR`). **Known limitation**:
+  computed from a preseason snapshot, before any 2026 games -- almost every
+  signal that fires right now is a rookie/prospect (real dynasty-vs-redraft
+  uncertainty) or an aging/deep-bench veteran, not yet a genuine
+  performance-vs-price gap. Re-run every few weeks in-season as redraft
+  rankings start moving on actual results.
+
 Loaded by `load_sleeper.py` (run separately, needs real internet -- this
 can't be tested from inside the cloud sandbox this was built in, since that
 sandbox's network specifically blocks `api.sleeper.app`, but it should work
@@ -123,12 +138,8 @@ fine from a normal machine):
   in place of the real thing.
 - `model_feature_pool` (DuckDB) -- this is the breakout/bounce-back model's
   own output, not raw data; it gets populated once that model is built.
-- `arbitrage_signals`, `model_predictions` (SQLite) -- populated by a
-  signal-computation script, not written yet. See `pipeline/` below --
-  `build_comparison_model.py`/`trade_signals.py` already implement a
-  lightweight version of this signal against Sleeper rosters; porting that
-  logic to write into `app.db`'s `arbitrage_signals` table is the natural
-  next step.
+- `model_predictions` (SQLite) -- this is the real breakout/fall-off model's
+  output (see `docs/breakout-falloff-methodology.md`), not written yet.
 
 Worth flagging so the web page doesn't silently show stale numbers: check
 `sync_log` in `app.db` for when each table was last refreshed.
@@ -149,6 +160,8 @@ scripts/
   load_nflverse.py                 -- loads play_by_play
   load_coaching_and_offense.py      -- loads coach/offense/vegas-odds tables
                                        from data/coaching_and_offense/
+  build_arbitrage_signals.py         -- computes the buy-low/sell-high signal
+                                       into app.db's arbitrage_signals table
   requirements.txt
 data/
   app.db                -- committed
@@ -170,9 +183,11 @@ pipeline/
   HANDOFF.md              -- Sleeper/ESPN/Yahoo/FantasyPros API research: what's
                             reachable, auth status, known data-integrity gotchas
   build_crosswalk.py, value_rosters.py       -- Sleeper -> crosswalk -> valued roster
-  build_comparison_model.py, trade_signals.py -- the lightweight buy-low/sell-high
-                            signal (dynasty vs. redraft ECR percentile gap) --
-                            not yet wired into app.db's arbitrage_signals table
+  build_comparison_model.py, trade_signals.py -- the original lightweight buy-low/
+                            sell-high signal prototype (dynasty vs. redraft ECR
+                            percentile gap) -- ported into
+                            scripts/build_arbitrage_signals.py, which writes to
+                            app.db instead of a standalone JSON file
   yahoo_pull_example.py    -- Yahoo starter script (yfpy), awaiting API approval
   fantasypros_pull_example.py -- FantasyPros v2 API starter script, needs
                             FANTASYPROS_API_KEY env var, never run against live data
