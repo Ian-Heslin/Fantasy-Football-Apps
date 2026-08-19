@@ -37,6 +37,15 @@ python3 scripts/load_coaching_and_offense.py  # loads coach_table/team_offense_
 python3 scripts/build_arbitrage_signals.py  # computes the buy-low/sell-high
                                    # signal (dynasty vs. redraft ECR percentile
                                    # gap) from fp_ecr_history into app.db
+python3 scripts/load_player_stats.py  # loads season-level fantasy stats +
+                                   # draft/birth data (player_stats_season,
+                                   # player_bio) -- feeds the models below
+python3 scripts/build_bounceback_model.py  # the v7 bounce-back model:
+                                   # does a player who fell off Star+ tier
+                                   # return to Star+ next season?
+python3 scripts/build_breakout_model.py  # the v11 breakout model (4
+                                   # per-position logistic regressions):
+                                   # does a below-Star player break out?
 ```
 
 Re-run either script any time to refresh -- both are safe to run repeatedly
@@ -122,6 +131,39 @@ the same signal but wrote to a standalone JSON file instead of `app.db`):
   performance-vs-price gap. Re-run every few weeks in-season as redraft
   rankings start moving on actual results.
 
+Loaded by `load_player_stats.py`:
+- `player_stats_season` (DuckDB) -- season-level fantasy stats (PPR points,
+  games, carries/targets/attempts/sacks, rushing/receiving/passing EPA),
+  1999-2024. nflverse's `player_stats` release currently lags `play_by_play`
+  by about a season -- `build_breakout_model.py` derives the same counting
+  stats from `play_by_play` for whichever season(s) aren't here yet (2025,
+  as of this writing) rather than lose a season of candidates to the gap.
+- `player_bio` (DuckDB) -- birth date, draft year/round/pick, rookie season,
+  keyed on `gsis_id` (nflverse's player id -- the same id `play_by_play`,
+  `player_stats_season`, and `player_offense_rank` all use).
+
+Loaded by `build_bounceback_model.py` and `build_breakout_model.py` (a
+rebuild of the two models in `docs/breakout-falloff-methodology.md`, using
+`player_offense_rank`'s tier/PPG data -- 2001-2025, fixed cutoffs recovered
+from `data/final_workbooks/Fantasy_Football_PPG_Tiers_2001-2025.xlsx`'s
+"Tier Cutoffs" sheet -- plus `player_stats_season`/`player_bio` above):
+- `model_predictions` (SQLite) -- `bounceback` v7 (547 fall-off events,
+  2001-2025) and `breakout` v11 (4,905 candidate-seasons across QB/RB/WR/TE,
+  2001-2025), each with a predicted probability and the actual outcome where
+  known. Coefficients and walk-forward backtest AUCs closely track the
+  original doc's own numbers (same signs throughout, similar magnitudes) --
+  see each script's docstring for the handful of known, documented
+  deviations (no confirmed-injury fall-off cases, no ADP feature).
+- `model_feature_pool` (DuckDB) -- the exact feature values behind every
+  `model_predictions` row, as JSON, for both models.
+
+**v11, not the doc's final v12**, for the breakout model: v12 adds `log_adp`,
+built from footballguys.com/FantasyPros scrapes -- ordinary websites this
+sandbox's egress policy blocks, the same wall as `api.sleeper.app`. v11 (no
+ADP) is the doc's own documented fallback for exactly this situation ("kept
+as the baseline/full-coverage view since ~30% of candidates have no ADP
+match"). If ADP ever becomes reachable, `log_adp` can be added the same way.
+
 Loaded by `load_sleeper.py` (run separately, needs real internet -- this
 can't be tested from inside the cloud sandbox this was built in, since that
 sandbox's network specifically blocks `api.sleeper.app`, but it should work
@@ -136,10 +178,6 @@ fine from a normal machine):
   `bendominguez0111/fantasy-csv-data`) but only carry a single current-season
   snapshot, not the 15-year time series the model needs -- not worth loading
   in place of the real thing.
-- `model_feature_pool` (DuckDB) -- this is the breakout/bounce-back model's
-  own output, not raw data; it gets populated once that model is built.
-- `model_predictions` (SQLite) -- this is the real breakout/fall-off model's
-  output (see `docs/breakout-falloff-methodology.md`), not written yet.
 
 Worth flagging so the web page doesn't silently show stale numbers: check
 `sync_log` in `app.db` for when each table was last refreshed.
@@ -162,6 +200,9 @@ scripts/
                                        from data/coaching_and_offense/
   build_arbitrage_signals.py         -- computes the buy-low/sell-high signal
                                        into app.db's arbitrage_signals table
+  load_player_stats.py                -- loads player_stats_season + player_bio
+  build_bounceback_model.py            -- rebuilds the v7 bounce-back model
+  build_breakout_model.py              -- rebuilds the v11 breakout model
   requirements.txt
 data/
   app.db                -- committed

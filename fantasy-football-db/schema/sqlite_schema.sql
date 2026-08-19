@@ -23,12 +23,15 @@ CREATE TABLE IF NOT EXISTS players (
     yahoo_id        TEXT,
     mfl_id          TEXT,
     fantasypros_id  TEXT,
+    gsis_id         TEXT,                  -- nflverse's player id (play_by_play, player_stats_season,
+                                            -- player_offense_rank, model_predictions all key on this)
     name            TEXT NOT NULL,
     position        TEXT,
     team            TEXT,
     updated_at      TEXT DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_players_sleeper ON players(sleeper_id);
+CREATE INDEX IF NOT EXISTS idx_players_gsis    ON players(gsis_id);
 CREATE INDEX IF NOT EXISTS idx_players_fp      ON players(fantasypros_id);
 CREATE INDEX IF NOT EXISTS idx_players_name    ON players(name);
 

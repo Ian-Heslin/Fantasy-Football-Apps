@@ -113,6 +113,7 @@ def load_players(sqlite_conn):
             _clean(r.get("yahoo_id")),
             _clean(r.get("mfl_id")),
             fp_id,
+            _clean(r.get("gsis_id")),
             name,
             _clean(r.get("position")),
             _clean(r.get("team")),
@@ -121,13 +122,13 @@ def load_players(sqlite_conn):
     sqlite_conn.executemany(
         """INSERT INTO players
                (player_id, sleeper_id, espn_id, yahoo_id, mfl_id, fantasypros_id,
-                name, position, team, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                gsis_id, name, position, team, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
            ON CONFLICT(player_id) DO UPDATE SET
                sleeper_id=excluded.sleeper_id, espn_id=excluded.espn_id,
                yahoo_id=excluded.yahoo_id, mfl_id=excluded.mfl_id,
-               fantasypros_id=excluded.fantasypros_id, name=excluded.name,
-               position=excluded.position, team=excluded.team,
+               fantasypros_id=excluded.fantasypros_id, gsis_id=excluded.gsis_id,
+               name=excluded.name, position=excluded.position, team=excluded.team,
                updated_at=datetime('now')""",
         rows,
     )

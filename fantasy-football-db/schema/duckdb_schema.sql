@@ -42,13 +42,25 @@ CREATE TABLE IF NOT EXISTS adp_history (
 );
 CREATE INDEX IF NOT EXISTS idx_adp_name_season ON adp_history(player_name_norm, season);
 
--- nflverse play-by-play. Loaded per season as needed -- nflverse's real
--- schema is 300+ columns, so rather than hand-maintaining a column list here,
--- load it straight from the nflverse Parquet release with:
---   CREATE TABLE play_by_play AS SELECT * FROM read_parquet('play_by_play_2025.parquet');
--- (DuckDB infers the schema from the file.) This table is intentionally left
--- uncreated by build_db.py -- populate it only for the season(s) a given
--- analysis actually needs, since the full 2001-2025 history is multiple GB.
+-- nflverse play-by-play, 1999-2025 (~1.28M rows). nflverse's real schema is
+-- 300+ columns, so rather than hand-maintaining a column list here, this
+-- table's schema is inferred straight from the source CSVs -- see
+-- scripts/load_nflverse.py. Intentionally left uncreated by build_db.py.
+
+-- nflverse's season-level player fantasy stats (fantasy_points_ppr, games,
+-- carries/targets/attempts/sacks for touches and dropbacks, rushing_epa/
+-- receiving_epa/passing_epa for epa-per-touch) -- the raw ingredient the
+-- breakout/fall-off model's per-position feature engineering needs on top
+-- of player_offense_rank (which has PPG/tier but not touches/EPA). Same
+-- inferred-schema pattern as play_by_play; see scripts/load_player_stats.py.
+-- NOTE: as of this writing nflverse's player_stats release lags play_by_play
+-- by about a season -- scripts/build_breakout_model.py falls back to
+-- deriving the same counting stats from play_by_play for whichever season(s)
+-- aren't in this table yet.
+
+-- nflverse player biographical/draft data (birth_date for age, draft_year/
+-- round/pick, rookie_season) -- keyed on gsis_id, the same id play_by_play/
+-- player_stats_season/player_offense_rank use. See scripts/load_player_stats.py.
 
 -- Team-season offensive performance: scoring/yardage/EPA quality, 2000-2025,
 -- the "how good was this team's offense" fact table the coaching-effects and
