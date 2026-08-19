@@ -1,0 +1,11 @@
+# app.db IS committed on purpose -- it's small (a few MB) and it's the only
+# place roster/trade-value snapshot HISTORY lives; regenerating it from
+# scratch would lose that history. Everything below is either regenerable
+# from a source (dynastyprocess/Sleeper) or too large to belong in git.
+data/analytics.duckdb
+data/_dynastyprocess_data/
+
+__pycache__/
+*.pyc
+.venv/
+venv/
