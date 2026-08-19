@@ -26,10 +26,14 @@ python3 scripts/build_db.py       # creates both DBs, loads the player
 python3 scripts/load_sleeper.py   # pulls your leagues/rosters from Sleeper's
                                    # public API (edit LEAGUE_IDS in the script
                                    # if your leagues change)
-python3 scripts/load_nflverse.py  # loads 1999-2025 play-by-play + derives
-                                   # team_offense_season/vegas_odds/coach_table
-                                   # (defaults to the full range; pass --start
-                                   # /--end to load a smaller window)
+python3 scripts/load_nflverse.py  # loads 1999-2025 play-by-play (defaults to
+                                   # the full range; pass --start/--end for a
+                                   # smaller window)
+python3 scripts/load_coaching_and_offense.py  # loads coach_table/team_offense_
+                                   # season/vegas_odds/team_primary_qb/
+                                   # player_offense_rank/coach_tenure_segments
+                                   # from data/coaching_and_offense/ (a separate
+                                   # Cowork session's v13-v18 research export)
 ```
 
 Re-run either script any time to refresh -- both are safe to run repeatedly
@@ -80,16 +84,28 @@ Loaded by `load_nflverse.py` (reachable from this sandbox even though
 GitHub release assets and raw files):
 - `play_by_play` (DuckDB) -- full 1999-2025 nflverse play-by-play,
   ~1.28M rows
-- `team_offense_season` (DuckDB) -- PPG (from nfldata's game scores),
-  YPG and EPA/play (derived from `play_by_play`), ranked within season
-- `coach_table` (DuckDB) -- head coaches only (`role='HC'`), derived from
-  nfldata's `games.csv`; **OC/DC/position coaches have no reachable source
-  yet** and still need one
-- `vegas_odds` (DuckDB) -- preseason win-total lines and actual wins from
-  nfldata's `win_totals.csv`/`standings.csv`. **No Super Bowl odds source
-  was reachable** (`sb_odds` is NULL for every row), and `win_totals.csv`
-  itself only covers seasons 2003-2020 upstream -- 2021+ rows don't exist
-  until nflverse (or another reachable source) publishes newer win totals.
+
+Loaded by `load_coaching_and_offense.py`, from `data/coaching_and_offense/`
+(the CSV/script trail behind a separate Cowork session's v13-v18
+coaching-effects and offense-quality research -- see
+`docs/breakout-falloff-methodology.md`):
+- `team_offense_season` (DuckDB) -- PPG/YPG/EPA-per-play plus rank and
+  percentile within season, 2001-2025 (830 team-seasons)
+- `coach_table` (DuckDB) -- HC/OC/DC/position coaches scraped from
+  Pro-Football-Reference staff pages, 2001-2025 (5,962 rows)
+- `coach_tenure_segments` (DuckDB) -- continuous coach/team tenure ranges,
+  every role merged into one span (592 rows)
+- `vegas_odds` (DuckDB) -- preseason win-total lines, Super Bowl odds, and
+  actual results, 2001-2025 (799 rows)
+- `team_primary_qb` (DuckDB) -- ID-based primary starting QB per
+  team-season (830 rows)
+- `player_offense_rank` (DuckDB) -- per-player-season fantasy performance
+  joined to their team's offense-quality rank/percentile (10,079 rows)
+
+These five tables replaced a thinner, `load_nflverse.py`-derived version of
+`team_offense_season`/`vegas_odds`/`coach_table` (PPG/YPG/EPA only, HC-only
+coaches, no Super Bowl odds) once this richer, PFR-sourced export arrived --
+`load_nflverse.py` now only handles `play_by_play`.
 
 Loaded by `load_sleeper.py` (run separately, needs real internet -- this
 can't be tested from inside the cloud sandbox this was built in, since that
@@ -108,7 +124,11 @@ fine from a normal machine):
 - `model_feature_pool` (DuckDB) -- this is the breakout/bounce-back model's
   own output, not raw data; it gets populated once that model is built.
 - `arbitrage_signals`, `model_predictions` (SQLite) -- populated by a
-  signal-computation script, not written yet.
+  signal-computation script, not written yet. See `pipeline/` below --
+  `build_comparison_model.py`/`trade_signals.py` already implement a
+  lightweight version of this signal against Sleeper rosters; porting that
+  logic to write into `app.db`'s `arbitrage_signals` table is the natural
+  next step.
 
 Worth flagging so the web page doesn't silently show stale numbers: check
 `sync_log` in `app.db` for when each table was last refreshed.
@@ -116,21 +136,48 @@ Worth flagging so the web page doesn't silently show stale numbers: check
 ## Repo layout
 
 ```
+docs/
+  breakout-falloff-methodology.md          -- the statistical model spec (v18)
+  sleeper-and-trade-value-pipeline.md       -- Sleeper/trade-value pipeline spec
+  local-webapp-and-database-architecture.md -- this two-database architecture
 schema/
   sqlite_schema.sql    -- app.db table definitions
   duckdb_schema.sql     -- analytics.duckdb table definitions
 scripts/
-  build_db.py           -- creates both DBs, loads dynastyprocess data
-  load_sleeper.py        -- loads your leagues/rosters from Sleeper
-  load_nflverse.py       -- loads play-by-play + derives team/coach/odds tables
+  build_db.py                     -- creates both DBs, loads dynastyprocess data
+  load_sleeper.py                  -- loads your leagues/rosters from Sleeper
+  load_nflverse.py                 -- loads play_by_play
+  load_coaching_and_offense.py      -- loads coach/offense/vegas-odds tables
+                                       from data/coaching_and_offense/
   requirements.txt
 data/
   app.db                -- committed
   analytics.duckdb       -- gitignored, regenerate locally (~800MB with full
                             play-by-play history loaded)
+  final_workbooks/       -- committed: the 10 Excel deliverables produced
+                            across the project to date (human-readable
+                            reference, not read by any script)
+  coaching_and_offense/   -- committed: CSV/JSON/script trail behind the
+                            v13-v18 coaching-effects and offense-quality
+                            research -- source data for
+                            load_coaching_and_offense.py
   _dynastyprocess_data/  -- gitignored, a working clone build_db.py manages
-  _nflverse_data/        -- gitignored: nfldata clone + cached play-by-play
-                            CSV.gz downloads (~450MB for the full 1999-2025
-                            range) so re-running load_nflverse.py doesn't
-                            re-download what it already has
+  _nflverse_data/        -- gitignored: cached play-by-play CSV.gz downloads
+                            (~450MB for the full 1999-2025 range) so
+                            re-running load_nflverse.py doesn't re-download
+                            what it already has
+pipeline/
+  HANDOFF.md              -- Sleeper/ESPN/Yahoo/FantasyPros API research: what's
+                            reachable, auth status, known data-integrity gotchas
+  build_crosswalk.py, value_rosters.py       -- Sleeper -> crosswalk -> valued roster
+  build_comparison_model.py, trade_signals.py -- the lightweight buy-low/sell-high
+                            signal (dynasty vs. redraft ECR percentile gap) --
+                            not yet wired into app.db's arbitrage_signals table
+  yahoo_pull_example.py    -- Yahoo starter script (yfpy), awaiting API approval
+  fantasypros_pull_example.py -- FantasyPros v2 API starter script, needs
+                            FANTASYPROS_API_KEY env var, never run against live data
+  data/                    -- cached output from the session that produced this
+                            (Sleeper league/roster snapshots, crosswalk, signals) --
+                            stale the moment real leagues/rosters change; re-run
+                            the scripts above rather than trusting these as current
 ```

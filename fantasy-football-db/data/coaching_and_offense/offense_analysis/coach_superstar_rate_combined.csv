@@ -1,0 +1,331 @@
+coach_name,n_distinct_players,n_superstar_players,superstar_rate
+Aaron Glenn,21,0,0.0
+Aaron Kromer,34,7,0.20588235294117646
+Adam Gase,91,6,0.06593406593406594
+Adam Stenavich,38,2,0.05263157894736842
+Al Saunders,43,4,0.09302325581395349
+Alex Van Pelt,72,2,0.027777777777777776
+Alex Wood,18,0,0.0
+Andy Reid,151,12,0.07947019867549669
+Anthony Lynn,73,6,0.0821917808219178
+Antonio Pierce,32,1,0.03125
+Arthur Smith,78,3,0.038461538461538464
+Ben Johnson,46,3,0.06521739130434782
+Ben McAdoo,58,1,0.017241379310344827
+Bill Belichick,161,10,0.062111801242236024
+Bill Callahan,61,4,0.06557377049180328
+Bill Cowher,35,2,0.05714285714285714
+Bill Lazor,63,2,0.031746031746031744
+Bill Muir,70,2,0.02857142857142857
+Bill Musgrave,81,3,0.037037037037037035
+Bill O'Brien,94,7,0.07446808510638298
+Bill Parcells,18,1,0.05555555555555555
+Bo Hardegree,17,0,0.0
+Bob Bratkowski,77,2,0.025974025974025976
+Bobby Jackson,12,1,0.08333333333333333
+Bobby Petrino,27,1,0.037037037037037035
+Bobby Slowik,23,1,0.043478260869565216
+Brad Childress,101,6,0.0594059405940594
+Brad Idzik,27,0,0.0
+Brandon Staley,26,2,0.07692307692307693
+Brandon Staley; fired on December 15,19,1,0.05263157894736842
+Brian Billick,49,2,0.04081632653061224
+Brian Callahan,53,3,0.05660377358490566
+"Brian Callahan (fired October 13, 1–5 record)",17,0,0.0
+Brian Daboll,123,5,0.04065040650406504
+"Brian Daboll (fired November 10, 2–8 record)",16,0,0.0
+Brian Flores,36,1,0.027777777777777776
+Brian Johnson,15,1,0.06666666666666667
+Brian Schottenheimer,125,4,0.032
+Bruce Arians,141,7,0.04964539007092199
+Bruce Coslet,14,0,0.0
+Butch Davis,16,0,0.0
+Byron Leftwich,42,5,0.11904761904761904
+Cam Cameron,72,4,0.05555555555555555
+Carl Smith,17,1,0.058823529411764705
+Chad O'Shea,17,0,0.0
+Chan Gailey,100,4,0.04
+Charlie Weis,46,2,0.043478260869565216
+Chip Kelly,39,2,0.05128205128205128
+Chip Kelly {{small|(fired on December 29)}},16,1,0.0625
+Chris Beatty,16,0,0.0
+Chris Foerster,18,0,0.0
+Chris Palmer,39,1,0.02564102564102564
+"Chris Palmer (fired Nov 26, 2012)",17,0,0.0
+Chris Tabor,17,0,0.0
+Chuck Pagano,54,1,0.018518518518518517
+Clarence Shelmon,28,3,0.10714285714285714
+Clyde Christensen,59,3,0.05084745762711865
+Curtis Modkins,48,1,0.020833333333333332
+Dan Campbell,59,4,0.06779661016949153
+Dan Henning,59,2,0.03389830508474576
+Dan Pitcher,25,4,0.16
+Dan Quinn,68,6,0.08823529411764706
+Darrell Bevell,138,5,0.036231884057971016
+Darren Rizzi,21,2,0.09523809523809523
+Dave Campo,14,0,0.0
+Dave Canales,41,0,0.0
+Dave McGinnis,27,2,0.07407407407407407
+Dave Ragone,39,0,0.0
+Dave Wannstedt,24,1,0.041666666666666664
+Dave Wannstedt (Games 1-9),18,0,0.0
+David Culley,21,0,0.0
+DeMeco Ryans,33,1,0.030303030303030304
+Declan Doyle,16,0,0.0
+Dennis Allen,58,1,0.017241379310344827
+Dennis Allen (fired on November 4),21,2,0.09523809523809523
+Dennis Erickson,12,0,0.0
+Dennis Green,33,2,0.06060606060606061
+Dick Jauron,75,0,0.0
+Dick LeBeau,21,0,0.0
+Dick Vermeil,26,3,0.11538461538461539
+Dirk Koetter,109,8,0.07339449541284404
+Dom Capers,25,1,0.04
+Don Breaux,27,3,0.1111111111111111
+Doug Marrone,112,4,0.03571428571428571
+Doug Nussmeier,21,0,0.0
+Doug Pederson,104,7,0.0673076923076923
+Dowell Loggains,97,1,0.010309278350515464
+Drew Petzing,32,1,0.03125
+Eddie Faulkner,14,0,0.0
+Edgar Bennett,29,2,0.06896551724137931
+Emmitt Thomas,14,0,0.0
+Eric Bieniemy,53,4,0.07547169811320754
+Eric Mangini,50,2,0.04
+Eric Studesville,21,0,0.0
+Frank Reich,82,7,0.08536585365853659
+Frank Reich; fired on November 27,17,0,0.0
+Frank Smith,40,4,0.1
+Freddie Kitchens,47,0,0.0
+Gary Kubiak,136,8,0.058823529411764705
+Geep Chryst,21,0,0.0
+George Godsey,46,2,0.043478260869565216
+George Sefcik,15,0,0.0
+George Seifert,15,0,0.0
+Giff Smith,19,1,0.05263157894736842
+Gil Haskell,30,1,0.03333333333333333
+Grant Udinski,29,1,0.034482758620689655
+Greg Knapp,89,1,0.011235955056179775
+Greg Olson,161,6,0.037267080745341616
+Greg Roman,123,4,0.032520325203252036
+Greg Schiano,25,1,0.04
+Gregg Williams,18,2,0.1111111111111111
+Gus Bradley,41,2,0.04878048780487805
+Hal Hunter,14,0,0.0
+Harold Goodwin,39,1,0.02564102564102564
+Herm Edwards,16,2,0.125
+Herman Edwards,45,2,0.044444444444444446
+Hue Jackson,99,2,0.020202020202020204
+Jack Del Rio,77,2,0.025974025974025976
+Jason Garrett,81,5,0.06172839506172839
+Jason Garrett (fired after week 11),21,0,0.0
+Jason Michael,29,1,0.034482758620689655
+Jay Gruden,96,3,0.03125
+Jedd Fisch,39,1,0.02564102564102564
+Jeff Davidson,48,3,0.0625
+Jeff Fisher,15,0,0.0
+Jeff Fisher (Fired Week 14),16,0,0.0
+Jeff Jagodzinski,17,0,0.0
+Jeff Nixon,18,1,0.05555555555555555
+Jeff Saturday,19,0,0.0
+Jeff Tedford,18,0,0.0
+Jeff Ulbrich,14,0,0.0
+Jeremy Bates,32,0,0.0
+Jerod Mayo,17,0,0.0
+Jerry Rosburg,22,0,0.0
+Jerry Sullivan,16,1,0.0625
+Jim Bob Cooter,79,2,0.02531645569620253
+Jim Caldwell,76,7,0.09210526315789473
+Jim Colletto,17,0,0.0
+Jim E. Mora,13,3,0.23076923076923078
+Jim Fassel,41,2,0.04878048780487805
+Jim Harbaugh,61,1,0.01639344262295082
+Jim Haslett,34,3,0.08823529411764706
+Jim Hostler,14,0,0.0
+Jim Mora,15,0,0.0
+Jim Mora Jr.,14,0,0.0
+Jim Schwartz,39,6,0.15384615384615385
+Jim Tomsula,34,2,0.058823529411764705
+Jimmy Raye,42,3,0.07142857142857142
+Jimmy Raye II,13,0,0.0
+Joe Brady,46,2,0.043478260869565216
+Joe Brady (fired mid season),18,1,0.05555555555555555
+Joe Gibbs,27,3,0.1111111111111111
+Joe Judge,30,0,0.0
+Joe Lombardi,66,2,0.030303030303030304
+"Joe Lombardi (fired Oct 26, 2015)",15,0,0.0
+Joe Pendry,14,1,0.07142857142857142
+Joe Philbin,68,5,0.07352941176470588
+Joe Philbin {{small|(fired on October 5)}},14,0,0.0
+Joe Vitt,16,3,0.1875
+John DeFilippo,38,2,0.05263157894736842
+John Fassel,16,0,0.0
+John Fox,126,10,0.07936507936507936
+John Harbaugh,126,6,0.047619047619047616
+John Hufnagel,13,1,0.07692307692307693
+John Morton,34,3,0.08823529411764706
+John Shoop,29,0,0.0
+Jon Gruden,102,4,0.0392156862745098
+Jonathan Gannon,32,1,0.03125
+Jordan Traylor,17,0,0.0
+Josh Grizzard,18,0,0.0
+Josh McDaniels,158,13,0.08227848101265822
+Josh McDaniels {{small|(fired December 6)}},16,1,0.0625
+Josh McDaniels; fired on October 31,17,0,0.0
+Justin Outten,22,0,0.0
+Keith Rowen,24,2,0.08333333333333333
+Kellen Moore,93,7,0.07526881720430108
+Ken Dorsey,39,3,0.07692307692307693
+Ken Dorsey; fired after Week 10,16,1,0.0625
+Ken Whisenhunt,120,3,0.025
+"Ken Whisenhunt (fired November 3, 2015)",19,1,0.05263157894736842
+Ken Zampese,15,2,0.13333333333333333
+"Ken Zampese (fired Sept 15, 2017)",16,0,0.0
+Kevin Gilbride,59,4,0.06779661016949153
+Kevin O'Connell,69,3,0.043478260869565216
+Kevin Patullo,15,1,0.06666666666666667
+Kevin Stefanski,82,5,0.06097560975609756
+Kim Helton,16,0,0.0
+Klay Kubiak,14,2,0.14285714285714285
+Klayton Adams,17,0,0.0
+Kliff Kingsbury,67,4,0.05970149253731343
+Klint Kubiak,53,4,0.07547169811320754
+Kyle Shanahan,144,12,0.08333333333333333
+Lane Kiffin,23,0,0.0
+Leslie Frazier,35,2,0.05714285714285714
+Liam Coen,51,3,0.058823529411764705
+Lovie Smith,96,3,0.03125
+Luke Getsy,29,1,0.034482758620689655
+Luke Getsy (fired on November 5),21,1,0.047619047619047616
+Marc Trestman,67,6,0.08955223880597014
+Marcus Brady,18,1,0.05555555555555555
+Mark Helfrich,25,0,0.0
+Marty Mornhinweg,132,5,0.03787878787878788
+Marty Schottenheimer,29,2,0.06896551724137931
+Marvin Lewis,85,4,0.047058823529411764
+Matt Canada,23,1,0.043478260869565216
+Matt Canada; fired after Week 11,14,0,0.0
+Matt Cavanaugh,64,2,0.03125
+Matt Eberflus,29,1,0.034482758620689655
+Matt Eberflus (fired on November 29),16,0,0.0
+Matt LaFleur,86,7,0.08139534883720931
+Matt Nagy,96,4,0.041666666666666664
+Matt Patricia,36,1,0.027777777777777776
+Matt Rhule,28,1,0.03571428571428571
+Maurice Carthon,41,0,0.0
+Maurice Carthon (Resigned after week 7),14,1,0.07142857142857142
+Mick Lombardi,15,2,0.13333333333333333
+Mick Lombardi; fired on October 31,17,0,0.0
+Mike Groh,27,1,0.037037037037037035
+Mike Heimerdinger,59,3,0.05084745762711865
+Mike Holmgren,24,1,0.041666666666666664
+Mike Johnson,14,2,0.14285714285714285
+Mike Kafka,37,2,0.05405405405405406
+Mike Kruczek,14,0,0.0
+Mike LaFleur,59,4,0.06779661016949153
+Mike Macdonald,26,2,0.07692307692307693
+Mike Martz,69,4,0.057971014492753624
+Mike McCarthy,154,11,0.07142857142857142
+Mike McCoy,84,6,0.07142857142857142
+"Mike McCoy (fired November 20, 2017)",17,0,0.0
+"Mike McCoy (fired Oct 19, 2018)",15,0,0.0
+Mike McDaniel,53,6,0.11320754716981132
+Mike Miller,22,0,0.0
+Mike Mularkey,118,6,0.05084745762711865
+Mike Munchak,26,0,0.0
+Mike Nolan,35,1,0.02857142857142857
+Mike Pettine,15,0,0.0
+Mike Riley,15,1,0.06666666666666667
+Mike Shanahan,35,3,0.08571428571428572
+Mike Sheppard,26,0,0.0
+Mike Sherman,50,3,0.06
+Mike Shula,57,5,0.08771929824561403
+Mike Singletary,21,2,0.09523809523809523
+Mike Smith,38,4,0.10526315789473684
+Mike Solari,16,2,0.125
+Mike Sullivan,48,2,0.041666666666666664
+Mike Tice,50,4,0.08
+Mike Tomlin,127,7,0.05511811023622047
+Mike Vrabel,73,4,0.0547945205479452
+Mike Zimmer,49,6,0.12244897959183673
+Nathaniel Hackett,109,6,0.05504587155963303
+Nick Caley,19,0,0.0
+Nick Holz,27,0,0.0
+Nick Saban,22,0,0.0
+Nick Sirianni,73,5,0.0684931506849315
+Norm Chow,32,0,0.0
+Norv Turner,159,11,0.06918238993710692
+Parks Frazier,19,0,0.0
+Pat Shurmur,147,9,0.061224489795918366
+Paul Hackett,21,1,0.047619047619047616
+Pep Hamilton,45,1,0.022222222222222223
+Pete Carmichael,98,8,0.08163265306122448
+Pete Carmichael Jr.,16,0,0.0
+Pete Carroll,18,1,0.05555555555555555
+Pete Mangurian,15,0,0.0
+Press Taylor,28,2,0.07142857142857142
+Raheem Morris,62,4,0.06451612903225806
+Randy Fichtner,31,4,0.12903225806451613
+Rex Ryan,73,0,0.0
+Rich Bisaccia,18,1,0.05555555555555555
+Rich Olson,20,1,0.05
+Rich Scangarello,14,0,0.0
+Richard Williamson,15,0,0.0
+Rick Dennison,97,4,0.041237113402061855
+Rick Neuheisel,18,0,0.0
+Rob Boras,23,0,0.0
+Rob Chudzinski,104,6,0.057692307692307696
+Robert Saleh,41,1,0.024390243902439025
+Robert Saleh (fired on October 8),14,0,0.0
+Rod Dowhower,19,0,0.0
+Rod Marinelli,35,1,0.02857142857142857
+Romeo Crennel,67,4,0.05970149253731343
+Ron Rivera,97,3,0.030927835051546393
+Ron Turner,33,1,0.030303030303030304
+Ryan Grubb,15,1,0.06666666666666667
+Scott Linehan,113,10,0.08849557522123894
+Scott Milanovich,18,0,0.0
+Scott Turner,71,2,0.028169014084507043
+Sean McDermott,76,4,0.05263157894736842
+Sean McVay,86,6,0.06976744186046512
+Sean Payton,150,11,0.07333333333333333
+Shane Steichen,73,6,0.0821917808219178
+Shane Waldron,29,0,0.0
+Shane Waldron (fired on November 10),16,0,0.0
+Sherman Lewis,36,0,0.0
+Sherman Smith,18,1,0.05555555555555555
+Steve Fairchild,19,0,0.0
+Steve Loney,16,0,0.0
+Steve Mariucci,40,1,0.025
+Steve Sarkisian,22,2,0.09090909090909091
+Steve Spagnuolo,55,2,0.03636363636363636
+Steve Spurrier,16,0,0.0
+Steve Wilks,32,0,0.0
+Tanner Engstrand,21,0,0.0
+Ted Tollner,17,0,0.0
+Terry Robiskie,39,2,0.05128205128205128
+Terry Shea,15,1,0.06666666666666667
+Thomas Brown,33,0,0.0
+Tim Kelly,70,2,0.02857142857142857
+Todd Bowles,95,3,0.031578947368421054
+Todd Downing,48,1,0.020833333333333332
+Todd Haley,114,6,0.05263157894736842
+"Todd Haley (fired Dec 12, 2011)",17,0,0.0
+Todd Monken,71,6,0.08450704225352113
+Tom Cable,23,1,0.043478260869565216
+Tom Clements,42,5,0.11904761904761904
+Tom Coughlin,88,6,0.06818181818181818
+Tom Moore,50,6,0.12
+Tom Rossley,37,2,0.05405405405405406
+Tommy Rees,18,0,0.0
+Tony Dungy,52,4,0.07692307692307693
+Tony Sparano,63,0,0.0
+Troy Calhoun,16,0,0.0
+Turk Schonert,13,0,0.0
+Urban Meyer (fired mid season),21,0,0.0
+Vance Joseph,28,0,0.0
+Vic Fangio,31,0,0.0
+Wade Phillips,15,0,0.0
+Wes Phillips,34,2,0.058823529411764705
+Zac Robinson,19,2,0.10526315789473684
+Zac Taylor,64,5,0.078125

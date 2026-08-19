@@ -1,0 +1,128 @@
+{
+  "sleeper_username": "authorzed",
+  "sleeper_user_id": "412300641516400640",
+  "fetched_at": "2026-08-17",
+  "note": "Data pulled via WebFetch against api.sleeper.app (this sandbox's Bash/curl network is blocked to that domain; WebFetch is the only working transport in this session). Player IDs are Sleeper's internal player_id and are NOT yet resolved to names - the full /v1/players/nfl reference file (~5MB) truncates at ~60-70% when pulled through WebFetch, so a separate resolution step is needed before names can be attached.",
+  "leagues": [
+    {
+      "league_id": "1389389302827339776",
+      "name": "Alumni Committee",
+      "season": "2026",
+      "status": "pre_draft",
+      "total_rosters": 10,
+      "format_notes": "5-round rookie drafts, 2-year taxi slots, up to 1 keeper. QB/RB/RB/WR/WR/TE/FLEX/FLEX/K/DEF + 13 bench.",
+      "my_roster_id": 9,
+      "my_record": {"wins": 0, "losses": 0, "ties": 0, "fpts": 0},
+      "my_player_ids": ["10859","11564","11624","11646","12492","12497","12499","12519","12526","12529","12540","12541","1433","3257","5012","5850","6803","6806","7002","7547","8112","8131","8144","8155","9488","9753","9997","BAL","JAX","TB"],
+      "owners": [
+        {"user_id":"412300641516400640","display_name":"authorzed","team_name":null,"is_me":true},
+        {"user_id":"466781400213745664","display_name":"Beekeepin","team_name":"Tis but a Scratch"},
+        {"user_id":"731191346269896704","display_name":"GangOfFrei","team_name":"Kneecap Nibblers","is_owner":true},
+        {"user_id":"731195356901167104","display_name":"mak726","team_name":"Michigan Cheated"},
+        {"user_id":"731228697272680448","display_name":"Flojoe41","team_name":"Milwaukee Bus Stop Bums"},
+        {"user_id":"731343582509772800","display_name":"mhershey","team_name":"Ginger Swarm"},
+        {"user_id":"732112871906992128","display_name":"benfreigang","team_name":"Mom get the Kamara"},
+        {"user_id":"732290513285283840","display_name":"ARHanson02","team_name":null},
+        {"user_id":"737493201036111872","display_name":"tkrahn98","team_name":"Joe's Bois"},
+        {"user_id":"739188927734382592","display_name":"seanthesean","team_name":"Kupp My Nuts On ur face"}
+      ]
+    },
+    {
+      "league_id": "1313508869787389952",
+      "name": "Quarantine Dynasty",
+      "season": "2026",
+      "status": "in_season",
+      "total_rosters": 10,
+      "format_notes": "Dynasty. QB/RB/RB/WR/WR/TE/FLEX/FLEX/SUPER_FLEX + 16 bench.",
+      "my_roster_id": 5,
+      "my_record": {"wins": 0, "losses": 0, "ties": 0, "fpts": 0},
+      "my_player_ids": ["10213","10222","11559","11564","12492","12501","12512","12529","12544","13276","13353","13400","13420","19","4034","5022","5927","6770","6806","7049","7553","7564","7594","8111","8132","8134","8142","8183"],
+      "owners": [
+        {"user_id":"112034850881814528","display_name":"zachkirch05"},
+        {"user_id":"411277617065373696","display_name":"cphietpas"},
+        {"user_id":"412300641516400640","display_name":"authorzed","is_me":true},
+        {"user_id":"420009885271334912","display_name":"IrishMafia","team_name":"JustCrimsonBaby"},
+        {"user_id":"461955121840910336","display_name":"Put4doe","team_name":"Oreo Speedwagon"},
+        {"user_id":"560234817445904384","display_name":"ckirch","team_name":"Bed, Bath and Bijan"},
+        {"user_id":"560627981239115776","display_name":"scooterd552001","team_name":"MaHomies"},
+        {"user_id":"561976822194094080","display_name":"exmalibu"},
+        {"user_id":"996991293886685184","display_name":"Prestonkirchner"},
+        {"user_id":"1312938024232828928","display_name":"alexbatcha"}
+      ]
+    },
+    {
+      "league_id": "1313201033589035008",
+      "name": null,
+      "name_note": "Not set in Sleeper (shows as 'TBD')",
+      "season": "2026",
+      "status": "in_season",
+      "total_rosters": 10,
+      "format_notes": "QB/RB/RB/WR/WR/FLEX/REC_FLEX/SUPER_FLEX + 17 bench. Reception = 0.75 pts.",
+      "my_roster_id": 6,
+      "my_record": {"wins": 0, "losses": 0, "ties": 0, "fpts": 0},
+      "my_player_ids": ["10232","11370","11581","11637","12497","12505","12517","13268","13269","13288","13298","13345","13349","1466","4046","4199","5849","5872","5927","6790","6806","6819","7527","8131","8142","8205","9229","9482","9500","9506"],
+      "owners": [
+        {"user_id":"411277617065373696","display_name":"cphietpas"},
+        {"user_id":"412300641516400640","display_name":"authorzed","is_me":true},
+        {"user_id":"412333227273887744","display_name":"ezawikowski","team_name":"Bed Shitting Ass Clowns","is_owner":true},
+        {"user_id":"412367294539251712","display_name":"Bschmit"},
+        {"user_id":"412390309419286528","display_name":"kskenandore"},
+        {"user_id":"412451275104321536","display_name":"BrandonTilkens24","team_name":"Then He Waddled Away"},
+        {"user_id":"467092702471647232","display_name":"Thebetterlookingbrother"},
+        {"user_id":"467535337397153792","display_name":"Dhoepner09","team_name":"Sith Happens"},
+        {"user_id":"595671236659437568","display_name":"MKlamecki","team_name":"It's a Love Story"},
+        {"user_id":"733725888906125312","display_name":"cameronsawyer"}
+      ]
+    },
+    {
+      "league_id": "1312127342742614016",
+      "name": "Wisco Dynasty",
+      "season": "2026",
+      "status": "in_season",
+      "total_rosters": 12,
+      "format_notes": "Dynasty, 0.5 PPR. QB/RB/RB/WR/WR/TE/FLEX/FLEX + 15 bench.",
+      "my_roster_id": 3,
+      "my_record": {"wins": 0, "losses": 0, "ties": 0, "fpts": 0},
+      "my_player_ids": ["10218","11575","12487","13272","13278","13293","13298","13320","13330","13404","13420","13424","19","2216","3214","3294","5001","5012","5849","5859","5870","5872","6813","7547","7611","8130","8138","9486","9493"],
+      "owners": [
+        {"user_id":"411277617065373696","display_name":"cphietpas","team_name":"BillAdonaiTheScienceGuy"},
+        {"user_id":"412299941042475008","display_name":"SkyBohn","team_name":"Teach me how to Bucky"},
+        {"user_id":"412300641516400640","display_name":"authorzed","is_me":true},
+        {"user_id":"412333227273887744","display_name":"ezawikowski","team_name":"Wheels fell off"},
+        {"user_id":"412367294539251712","display_name":"Bschmit","team_name":"Catching Dragons"},
+        {"user_id":"412390309419286528","display_name":"kskenandore"},
+        {"user_id":"412451275104321536","display_name":"BrandonTilkens24","team_name":"Then He Waddled Away"},
+        {"user_id":"412724717833687040","display_name":"TheAdamWhite69","team_name":"MakeGreenBayGreatAgain"},
+        {"user_id":"413160982970376192","display_name":"adrews79","team_name":"Howdy, Nabers!"},
+        {"user_id":"462045945274560512","display_name":"jrtsoh","team_name":"Member Berries"},
+        {"user_id":"618288502165016576","display_name":"Ryantilkens7","team_name":"Watsons Massage Parlor"},
+        {"user_id":"729192237501620224","display_name":"freuty07","team_name":"Out on Bail"}
+      ]
+    },
+    {
+      "league_id": "1180207743981412352",
+      "name": "D - 1",
+      "season": "2025",
+      "status": "complete",
+      "total_rosters": 12,
+      "format_notes": "PPR dynasty-style. QB/RB/RB/WR/WR/WR/TE/FLEX/FLEX/FLEX/SUPER_FLEX + 15 bench.",
+      "my_roster_id": 2,
+      "my_record": {"wins": 3, "losses": 11, "ties": 0, "fpts": 1672},
+      "my_player_ids": ["12505","1426","6149","4035","11560","6803","12500","8121","4018","13101","12538","12732","4381","1479","11299","2749","12457","4993","8917","1689","5967","11617","2216","4040","8146","9484","827","4219","4046","8205","5906","4037","2197","12532"],
+      "owners": [
+        {"user_id":"308511772686422016","display_name":"Friez727"},
+        {"user_id":"411277617065373696","display_name":"cphietpas"},
+        {"user_id":"412300641516400640","display_name":"authorzed","is_me":true},
+        {"user_id":"445299564346339328","display_name":"VaultDweller247","team_name":"$75 Devy Rebuild","is_owner":true},
+        {"user_id":"472434530850959360","display_name":"THANOSofFANTASY"},
+        {"user_id":"603235191191834624","display_name":"Callaway436"},
+        {"user_id":"690627622757019648","display_name":"BulldogBradley"},
+        {"user_id":"734947887070466048","display_name":"Patsforlife22"},
+        {"user_id":"776473234106363904","display_name":"Tecmo88","team_name":"Tecmo88"},
+        {"user_id":"827245258843721728","display_name":"jordanjnoone"},
+        {"user_id":"837111438496604160","display_name":"goglspisan","team_name":"Flavatown Boozehounds"},
+        {"user_id":"848704934152093696","display_name":"UntitledTwo","is_owner":true}
+      ]
+    }
+  ]
+}
