@@ -4,6 +4,7 @@
 # from a source (dynastyprocess/Sleeper) or too large to belong in git.
 data/analytics.duckdb
 data/_dynastyprocess_data/
+data/_nflverse_data/
 
 __pycache__/
 *.pyc
