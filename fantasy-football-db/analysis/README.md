@@ -31,26 +31,34 @@ PPG/points/games, and whether it "vanished" from the data the next season).
 
 ## `rb_carries_superstar_falloff.py`
 
-Follow-up to the above, two refinements: (1) rushing **carries** only, not
-touches -- isolates leg-wear specifically from receiving work; (2) a
-tighter 250-299 vs. 300+ carries comparison, run twice -- once across all
-RB seasons, once restricted to seasons where the back was already
-Superstar-tier or better (`tier_score >= 4`) that year.
+Follow-up to the above, three refinements: (1) a tighter 250-299 vs. 300+
+comparison (narrower than the original 200-249 vs. 300+); (2) run twice --
+once across all RB seasons, once restricted to seasons where the back was
+already Superstar-tier or better (`tier_score >= 4`) that year; (3) run
+under BOTH rushing **carries** only (isolates leg-wear from receiving
+work) and total **touches** (carries + receptions, the original report's
+definition), side by side.
 
-**Finding: same direction, no longer significant.** All RB seasons:
-300+ carries still declines less than 250-299 (PPG -14.5% vs -16.4%; <=9
-games missed 13.0% vs 16.3%) but p=0.64/0.46 -- narrowing from 200-249 to
-250-299 shrinks the true gap along with the sample, since 250-299-carry
-backs are already a fairly established, bell-cow-ish population
-themselves, not the more mixed committee/timeshare group that sat in
-200-249. Superstar+-only (n=80 vs n=52): same direction again (PPG -17.1%
-vs -20.6%) but same story, p=0.50. Read: the original 200-249-vs-300+ gap
-was real and driven by contrasting a stable-workhorse population against a
-noisier one; once both buckets already are workhorses (or already are
-elite producers), there's less contrast left to detect at this sample
-size -- consistent with, not a contradiction of, the original finding.
+**Finding: same direction under carries, no longer significant; touches
+gets noisier still, and flips sign in the smallest cut.** Carries, all RBs
+(n=115 vs 147): 300+ still declines less (PPG -14.5% vs -16.4%, p=0.64).
+Carries, Superstar+ only (n=80 vs 52): same direction (-17.1% vs -20.6%,
+p=0.50). Touches, all RBs (n=217 vs 195): same direction again but flatter
+(-15.2% vs -16.9%, p=0.62). Touches, Superstar+ only (n=133 vs 55): flips
+-- 300+ touches declines *slightly more* than 250-299 (-19.1% vs -17.2%,
+p=0.73) -- though at that p-value it's indistinguishable from no
+difference either way, not a real reversal.
+
+Read: none of these narrower cuts reach significance in either direction.
+The original 200-249-vs-300+ gap was real (p=0.012/0.001) because it
+contrasted a genuinely different, noisier population (committee/timeshare
+backs) against true workhorses. Once both buckets are already heavy
+workloads -- or, further, already elite production -- there's little real
+contrast left to detect at these sample sizes, and which way the point
+estimate leans stops meaning much.
 
 Run `python3 analysis/rb_carries_superstar_falloff.py` to reproduce --
-writes `rb_carries_superstar_falloff_rows.csv` and prints every
-Superstar+/League-Winner RB season at 250+ carries with its next-season
+runs both metrics automatically, writes `rb_carries_superstar_falloff_rows.csv`
+and `rb_touches_superstar_falloff_rows.csv`, and prints every Superstar+/
+League-Winner RB season at 250+ carries or touches with its next-season
 outcome.

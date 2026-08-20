@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
 """
-rb_carries_superstar_falloff.py -- follow-up to rb_touches_falloff.py, two
-refinements requested directly:
+rb_carries_superstar_falloff.py -- follow-up to rb_touches_falloff.py,
+three refinements requested directly:
 
-  1. Rushing CARRIES only (not touches = carries + receptions) -- a
-     tighter test of leg-wear specifically, separate from receiving work.
-  2. Bucket 250-299 vs. 300+ carries (narrower than the original 200-249
-     vs. 300+ touches comparison), run twice: once across all RB seasons,
-     once restricted to seasons where the RB was ALREADY Superstar-tier or
-     better that year (tier_score >= 4) -- does the "reaching a heavy
-     workload is itself a filter for a good situation" explanation from
-     the original report still hold once we're only looking at backs who
-     were already elite, or does conditioning on elite production wash
-     the effect out?
+  1. A tighter 250-299 vs. 300+ bucket comparison (narrower than the
+     original 200-249 vs. 300+ touches comparison).
+  2. Run twice: once across all RB seasons, once restricted to seasons
+     where the RB was ALREADY Superstar-tier or better that year
+     (tier_score >= 4) -- does the "reaching a heavy workload is itself a
+     filter for a good situation" explanation from the original report
+     still hold once we're only looking at backs who were already elite,
+     or does conditioning on elite production wash the effect out?
+  3. Run under BOTH workload definitions -- rushing CARRIES only (isolates
+     leg-wear from receiving work) and total TOUCHES (carries +
+     receptions, the original report's definition) -- so the two are
+     directly comparable side by side.
 
 Same survivorship-bias handling as rb_touches_falloff.py: a player absent
 from player_offense_rank the next season (<4 games played, or out of the
@@ -22,6 +24,7 @@ dropped, and tracked separately as a "vanished" rate.
 Usage:
     python3 analysis/rb_carries_superstar_falloff.py
 """
+import csv
 import os
 
 import duckdb
@@ -34,11 +37,16 @@ DUCKDB_PATH = os.path.join(ROOT, "data", "analytics.duckdb")
 
 SUPERSTAR_TIER_SCORE = 4  # Superstar=4, League Winner=5 (see docs/breakout-falloff-methodology.md)
 
+METRICS = {
+    "carries": "s.carries",
+    "touches": "s.carries + s.receptions",
+}
 
-def load_data(conn):
-    rows = conn.execute("""
+
+def load_data(conn, metric_expr):
+    rows = conn.execute(f"""
         SELECT
-            s.season, s.player_id, s.carries,
+            s.season, s.player_id, {metric_expr} AS workload,
             cur.display_name, cur.ppg AS ppg_current, cur.fantasy_points_ppr AS pts_current,
             cur.games_played AS games_current, cur.tier AS tier_current, cur.tier_score AS tier_score_current,
             nxt.ppg AS ppg_next, nxt.fantasy_points_ppr AS pts_next,
@@ -46,13 +54,13 @@ def load_data(conn):
         FROM player_stats_season s
         JOIN player_offense_rank cur ON cur.season = s.season AND cur.player_id = s.player_id
         LEFT JOIN player_offense_rank nxt ON nxt.season = s.season + 1 AND nxt.player_id = s.player_id
-        WHERE s.position = 'RB' AND s.season BETWEEN 2001 AND 2024 AND s.carries >= 250
+        WHERE s.position = 'RB' AND s.season BETWEEN 2001 AND 2024 AND {metric_expr} >= 250
     """).fetchall()
-    cols = ["season", "player_id", "carries", "display_name", "ppg_current", "pts_current",
+    cols = ["season", "player_id", "workload", "display_name", "ppg_current", "pts_current",
             "games_current", "tier_current", "tier_score_current", "ppg_next", "pts_next", "games_next"]
     data = [dict(zip(cols, r)) for r in rows]
     for d in data:
-        d["bucket"] = "300+" if d["carries"] >= 300 else "250-299"
+        d["bucket"] = "300+" if d["workload"] >= 300 else "250-299"
         d["vanished"] = d["ppg_next"] is None
         d["ppg_next_eff"] = d["ppg_next"] if d["ppg_next"] is not None else 0.0
         d["pts_next_eff"] = d["pts_next"] if d["pts_next"] is not None else 0.0
@@ -66,8 +74,8 @@ def pct_change(rows_b, key_cur, key_nxt_eff):
     return (nxt - cur) / cur * 100
 
 
-def report(title, heavy, mid):
-    print(f"\n=== {title}: 300+ carries (n={len(heavy)}) vs. 250-299 carries (n={len(mid)}) ===")
+def report(unit, title, heavy, mid):
+    print(f"\n=== {title}: 300+ {unit} (n={len(heavy)}) vs. 250-299 {unit} (n={len(mid)}) ===")
     if not heavy or not mid:
         print("  not enough rows in one bucket to compare")
         return
@@ -107,44 +115,49 @@ def report(title, heavy, mid):
           f"250-299 {np.mean([d['games_current'] for d in mid]):.1f}")
 
 
-def main():
-    conn = duckdb.connect(DUCKDB_PATH, read_only=True)
-    data = load_data(conn)
-    conn.close()
-    print(f"[rb_carries_superstar_falloff] {len(data)} RB player-seasons with 250+ carries, 2001-2024")
+def run_metric(conn, metric_name, metric_expr):
+    print(f"\n{'#' * 70}\n# WORKLOAD METRIC: {metric_name.upper()}\n{'#' * 70}")
+    data = load_data(conn, metric_expr)
+    print(f"[rb_carries_superstar_falloff] {len(data)} RB player-seasons with 250+ {metric_name}, 2001-2024")
 
     all_heavy = [d for d in data if d["bucket"] == "300+"]
     all_mid = [d for d in data if d["bucket"] == "250-299"]
-    report("All RB seasons", all_heavy, all_mid)
+    report(metric_name, "All RB seasons", all_heavy, all_mid)
 
     ss_heavy = [d for d in all_heavy if d["tier_score_current"] >= SUPERSTAR_TIER_SCORE]
     ss_mid = [d for d in all_mid if d["tier_score_current"] >= SUPERSTAR_TIER_SCORE]
-    report("Superstar-tier-or-better seasons only", ss_heavy, ss_mid)
+    report(metric_name, "Superstar-tier-or-better seasons only", ss_heavy, ss_mid)
 
-    print("\n--- Superstar+ 300+ carries: every season (sorted by carries) ---")
-    for d in sorted(ss_heavy, key=lambda d: -d["carries"]):
+    print(f"\n--- Superstar+ 300+ {metric_name}: every season (sorted by {metric_name}) ---")
+    for d in sorted(ss_heavy, key=lambda d: -d["workload"]):
         outcome = "vanished" if d["vanished"] else f"{d['ppg_next_eff']:.1f} ppg / {d['games_next_eff']:.0f} gm"
-        print(f"  {d['season']} {d['display_name']:<22} {d['carries']:>3} car  "
+        print(f"  {d['season']} {d['display_name']:<22} {d['workload']:>3} {metric_name[:3]}  "
               f"{d['ppg_current']:.1f} ppg ({d['tier_current']})  ->  {outcome}")
 
-    print("\n--- Superstar+ 250-299 carries: every season (sorted by carries) ---")
-    for d in sorted(ss_mid, key=lambda d: -d["carries"]):
+    print(f"\n--- Superstar+ 250-299 {metric_name}: every season (sorted by {metric_name}) ---")
+    for d in sorted(ss_mid, key=lambda d: -d["workload"]):
         outcome = "vanished" if d["vanished"] else f"{d['ppg_next_eff']:.1f} ppg / {d['games_next_eff']:.0f} gm"
-        print(f"  {d['season']} {d['display_name']:<22} {d['carries']:>3} car  "
+        print(f"  {d['season']} {d['display_name']:<22} {d['workload']:>3} {metric_name[:3]}  "
               f"{d['ppg_current']:.1f} ppg ({d['tier_current']})  ->  {outcome}")
 
-    import csv
-    out_path = os.path.join(ROOT, "analysis", "rb_carries_superstar_falloff_rows.csv")
+    out_path = os.path.join(ROOT, "analysis", f"rb_{metric_name}_superstar_falloff_rows.csv")
     with open(out_path, "w", newline="") as f:
         w = csv.writer(f)
-        w.writerow(["season", "player_id", "display_name", "carries", "bucket",
+        w.writerow(["season", "player_id", "display_name", metric_name, "bucket",
                      "tier_current", "tier_score_current", "games_current", "ppg_current", "pts_current",
                      "games_next_eff", "ppg_next_eff", "pts_next_eff", "vanished"])
         for d in data:
-            w.writerow([d["season"], d["player_id"], d["display_name"], d["carries"], d["bucket"],
+            w.writerow([d["season"], d["player_id"], d["display_name"], d["workload"], d["bucket"],
                         d["tier_current"], d["tier_score_current"], d["games_current"], d["ppg_current"],
                         d["pts_current"], d["games_next_eff"], d["ppg_next_eff"], d["pts_next_eff"], d["vanished"]])
     print(f"\nRow-level dataset written to {out_path}")
+
+
+def main():
+    conn = duckdb.connect(DUCKDB_PATH, read_only=True)
+    for metric_name, metric_expr in METRICS.items():
+        run_metric(conn, metric_name, metric_expr)
+    conn.close()
 
 
 if __name__ == "__main__":
