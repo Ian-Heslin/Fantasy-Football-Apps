@@ -34,6 +34,11 @@ python3 scripts/load_coaching_and_offense.py  # loads coach_table/team_offense_
                                    # player_offense_rank/coach_tenure_segments
                                    # from data/coaching_and_offense/ (a separate
                                    # Cowork session's v13-v18 research export)
+python3 scripts/backfill_vegas_actual_wins.py  # fills in actual_wins/losses/
+                                   # ties/over_under_result for any season
+                                   # vegas_odds doesn't have a final result
+                                   # for yet, from nflverse/nfldata's
+                                   # standings.csv
 python3 scripts/build_arbitrage_signals.py  # computes the buy-low/sell-high
                                    # signal (dynasty vs. redraft ECR percentile
                                    # gap) from fp_ecr_history into app.db
@@ -108,7 +113,12 @@ coaching-effects and offense-quality research -- see
 - `coach_tenure_segments` (DuckDB) -- continuous coach/team tenure ranges,
   every role merged into one span (592 rows)
 - `vegas_odds` (DuckDB) -- preseason win-total lines, Super Bowl odds, and
-  actual results, 2001-2025 (799 rows)
+  actual results, 2001-2025 (799 rows). The 2025 season's `actual_wins`/
+  `actual_losses`/`actual_ties`/`over_under_result` were still NULL as
+  delivered (that research predated the season finishing) --
+  `scripts/backfill_vegas_actual_wins.py` fills them in from nflverse/
+  nfldata's `standings.csv` without touching the PFR-sourced historical
+  rows. Safe to re-run each time a season wraps up.
 - `team_primary_qb` (DuckDB) -- ID-based primary starting QB per
   team-season (830 rows)
 - `player_offense_rank` (DuckDB) -- per-player-season fantasy performance
@@ -198,6 +208,9 @@ scripts/
   load_nflverse.py                 -- loads play_by_play
   load_coaching_and_offense.py      -- loads coach/offense/vegas-odds tables
                                        from data/coaching_and_offense/
+  backfill_vegas_actual_wins.py      -- fills in actual results for any
+                                       season vegas_odds doesn't have one
+                                       for yet, from nflverse/nfldata
   build_arbitrage_signals.py         -- computes the buy-low/sell-high signal
                                        into app.db's arbitrage_signals table
   load_player_stats.py                -- loads player_stats_season + player_bio
