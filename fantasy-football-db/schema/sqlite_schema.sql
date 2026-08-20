@@ -74,8 +74,17 @@ CREATE INDEX IF NOT EXISTS idx_roster_players_date ON roster_players(as_of_date)
 -- Dynasty trade values (dynastyprocess/data's values.csv), one row per
 -- player-or-pick per snapshot date. Re-running the loader with a new date
 -- adds a new snapshot rather than overwriting, so value trends over time.
+-- NOTE: player_id and pick_label are NOT NULL (empty string, not NULL, for
+-- whichever one doesn't apply to a given row) specifically so the PRIMARY
+-- KEY actually dedupes on re-run -- SQLite (like standard SQL) treats every
+-- NULL as distinct from every other NULL in a uniqueness check, so a
+-- nullable column in a PK silently defeats ON CONFLICT and every re-run
+-- just appends duplicate rows instead of updating them in place. (Learned
+-- the hard way: the originally-delivered app.db had exactly this bug --
+-- every row duplicated 2x from an earlier double-run, invisible until
+-- someone went looking for it.)
 CREATE TABLE IF NOT EXISTS trade_values (
-    player_id       TEXT,               -- NULL when is_pick = 1
+    player_id       TEXT NOT NULL DEFAULT '',  -- '' when is_pick = 1
     value_date      TEXT NOT NULL,
     value_1qb       REAL,
     value_2qb       REAL,
@@ -83,7 +92,7 @@ CREATE TABLE IF NOT EXISTS trade_values (
     ecr_2qb         REAL,
     ecr_pos         REAL,
     is_pick         INTEGER DEFAULT 0,
-    pick_label      TEXT,               -- e.g. '2027 1st', set when is_pick = 1
+    pick_label      TEXT NOT NULL DEFAULT '',  -- e.g. '2027 1st', '' when is_pick = 0
     source          TEXT DEFAULT 'dynastyprocess',
     PRIMARY KEY (value_date, source, player_id, pick_label)
 );

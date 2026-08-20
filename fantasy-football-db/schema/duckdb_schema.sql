@@ -17,16 +17,22 @@
 -- Full FantasyPros ECR history (dynastyprocess/data's db_fpecr.csv.gz).
 -- Long time series across many ranking pages (dynasty-overall, dynasty-
 -- superflex, ppr-cheatsheets, etc.) -- this is what the arbitrage-signal and
--- breakout/bounce-back models are ultimately built from.
+-- breakout/bounce-back models are ultimately built from. One row per
+-- player per ranking page per scrape date -- PRIMARY KEY enforces that and
+-- lets the loader upsert instead of blindly re-appending the same snapshot
+-- every time build_db.py is re-run (this table had exactly that bug: no
+-- key at all, so re-running it doubled/tripled the table with zero
+-- warning -- caught by comparing row counts before and after a rerun).
 CREATE TABLE IF NOT EXISTS fp_ecr_history (
-    fp_id           VARCHAR,
-    page            VARCHAR,      -- e.g. 'dynasty-overall', 'ppr-cheatsheets'
+    fp_id           VARCHAR NOT NULL,
+    page            VARCHAR NOT NULL,  -- e.g. 'dynasty-overall', 'ppr-cheatsheets'
     player_name     VARCHAR,
     position        VARCHAR,
     rank            INTEGER,
     ecr             DOUBLE,
     rank_delta      DOUBLE,
-    scrape_date     DATE
+    scrape_date     DATE NOT NULL,
+    PRIMARY KEY (fp_id, page, scrape_date)
 );
 CREATE INDEX IF NOT EXISTS idx_ecr_fpid ON fp_ecr_history(fp_id);
 CREATE INDEX IF NOT EXISTS idx_ecr_date ON fp_ecr_history(scrape_date);

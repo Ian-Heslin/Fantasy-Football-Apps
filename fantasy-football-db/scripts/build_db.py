@@ -160,8 +160,10 @@ def load_trade_values(sqlite_conn):
             fp_id = _clean(r.get("fp_id")) or _clean(r.get("fantasypros_id"))
             player_name = _clean(r.get("player")) or ""
             is_pick = 1 if (_clean(r.get("pos")) or "").upper() == "PICK" else 0
+            if not is_pick and not fp_id:
+                continue  # a real player row with no usable id -- can't key it, skip
             rows.append((
-                None if is_pick else fp_id,
+                "" if is_pick else fp_id,
                 TODAY,
                 to_float(r.get("value_1qb")),
                 to_float(r.get("value_2qb")),
@@ -169,7 +171,7 @@ def load_trade_values(sqlite_conn):
                 to_float(r.get("ecr_2qb")),
                 to_float(r.get("ecr_pos")),
                 is_pick,
-                player_name if is_pick else None,
+                player_name if is_pick else "",
                 "dynastyprocess",
             ))
 
@@ -210,6 +212,10 @@ def load_fp_ecr_latest(duckdb_conn):
             TRY_CAST(rank_delta AS DOUBLE) AS rank_delta,
             TRY_CAST(scrape_date AS DATE) AS scrape_date
         FROM read_csv_auto('{path}', ignore_errors=true)
+        WHERE id IS NOT NULL AND fp_page IS NOT NULL AND scrape_date IS NOT NULL
+        ON CONFLICT (fp_id, page, scrape_date) DO UPDATE SET
+            player_name=excluded.player_name, position=excluded.position,
+            rank=excluded.rank, ecr=excluded.ecr, rank_delta=excluded.rank_delta
     """)
     count = duckdb_conn.execute("SELECT count(*) FROM fp_ecr_history").fetchone()[0]
     log(f"fp_ecr_history now has {count} total rows")
