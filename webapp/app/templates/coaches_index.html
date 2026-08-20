@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Coaches{% endblock %}
+{% block content %}
+<h1>Coaches</h1>
+<p class="subtle">
+  Average team offensive EPA/play percentile across every season as HC or
+  OC (see docs/breakout-falloff-methodology.md's v13-v18 coaching-effects
+  research -- this ranking alone doesn't prove a coaching effect; a coach
+  with few seasons can rank high or low on a small sample).
+</p>
+
+<form class="filter-bar" method="get">
+  <label>Minimum seasons
+    <select name="min_seasons" onchange="this.form.submit()">
+      {% for n in min_season_options %}
+      <option value="{{ n }}" {{ 'selected' if n == min_seasons else '' }}>{{ n }}+</option>
+      {% endfor %}
+    </select>
+  </label>
+</form>
+
+{% if not rows %}
+<div class="empty-state"><p>No coaching data loaded -- run <code>scripts/load_coaching_and_offense.py</code>.</p></div>
+{% else %}
+<table class="data-table">
+  <thead>
+    <tr><th>Coach</th><th>Seasons (HC/OC)</th><th>First</th><th>Last</th><th>Avg offense %ile</th></tr>
+  </thead>
+  <tbody>
+    {% for r in rows %}
+    <tr>
+      <td><a href="/coaches/{{ r['coach_name'] }}">{{ r['coach_name'] }}</a></td>
+      <td>{{ r['n_seasons'] }}</td>
+      <td>{{ r['first_season'] }}</td>
+      <td>{{ r['last_season'] }}</td>
+      <td>{{ '%.0f%%'|format(r['avg_epa_pctile'] * 100) if r['avg_epa_pctile'] is not none else '—' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

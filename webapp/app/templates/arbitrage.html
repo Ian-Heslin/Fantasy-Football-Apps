@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Arbitrage{% endblock %}
+{% block content %}
+<h1>Arbitrage board</h1>
+<p class="subtle">
+  Dynasty ECR percentile vs. redraft ECR percentile, per player. A big
+  positive gap means the dynasty market believes in a player more than his
+  current-season ranking does (buy-low); a big negative gap means current
+  production is outrunning his long-term dynasty price (sell-high).
+  {% if as_of_date %}As of {{ as_of_date }}.{% endif %}
+</p>
+
+<form class="filter-bar" method="get">
+  <label>Format
+    <select name="format" onchange="this.form.submit()">
+      <option value="1qb" {{ 'selected' if format == '1qb' else '' }}>1QB</option>
+      <option value="sf" {{ 'selected' if format == 'sf' else '' }}>Superflex</option>
+    </select>
+  </label>
+  <label>Signal
+    <select name="signal" onchange="this.form.submit()">
+      <option value="">All</option>
+      {% for s in signals %}
+      <option value="{{ s }}" {{ 'selected' if s == signal else '' }}>{{ signal_labels.get(s, s) }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Position
+    <select name="position" onchange="this.form.submit()">
+      <option value="">All</option>
+      {% for pos in positions %}
+      <option value="{{ pos }}" {{ 'selected' if pos == selected_position else '' }}>{{ pos }}</option>
+      {% endfor %}
+    </select>
+  </label>
+</form>
+
+{% if not rows %}
+<div class="empty-state">
+  <p>No arbitrage signals found. Run <code>scripts/build_arbitrage_signals.py</code>.</p>
+</div>
+{% else %}
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>Player</th><th>Pos</th><th>Team</th>
+      <th>Dynasty %ile</th><th>Redraft %ile</th><th>Gap</th><th>Signal</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in rows %}
+    <tr>
+      <td>{{ r['name'] or r['player_id'] }}</td>
+      <td>{{ r['position'] or '—' }}</td>
+      <td>{{ r['team'] or '—' }}</td>
+      <td>{{ '%.0f%%'|format(r['dynasty_percentile'] * 100) }}</td>
+      <td>{{ '%.0f%%'|format(r['redraft_percentile'] * 100) }}</td>
+      <td>{{ '%+.0f%%'|format(r['gap'] * 100) }}</td>
+      <td>
+        <span class="badge badge-{{ r['signal']|lower|replace('_', '-') }}">
+          {{ signal_labels.get(r['signal'], r['signal']) }}
+        </span>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

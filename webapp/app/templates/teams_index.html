@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Teams{% endblock %}
+{% block content %}
+<h1>Team offense</h1>
+<p class="subtle">PPG/EPA-per-play rank within the season -- 1 is the league's best offense that year.</p>
+
+<form class="filter-bar" method="get">
+  <label>Season
+    <select name="season" onchange="this.form.submit()">
+      {% for s in seasons %}
+      <option value="{{ s }}" {{ 'selected' if s == selected_season else '' }}>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </label>
+</form>
+
+{% if not rows %}
+<div class="empty-state"><p>No team offense data loaded -- run <code>scripts/load_coaching_and_offense.py</code>.</p></div>
+{% else %}
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>#</th><th>Team</th><th>PPG</th><th>YPG</th><th>EPA/play</th>
+      <th>Head coach</th><th>Primary QB</th><th>Win total</th><th>Actual wins</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in rows %}
+    <tr>
+      <td>{{ r['epa_rank'] }}</td>
+      <td><a href="/teams/{{ r['team'] }}">{{ r['team'] }}</a></td>
+      <td>{{ '%.1f'|format(r['ppg']) if r['ppg'] is not none else '—' }}</td>
+      <td>{{ '%.1f'|format(r['yards_per_game']) if r['yards_per_game'] is not none else '—' }}</td>
+      <td>{{ '%.3f'|format(r['epa_per_play']) if r['epa_per_play'] is not none else '—' }}</td>
+      <td>
+        {% if r['head_coach'] %}<a href="/coaches/{{ r['head_coach'] }}">{{ r['head_coach'] }}</a>{% else %}—{% endif %}
+      </td>
+      <td>{{ r['primary_qb_name'] or '—' }}</td>
+      <td>{{ r['win_total_line'] if r['win_total_line'] is not none else '—' }}</td>
+      <td>{{ r['actual_wins']|int if r['actual_wins'] is not none else '—' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}
