@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Database not found{% endblock %}
+{% block content %}
+<div class="empty-state">
+  <h1>Database not found</h1>
+  <p>{{ error }}</p>
+  <p>Run this from the repo root first:</p>
+  <pre>cd fantasy-football-db
+pip install -r scripts/requirements.txt
+python3 scripts/build_db.py</pre>
+</div>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Predictions{% endblock %}
+{% block content %}
+<h1>Predictions</h1>
+
+<div class="tabs">
+  <a class="tab {{ 'active' if model == 'breakout' else '' }}" href="/predictions?model=breakout">Breakout</a>
+  <a class="tab {{ 'active' if model == 'bounceback' else '' }}" href="/predictions?model=bounceback">Bounce-back</a>
+</div>
+
+<p class="subtle">
+  {% if model == 'breakout' %}
+    Does a below-Star player break out to Star-or-higher next season? Four
+    per-position models (v11 -- see docs/breakout-falloff-methodology.md).
+  {% else %}
+    Does a player who fell off Star-or-higher tier return to Star+ the very
+    next season? (v7)
+  {% endif %}
+</p>
+
+<form class="filter-bar" method="get">
+  <input type="hidden" name="model" value="{{ model }}">
+  <label>Season
+    <select name="season" onchange="this.form.submit()">
+      {% for s in seasons %}
+      <option value="{{ s }}" {{ 'selected' if s == selected_season else '' }}>{{ s }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Position
+    <select name="position" onchange="this.form.submit()">
+      <option value="">All</option>
+      {% for pos in positions %}
+      <option value="{{ pos }}" {{ 'selected' if pos == selected_position else '' }}>{{ pos }}</option>
+      {% endfor %}
+    </select>
+  </label>
+</form>
+
+{% if not rows %}
+<div class="empty-state"><p>No predictions match these filters.</p></div>
+{% else %}
+<table class="data-table">
+  <thead>
+    <tr><th>Player</th><th>Pos</th><th>Team</th><th>Probability</th><th>Actual outcome</th></tr>
+  </thead>
+  <tbody>
+    {% for r in rows %}
+    <tr>
+      <td>{{ r['name'] or r['player_id'] }}</td>
+      <td>{{ r['position'] or '—' }}</td>
+      <td>{{ r['team'] or '—' }}</td>
+      <td>
+        <div class="prob-bar">
+          <div class="prob-bar-fill" style="width: {{ (r['predicted_probability'] * 100)|round(1) }}%"></div>
+          <span>{{ '%.1f%%'|format(r['predicted_probability'] * 100) }}</span>
+        </div>
+      </td>
+      <td>
+        {% if r['actual_outcome'] is none %}
+          <span class="subtle">TBD ({{ r['season'] }})</span>
+        {% elif r['actual_outcome'] == 1 %}
+          <span class="badge badge-yes">Yes</span>
+        {% else %}
+          <span class="badge badge-no">No</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

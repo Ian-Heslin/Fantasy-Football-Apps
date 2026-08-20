@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Rosters{% endblock %}
+{% block content %}
+<h1>Rosters</h1>
+
+{% if not leagues %}
+<div class="empty-state">
+  <p>No leagues loaded yet.</p>
+  <p>Run this on a machine with real network access (Sleeper's API is
+  blocked from some sandboxed environments):</p>
+  <pre>cd fantasy-football-db
+python3 scripts/load_sleeper.py</pre>
+</div>
+{% else %}
+<table class="data-table">
+  <thead>
+    <tr><th>League</th><th>Season</th><th>Format</th><th>Status</th></tr>
+  </thead>
+  <tbody>
+    {% for lg in leagues %}
+    <tr>
+      <td><a href="/rosters/{{ lg['league_id'] }}">{{ lg['name'] or '(unnamed league)' }}</a></td>
+      <td>{{ lg['season'] }}</td>
+      <td>{{ lg['format'] }}</td>
+      <td>{{ lg['status'] }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}

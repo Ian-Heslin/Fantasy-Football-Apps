@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Fantasy Football{% endblock %}
+{% block content %}
+<h1>Fantasy Football</h1>
+
+<div class="stat-grid">
+  <div class="stat-tile">
+    <div class="stat-value">{{ stats.players }}</div>
+    <div class="stat-label">Players</div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-value">{{ stats.leagues }}</div>
+    <div class="stat-label">Leagues loaded</div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-value">{{ stats.arbitrage_signals }}</div>
+    <div class="stat-label">Arbitrage signals</div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-value">{{ stats.breakout_predictions }}</div>
+    <div class="stat-label">Breakout predictions</div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-value">{{ stats.bounceback_predictions }}</div>
+    <div class="stat-label">Bounce-back predictions</div>
+  </div>
+</div>
+
+{% if stats.leagues == 0 %}
+<div class="notice">
+  No leagues loaded yet. Run <code>scripts/load_sleeper.py</code> from a machine
+  with real network access (Sleeper's API is blocked from some sandboxed
+  environments) to pull your rosters in.
+</div>
+{% endif %}
+
+<h2>Data freshness</h2>
+<table class="data-table">
+  <thead>
+    <tr><th>Table</th><th>Source</th><th>Last synced</th><th>Rows</th><th>Notes</th></tr>
+  </thead>
+  <tbody>
+    {% for row in sync_log %}
+    <tr>
+      <td>{{ row['table_name'] }}</td>
+      <td>{{ row['source'] }}</td>
+      <td>{{ row['last_synced_at'] }}</td>
+      <td>{{ row['row_count'] }}</td>
+      <td>{{ row['notes'] }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
