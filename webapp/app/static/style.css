@@ -100,6 +100,11 @@ a:hover { text-decoration: underline; }
   background: var(--panel); color: var(--text); border: 1px solid var(--border);
   border-radius: 6px; padding: 6px 10px; font-size: 0.9rem;
 }
+.filter-bar .checkbox-label {
+  flex-direction: row; align-items: center; gap: 8px; align-self: flex-end;
+  font-size: 0.9rem; color: var(--text);
+}
+.filter-bar .checkbox-label input { width: 16px; height: 16px; accent-color: var(--accent); }
 
 .prob-bar {
   position: relative; width: 140px; height: 20px; background: #0b0d11;

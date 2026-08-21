@@ -8,6 +8,15 @@
   research -- this ranking alone doesn't prove a coaching effect; a coach
   with few seasons can rank high or low on a small sample).
 </p>
+{% if current_only %}
+<p class="subtle">
+  Showing only coaches active in {{ latest_season }}, the most recent
+  season this data covers -- <strong>not necessarily this year's actual
+  staff.</strong> This table is a static export (see
+  <code>data/coaching_and_offense/</code>), not re-scraped every season,
+  so a coaching change since {{ latest_season }} won't show up here yet.
+</p>
+{% endif %}
 
 <form class="filter-bar" method="get">
   <label>Minimum seasons
@@ -16,6 +25,11 @@
       <option value="{{ n }}" {{ 'selected' if n == min_seasons else '' }}>{{ n }}+</option>
       {% endfor %}
     </select>
+  </label>
+  <label class="checkbox-label">
+    <input type="checkbox" name="current_only" value="true"
+           {{ 'checked' if current_only else '' }} onchange="this.form.submit()">
+    Current coaches only ({{ latest_season }})
   </label>
 </form>
 
