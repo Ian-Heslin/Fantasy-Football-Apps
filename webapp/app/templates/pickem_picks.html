@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Make picks{% endblock %}
+{% block content %}
+<h1>Make picks</h1>
+<p class="subtle"><a href="/games/pickem">&larr; NFL Pick&rsquo;em</a></p>
+
+<form class="filter-bar" method="get" action="/games/pickem/picks">
+  <input type="hidden" name="week" value="{{ week }}">
+  <label>Picking as
+    <select name="friend" onchange="this.form.submit()">
+      {% for f in friends %}
+      <option value="{{ f }}" {{ 'selected' if f == friend else '' }}>{{ f }}</option>
+      {% endfor %}
+    </select>
+  </label>
+</form>
+
+<h2>{{ week_data['label'] }} &middot; {{ n_games }} games</h2>
+<p class="subtle">{{ week_data['note'] }}</p>
+{% if saved %}<div class="notice"><p>Picks saved for {{ friend }}.</p></div>{% endif %}
+{% if settings.confidence_enabled %}
+<div class="notice">
+  <p>Confidence points are on. Assign each game a unique number from 1 to {{ n_games }} --
+    {{ n_games }} for your most confident pick, 1 for your least confident. Duplicate numbers
+    won&rsquo;t score correctly, so use each one once.</p>
+</div>
+{% endif %}
+
+<form method="post" action="/games/pickem/picks">
+  <input type="hidden" name="friend" value="{{ friend }}">
+  <input type="hidden" name="week" value="{{ week }}">
+  <table class="data-table pickem-table">
+    <thead>
+      <tr>
+        <th>Matchup</th>
+        <th>{{ 'Spread' if settings.pick_mode == 'spread' else 'Line (ref.)' }}</th>
+        <th>Your pick</th>
+        {% if settings.confidence_enabled %}<th>Confidence</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for g in games %}
+      {% set pick = existing.get(g.id, {}) %}
+      <tr>
+        <td>{{ team_names.get(g.away, g.away) }} ({{ g.away }}) @ {{ team_names.get(g.home, g.home) }} ({{ g.home }})
+          <div class="subtle">{{ g.kickoff }}</div>
+        </td>
+        <td>{{ g.spread_display() }}</td>
+        <td>
+          <label class="pick-option">
+            <input type="radio" name="pick_{{ g.id }}" value="{{ g.away }}" {{ 'checked' if pick.get('team') == g.away else '' }}>
+            {{ g.away }}
+          </label>
+          <label class="pick-option">
+            <input type="radio" name="pick_{{ g.id }}" value="{{ g.home }}" {{ 'checked' if pick.get('team') == g.home else '' }}>
+            {{ g.home }}
+          </label>
+        </td>
+        {% if settings.confidence_enabled %}
+        <td>
+          <input type="number" class="confidence-input" name="confidence_{{ g.id }}"
+                 min="1" max="{{ n_games }}" value="{{ pick.get('confidence') or '' }}">
+        </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p><button type="submit">Save picks</button></p>
+</form>
+{% endblock %}

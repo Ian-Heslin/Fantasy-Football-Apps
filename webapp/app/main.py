@@ -11,7 +11,7 @@ import os
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from app.routes import arbitrage, coaches, home, predictions, rosters, teams
+from app.routes import arbitrage, coaches, home, pickem, predictions, rosters, teams
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -24,3 +24,4 @@ app.include_router(predictions.router)
 app.include_router(arbitrage.router)
 app.include_router(teams.router)
 app.include_router(coaches.router)
+app.include_router(pickem.router)

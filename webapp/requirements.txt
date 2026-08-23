@@ -3,3 +3,4 @@ fastapi
 uvicorn[standard]
 jinja2
 duckdb
+python-multipart  # needed for Form(...) request bodies, e.g. the /games/pickem picks form

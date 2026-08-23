@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}NFL Pick'em{% endblock %}
+{% block content %}
+<h1>NFL Pick&rsquo;em</h1>
+<p class="subtle">
+  <a href="/games">&larr; Games</a> &middot; mock data for the demo, resets when the app restarts.
+</p>
+
+<h2>League settings</h2>
+<form class="filter-bar" method="post" action="/games/pickem/settings">
+  <label>Pick mode
+    <select name="pick_mode">
+      <option value="straight_up" {{ 'selected' if settings.pick_mode == 'straight_up' else '' }}>Straight-up winner</option>
+      <option value="spread" {{ 'selected' if settings.pick_mode == 'spread' else '' }}>Against the spread</option>
+    </select>
+  </label>
+  <label class="checkbox-label">
+    <input type="checkbox" name="confidence_enabled" value="true" {{ 'checked' if settings.confidence_enabled else '' }}>
+    Confidence points
+  </label>
+  <label style="justify-content:flex-end;">
+    <button type="submit">Save settings</button>
+  </label>
+</form>
+<p class="subtle">
+  {% if settings.pick_mode == 'spread' %}
+    Picks must cover the Vegas spread shown at the time you make them, not just win outright.
+  {% else %}
+    Picks just need to win the game outright -- the spread is shown for reference only.
+  {% endif %}
+  {% if settings.confidence_enabled %}
+    Confidence is on: rank every pick 1&ndash;N (N = games this week). Correct picks score their
+    assigned points; your most confident pick is worth the most.
+  {% else %}
+    Confidence is off: every correct pick is worth 1 point.
+  {% endif %}
+</p>
+
+<h2>{{ open_week['label'] }} &mdash; open for picks</h2>
+<p class="subtle">{{ open_week['note'] }}</p>
+<table class="data-table">
+  <thead><tr><th>Friend</th><th></th></tr></thead>
+  <tbody>
+    {% for friend in friends %}
+    <tr>
+      <td>{{ friend }}</td>
+      <td><a href="/games/pickem/picks?friend={{ friend }}&week={{ open_week_num }}">Make picks</a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2>Standings</h2>
+<table class="data-table">
+  <thead><tr><th>#</th><th>Friend</th><th>Points</th><th>Correct</th></tr></thead>
+  <tbody>
+    {% for row in standings %}
+    <tr>
+      <td>{{ row.rank }}</td>
+      <td>{{ row.friend }}</td>
+      <td>{{ row.points }}</td>
+      <td>{{ row.correct }} / {{ row.played }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p><a href="/games/pickem/standings">Full standings &amp; week-by-week breakdown &rarr;</a></p>
+{% endblock %}
