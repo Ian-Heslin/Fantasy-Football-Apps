@@ -1,4 +1,5 @@
-fastapi>=0.110.0
-uvicorn[standard]>=0.29.0
-jinja2>=3.1.0
-duckdb>=1.5.0
+# No version floors on purpose -- see fantasy-football-db/scripts/requirements.txt
+fastapi
+uvicorn[standard]
+jinja2
+duckdb

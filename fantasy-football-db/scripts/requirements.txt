@@ -1,6 +1,9 @@
-duckdb>=1.5.0
-requests>=2.31.0
-pandas>=2.0.0
-numpy>=1.26.0
-statsmodels>=0.14.0
-scikit-learn>=1.4.0
+# No version floors on purpose -- an overly strict pin (e.g. duckdb>=1.5.0)
+# can fail to resolve at all on an older Python/pip, aborting the entire
+# install even though a slightly older version would work fine.
+duckdb
+requests
+pandas
+numpy
+statsmodels
+scikit-learn
