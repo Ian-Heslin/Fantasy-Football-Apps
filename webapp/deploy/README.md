@@ -13,9 +13,16 @@ domain, `launchd` instead of whatever's running mailprep.
 macOS already advertises itself on the local network via Bonjour at
 `<computer-name>.local`. Check/set yours:
 
+See the current one:
+
 ```bash
-scutil --get LocalHostName        # see the current one
-sudo scutil --set LocalHostName fantasyfootball   # rename it
+scutil --get LocalHostName
+```
+
+Rename it:
+
+```bash
+sudo scutil --set LocalHostName fantasyfootball
 ```
 
 (Same setting as System Settings -> General -> Sharing -> Local hostname.)
@@ -28,16 +35,29 @@ you could instead add a static DNS entry there for something shorter, but
 
 ## 2. Install the launchd service
 
-```bash
-cd fantasy-football-apps/webapp/deploy
+From inside your existing clone of this repo:
 
-# Fill in your actual repo path and python3 path:
+```bash
+cd webapp/deploy
+```
+
+Fill in your actual repo path and python3 path:
+
+```bash
 REPO_PATH="$(cd .. && cd .. && pwd)"
 PYTHON_PATH="$(which python3)"
-sed -e "s|__REPO_PATH__|$REPO_PATH|g" -e "s|__PYTHON_PATH__|$PYTHON_PATH|g" \
-  com.ianheslin.fantasyfootball.plist > /tmp/com.ianheslin.fantasyfootball.plist
-cp /tmp/com.ianheslin.fantasyfootball.plist ~/Library/LaunchAgents/
+```
 
+Generate the filled-in service file and install it:
+
+```bash
+sed -e "s|__REPO_PATH__|$REPO_PATH|g" -e "s|__PYTHON_PATH__|$PYTHON_PATH|g" com.ianheslin.fantasyfootball.plist > /tmp/com.ianheslin.fantasyfootball.plist
+cp /tmp/com.ianheslin.fantasyfootball.plist ~/Library/LaunchAgents/
+```
+
+Load it:
+
+```bash
 launchctl load ~/Library/LaunchAgents/com.ianheslin.fantasyfootball.plist
 ```
 
@@ -53,17 +73,27 @@ http://fantasyfootball.local:8000
 
 ## Managing the service
 
+Stop it:
+
 ```bash
-# Stop it
 launchctl unload ~/Library/LaunchAgents/com.ianheslin.fantasyfootball.plist
+```
 
-# Start it again
+Start it again:
+
+```bash
 launchctl load ~/Library/LaunchAgents/com.ianheslin.fantasyfootball.plist
+```
 
-# Check it's running
+Check it's running:
+
+```bash
 launchctl list | grep fantasyfootball
+```
 
-# See logs
+See logs:
+
+```bash
 tail -f webapp/deploy/webapp.log webapp/deploy/webapp.error.log
 ```
 
