@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  launchd service definition for running the Fantasy Football web app
+  persistently on a Mac -- see webapp/deploy/README.md for install steps.
+
+  RunAtLoad + KeepAlive means: start this the moment the Mac boots/you log
+  in, and if it ever crashes or you kill it, launchd starts it right back
+  up. That's what "don't have to start the website every time" means on
+  macOS -- there's no separate systemd-style daemon here, launchd IS it.
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.ianheslin.fantasyfootball</string>
+
+  <key>WorkingDirectory</key>
+  <string>__REPO_PATH__/webapp</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>__PYTHON_PATH__</string>
+    <string>-m</string>
+    <string>uvicorn</string>
+    <string>app.main:app</string>
+    <string>--host</string>
+    <string>0.0.0.0</string>
+    <string>--port</string>
+    <string>8000</string>
+  </array>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>__REPO_PATH__/webapp/deploy/webapp.log</string>
+  <key>StandardErrorPath</key>
+  <string>__REPO_PATH__/webapp/deploy/webapp.error.log</string>
+</dict>
+</plist>

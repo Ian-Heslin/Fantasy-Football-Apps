@@ -23,6 +23,10 @@ uvicorn app.main:app --reload
 
 Then open http://127.0.0.1:8000.
 
+To stop starting this manually every time and instead have it run
+persistently on your home network at a friendly hostname, see
+`deploy/README.md`.
+
 ## Pages
 
 - **`/`** -- data freshness dashboard (reads `sync_log`) and quick counts.
