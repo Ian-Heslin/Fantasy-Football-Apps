@@ -8,9 +8,24 @@
 <h1>{{ league['name'] or '(unnamed league)' }}</h1>
 <p class="subtle">{{ league['season'] }} &middot; {{ league['format'] }} &middot; {{ league['status'] }}</p>
 
+{% if teams %}
+<form class="filter-bar" method="get">
+  <label>Team
+    <select name="roster_id" onchange="this.form.submit()">
+      {% for t in teams %}
+      <option value="{{ t['roster_id'] }}" {{ 'selected' if t['roster_id'] == roster_id else '' }}>
+        {{ t['owner_name'] or ('Team ' + t['roster_id']) }}{{ ' (you)' if t['is_mine'] else '' }}
+      </option>
+      {% endfor %}
+    </select>
+  </label>
+</form>
+<p class="subtle"><a href="/rosters/{{ league['league_id'] }}/trades">Find trades in this league &rarr;</a></p>
+{% endif %}
+
 {% if roster_id is none %}
 <div class="empty-state">
-  <p>Your roster hasn't been identified in this league yet -- run
+  <p>No team selected yet -- run
   <code>scripts/load_sleeper.py</code> to refresh.</p>
 </div>
 {% elif not players %}

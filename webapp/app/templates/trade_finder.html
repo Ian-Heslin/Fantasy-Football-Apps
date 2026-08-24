@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Trade Finder{% endblock %}
+{% block content %}
+{% if league is none %}
+<div class="empty-state"><p>League not found.</p></div>
+{% else %}
+<p><a href="/rosters/{{ league['league_id'] }}">&larr; {{ league['name'] or '(unnamed league)' }}</a></p>
+<h1>Trade Finder</h1>
+<p class="subtle">
+  1-for-1 trades where the two players' dynasty values are within 20% of
+  each other, ranked higher when you'd be moving a Sell High player for a
+  Buy Low one (see <a href="/arbitrage">the arbitrage board</a> for what
+  those mean). Doesn't yet account for positional need -- e.g. it'll
+  suggest trading away a WR even if you're already thin there -- just
+  value and signal alignment.
+</p>
+
+{% if my_roster_id is none %}
+<div class="empty-state">
+  <p>Your roster hasn't been identified in this league yet -- run
+  <code>scripts/load_sleeper.py</code> to refresh.</p>
+</div>
+{% elif not opponents %}
+<div class="empty-state"><p>No other teams found in this league yet.</p></div>
+{% else %}
+<form class="filter-bar" method="get">
+  <label>Trade with
+    <select name="opponent_roster_id" onchange="this.form.submit()">
+      {% for o in opponents %}
+      <option value="{{ o['roster_id'] }}" {{ 'selected' if o['roster_id'] == opponent_roster_id else '' }}>
+        {{ o['owner_name'] or ('Team ' + o['roster_id']) }}
+      </option>
+      {% endfor %}
+    </select>
+  </label>
+</form>
+
+{% if not suggestions %}
+<div class="empty-state"><p>No fair-value 1-for-1 trades found with this team right now.</p></div>
+{% else %}
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>You give</th><th>Value</th><th>You get</th><th>Value</th><th>Value gap</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in suggestions %}
+    <tr>
+      <td>
+        {{ s['give']['name'] }} ({{ s['give']['position'] }})
+        {% if s['give']['signal'] %}
+          <span class="badge badge-{{ s['give']['signal']|lower|replace('_', '-') }}">
+            {{ signal_labels.get(s['give']['signal'], s['give']['signal']) }}
+          </span>
+        {% endif %}
+      </td>
+      <td>{{ '%.0f'|format(s['give'][value_col]) }}</td>
+      <td>
+        {{ s['get']['name'] }} ({{ s['get']['position'] }})
+        {% if s['get']['signal'] %}
+          <span class="badge badge-{{ s['get']['signal']|lower|replace('_', '-') }}">
+            {{ signal_labels.get(s['get']['signal'], s['get']['signal']) }}
+          </span>
+        {% endif %}
+      </td>
+      <td>{{ '%.0f'|format(s['get'][value_col]) }}</td>
+      <td>{{ '%.0f%%'|format(s['value_gap_pct'] * 100) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endif %}
+{% endif %}
+{% endblock %}
