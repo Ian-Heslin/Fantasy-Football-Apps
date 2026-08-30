@@ -1,0 +1,21 @@
+[Unit]
+# systemd service definition for running the Fantasy Football web app
+# persistently on Linux (Raspberry Pi) -- the systemd equivalent of
+# com.ianheslin.fantasyfootball.plist (launchd, for macOS). See
+# webapp/deploy/README.md's Raspberry Pi section for install steps.
+Description=Fantasy Football web app
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__SERVICE_USER__
+WorkingDirectory=__REPO_PATH__/webapp
+ExecStart=__VENV_PATH__/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+Restart=on-failure
+RestartSec=5
+StandardOutput=append:__REPO_PATH__/webapp/deploy/webapp.log
+StandardError=append:__REPO_PATH__/webapp/deploy/webapp.error.log
+
+[Install]
+WantedBy=multi-user.target

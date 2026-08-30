@@ -1,0 +1,25 @@
+[Unit]
+# Runs a Cloudflare "quick tunnel" persistently, so friends can reach the
+# Fantasy Football app from outside your home network without any router
+# port-forwarding. See webapp/deploy/README.md's Raspberry Pi section.
+#
+# NOTE: a quick tunnel's https://<random-words>.trycloudflare.com URL
+# changes every time this service (re)starts -- fine for early testing,
+# not a permanent link. Swap this for a named tunnel + your own domain
+# once you're ready (see the README) -- that URL stays fixed across
+# restarts.
+Description=Cloudflare Tunnel (quick tunnel) for Fantasy Football web app
+After=network-online.target fantasyfootball.service
+Wants=network-online.target
+Requires=fantasyfootball.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/cloudflared tunnel --url http://localhost:8000
+Restart=on-failure
+RestartSec=5
+StandardOutput=append:__REPO_PATH__/webapp/deploy/cloudflared.log
+StandardError=append:__REPO_PATH__/webapp/deploy/cloudflared.log
+
+[Install]
+WantedBy=multi-user.target
