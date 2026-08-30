@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}League History{% endblock %}
+{% block content %}
+{% if league is none %}
+<div class="empty-state"><p>League not found.</p></div>
+{% else %}
+<p><a href="/rosters/{{ league['league_id'] }}">&larr; {{ league['name'] or '(unnamed league)' }}</a></p>
+<h1>League History</h1>
+<p class="subtle">
+  Final standings by season, ranked by regular-season record (wins, then
+  points for) -- not pulled from the platform's own playoff bracket result,
+  so a champion who got hot in the playoffs may not show as #1 here.
+</p>
+
+{% if not rows %}
+<div class="empty-state">
+  <p>No season history loaded yet -- run
+  <code>scripts/load_{{ league['platform'] }}.py --history</code> to pull it in
+  (currently only ESPN leagues support this).</p>
+</div>
+{% else %}
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>Season</th><th>Rank</th><th>Team</th><th>Record</th><th>PF</th><th>PA</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in rows %}
+    <tr>
+      <td>{{ r['season'] }}</td>
+      <td>{{ r['final_rank'] }}</td>
+      <td>{{ r['owner_name'] or ('Team ' + r['roster_id']) }}</td>
+      <td>{{ r['wins'] }}-{{ r['losses'] }}{{ '-' + r['ties']|string if r['ties'] else '' }}</td>
+      <td>{{ '%.1f'|format(r['points_for']) if r['points_for'] is not none else '—' }}</td>
+      <td>{{ '%.1f'|format(r['points_against']) if r['points_against'] is not none else '—' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endif %}
+{% endblock %}

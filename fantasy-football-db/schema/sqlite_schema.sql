@@ -125,6 +125,29 @@ CREATE TABLE IF NOT EXISTS model_predictions (
     PRIMARY KEY (player_id, model_name, model_version, season)
 );
 
+-- Final season-by-season standings, one row per team per season, for
+-- leagues whose platform exposes real season history (currently ESPN --
+-- see scripts/load_espn.py's --history flag). final_rank is a best-effort
+-- ranking by (wins desc, points_for desc) computed from the regular-season
+-- record, NOT pulled from the platform's own playoff bracket result -- a
+-- team that lost in the championship game could still rank #1 here if its
+-- regular-season record was better. Good enough for "how has this team
+-- done over the years" context, not a substitute for real playoff history.
+CREATE TABLE IF NOT EXISTS league_season_standings (
+    league_id       TEXT NOT NULL,
+    season          INTEGER NOT NULL,
+    roster_id       TEXT NOT NULL,
+    owner_name      TEXT,
+    wins            INTEGER,
+    losses          INTEGER,
+    ties            INTEGER,
+    points_for      REAL,
+    points_against  REAL,
+    final_rank      INTEGER,
+    PRIMARY KEY (league_id, season, roster_id)
+);
+CREATE INDEX IF NOT EXISTS idx_league_standings_league ON league_season_standings(league_id, season);
+
 -- Freshness tracking, so the web page can show "last updated" per source
 -- instead of silently serving stale data.
 CREATE TABLE IF NOT EXISTS sync_log (

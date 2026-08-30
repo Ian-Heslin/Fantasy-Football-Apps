@@ -20,7 +20,11 @@
     </select>
   </label>
 </form>
-<p class="subtle"><a href="/rosters/{{ league['league_id'] }}/trades">Find trades in this league &rarr;</a></p>
+<p class="subtle">
+  <a href="/rosters/{{ league['league_id'] }}/trades">Find trades in this league &rarr;</a>
+  &middot;
+  <a href="/rosters/{{ league['league_id'] }}/history">League history &rarr;</a>
+</p>
 {% endif %}
 
 {% if roster_id is none %}

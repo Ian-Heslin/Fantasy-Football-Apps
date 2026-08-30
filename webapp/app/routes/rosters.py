@@ -207,3 +207,38 @@ def trade_finder(request: Request, league_id: str, opponent_roster_id: Optional[
             "value_col": value_col, "signal_labels": SIGNAL_LABELS,
         },
     )
+
+
+@router.get("/rosters/{league_id}/history", response_class=HTMLResponse)
+def league_history(request: Request, league_id: str):
+    try:
+        conn = get_connection()
+    except FileNotFoundError as e:
+        return db_missing_response(request, e)
+
+    try:
+        league = conn.execute(
+            "SELECT league_id, platform, name, season, format, status, my_roster_id "
+            "FROM leagues WHERE league_id = ?",
+            (league_id,),
+        ).fetchone()
+        if league is None:
+            conn.close()
+            return templates.TemplateResponse(
+                request, "league_history.html", {"league": None, "rows": []}, status_code=404,
+            )
+
+        rows = conn.execute(
+            """SELECT season, roster_id, owner_name, wins, losses, ties,
+                      points_for, points_against, final_rank
+               FROM league_season_standings
+               WHERE league_id = ?
+               ORDER BY season DESC, final_rank ASC""",
+            (league_id,),
+        ).fetchall()
+    finally:
+        conn.close()
+
+    return templates.TemplateResponse(
+        request, "league_history.html", {"league": league, "rows": rows},
+    )
