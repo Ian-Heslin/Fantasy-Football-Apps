@@ -197,8 +197,15 @@ sudo chown fantasyapp:fantasyapp /opt/fantasy-football-apps/repo/fantasy-footbal
 ```bash
 cd /opt/fantasy-football-apps/repo/webapp/deploy
 ```
+`sudo` only covers `sed` itself, not the `>` redirect (your normal shell
+sets that up before `sudo` runs) -- write to a temp file first, then move
+it into place with `sudo`:
+
 ```bash
-sudo sed -e "s|__REPO_PATH__|/opt/fantasy-football-apps/repo|g" -e "s|__VENV_PATH__|/opt/fantasy-football-apps/venv|g" -e "s|__SERVICE_USER__|fantasyapp|g" fantasyfootball.service > /etc/systemd/system/fantasyfootball.service
+sed -e "s|__REPO_PATH__|/opt/fantasy-football-apps/repo|g" -e "s|__VENV_PATH__|/opt/fantasy-football-apps/venv|g" -e "s|__SERVICE_USER__|fantasyapp|g" fantasyfootball.service > /tmp/fantasyfootball.service
+```
+```bash
+sudo mv /tmp/fantasyfootball.service /etc/systemd/system/fantasyfootball.service
 ```
 ```bash
 sudo systemctl daemon-reload
@@ -229,8 +236,13 @@ sudo dpkg -i /tmp/cloudflared.deb
 Install the tunnel as a systemd service (this is the "quick tunnel" mode --
 no Cloudflare account needed yet):
 
+Same redirect gotcha as step 5 -- write to `/tmp` first, then `sudo mv`:
+
 ```bash
-sudo sed -e "s|__REPO_PATH__|/opt/fantasy-football-apps/repo|g" cloudflared-quicktunnel.service > /etc/systemd/system/cloudflared-quicktunnel.service
+sed -e "s|__REPO_PATH__|/opt/fantasy-football-apps/repo|g" cloudflared-quicktunnel.service > /tmp/cloudflared-quicktunnel.service
+```
+```bash
+sudo mv /tmp/cloudflared-quicktunnel.service /etc/systemd/system/cloudflared-quicktunnel.service
 ```
 ```bash
 sudo systemctl daemon-reload
