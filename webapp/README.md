@@ -30,11 +30,15 @@ persistently on your home network at a friendly hostname, see
 ## Pages
 
 - **`/`** -- data freshness dashboard (reads `sync_log`) and quick counts.
-- **`/rosters`** -- your Sleeper leagues; click through to a roster valued
-  against current dynasty trade values (1QB or superflex, matching the
-  league's format) with the buy-low/sell-high arbitrage signal shown
-  alongside each player. Empty until `scripts/load_sleeper.py` has been run
-  somewhere with real network access to Sleeper's API.
+- **`/rosters`** -- your Sleeper and ESPN leagues; click through to any
+  team's roster (a picker lets you view league-mates' rosters too, not just
+  yours) valued against current dynasty trade values (1QB or superflex,
+  matching the league's format) with the buy-low/sell-high arbitrage signal
+  shown alongside each player. **`/rosters/{league}/trades`** suggests
+  fair-value 1-for-1 trades against a chosen opponent, weighted toward
+  moving a Sell High player for a Buy Low one. Empty until
+  `scripts/load_sleeper.py`/`scripts/load_espn.py` have been run somewhere
+  with real network access to those platforms' APIs.
 - **`/arbitrage`** -- every player's buy-low/sell-high signal (dynasty vs.
   redraft ECR percentile gap), not just yours. Filterable by format
   (1QB/superflex), signal, and position.

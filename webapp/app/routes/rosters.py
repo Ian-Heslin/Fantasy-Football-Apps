@@ -87,7 +87,7 @@ def rosters_index(request: Request):
 
     try:
         leagues = conn.execute(
-            "SELECT league_id, name, season, format, status, my_roster_id "
+            "SELECT league_id, platform, name, season, format, status, my_roster_id "
             "FROM leagues ORDER BY name"
         ).fetchall()
     finally:
@@ -107,7 +107,7 @@ def roster_detail(request: Request, league_id: str, roster_id: Optional[str] = N
 
     try:
         league = conn.execute(
-            "SELECT league_id, name, season, format, status, my_roster_id "
+            "SELECT league_id, platform, name, season, format, status, my_roster_id "
             "FROM leagues WHERE league_id = ?",
             (league_id,),
         ).fetchone()
@@ -160,7 +160,7 @@ def trade_finder(request: Request, league_id: str, opponent_roster_id: Optional[
 
     try:
         league = conn.execute(
-            "SELECT league_id, name, season, format, status, my_roster_id "
+            "SELECT league_id, platform, name, season, format, status, my_roster_id "
             "FROM leagues WHERE league_id = ?",
             (league_id,),
         ).fetchone()

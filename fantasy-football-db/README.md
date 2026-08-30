@@ -26,6 +26,11 @@ python3 scripts/build_db.py       # creates both DBs, loads the player
 python3 scripts/load_sleeper.py   # pulls your leagues/rosters from Sleeper's
                                    # public API (edit LEAGUE_IDS in the script
                                    # if your leagues change)
+python3 scripts/load_espn.py      # pulls your leagues/rosters from ESPN's
+                                   # public (unofficial) API -- both of Ian's
+                                   # ESPN leagues are public, no login cookies
+                                   # needed; edit LEAGUE_IDS/SEASON in the
+                                   # script if they change
 python3 scripts/load_nflverse.py  # loads 1999-2025 play-by-play (defaults to
                                    # the full range; pass --start/--end for a
                                    # smaller window)
@@ -174,11 +179,18 @@ ADP) is the doc's own documented fallback for exactly this situation ("kept
 as the baseline/full-coverage view since ~30% of candidates have no ADP
 match"). If ADP ever becomes reachable, `log_adp` can be added the same way.
 
-Loaded by `load_sleeper.py` (run separately, needs real internet -- this
-can't be tested from inside the cloud sandbox this was built in, since that
-sandbox's network specifically blocks `api.sleeper.app`, but it should work
-fine from a normal machine):
-- `leagues`, `rosters`, `roster_players` -- your 5 Sleeper leagues
+Loaded by `load_sleeper.py` and `load_espn.py` (run separately, needs real
+internet -- this can't be tested from inside the cloud sandbox this was
+built in, since that sandbox's network specifically blocks `api.sleeper.app`
+and `lm-api-reads.fantasy.espn.com`, but both work fine from a normal
+machine):
+- `leagues`, `rosters`, `roster_players` -- your 5 Sleeper leagues + 2 ESPN
+  leagues, `platform` column on `leagues` distinguishing them. Both loaders
+  write `sleeper:<id>`/`espn:<id>`-prefixed player ids into `roster_players`
+  and then repoint any that resolve to a `players.fantasypros_id` at their
+  canonical `player_id` (via `players.sleeper_id`/`players.espn_id`), so
+  trade values/arbitrage signals join against both platforms' rosters the
+  same way.
 
 **Still not populated -- no reachable source found:**
 - `adp_history` (DuckDB) -- the methodology doc's sources (footballguys.com
@@ -205,6 +217,7 @@ schema/
 scripts/
   build_db.py                     -- creates both DBs, loads dynastyprocess data
   load_sleeper.py                  -- loads your leagues/rosters from Sleeper
+  load_espn.py                     -- loads your leagues/rosters from ESPN
   load_nflverse.py                 -- loads play_by_play
   load_coaching_and_offense.py      -- loads coach/offense/vegas-odds tables
                                        from data/coaching_and_offense/

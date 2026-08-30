@@ -147,13 +147,24 @@ def main():
 
     resolve_sleeper_player_ids(conn)
 
+    # Separate sync_log row from ESPN's ('rosters:sleeper' vs. 'rosters:espn')
+    # -- sync_log's PRIMARY KEY is just table_name, so sharing one row between
+    # both loaders would have each one silently overwrite the other's
+    # freshness record instead of tracking them independently. Also scope
+    # row_count to Sleeper's own rosters rather than every platform's.
+    # (One-time cleanup: drop the old shared 'rosters' key from before ESPN
+    # support existed, so it doesn't linger on the dashboard forever.)
+    conn.execute("DELETE FROM sync_log WHERE table_name = 'rosters'")
     conn.execute(
         """INSERT INTO sync_log (table_name, source, last_synced_at, row_count, notes)
-           VALUES ('rosters', 'sleeper', datetime('now'),
-                   (SELECT count(*) FROM rosters), ?)
+           VALUES ('rosters:sleeper', 'sleeper', datetime('now'),
+                   (SELECT count(*) FROM rosters r JOIN leagues l ON l.league_id = r.league_id
+                    WHERE l.platform = 'sleeper'), ?)
            ON CONFLICT(table_name) DO UPDATE SET
                last_synced_at=datetime('now'),
-               row_count=(SELECT count(*) FROM rosters), notes=excluded.notes""",
+               row_count=(SELECT count(*) FROM rosters r JOIN leagues l ON l.league_id = r.league_id
+                          WHERE l.platform = 'sleeper'),
+               notes=excluded.notes""",
         (f"{len(LEAGUE_IDS)} leagues configured",),
     )
     conn.commit()

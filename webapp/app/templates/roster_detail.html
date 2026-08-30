@@ -6,7 +6,7 @@
 {% else %}
 <p><a href="/rosters">&larr; All leagues</a></p>
 <h1>{{ league['name'] or '(unnamed league)' }}</h1>
-<p class="subtle">{{ league['season'] }} &middot; {{ league['format'] }} &middot; {{ league['status'] }}</p>
+<p class="subtle">{{ league['platform'] }} &middot; {{ league['season'] }} &middot; {{ league['format'] }} &middot; {{ league['status'] }}</p>
 
 {% if teams %}
 <form class="filter-bar" method="get">
@@ -26,12 +26,12 @@
 {% if roster_id is none %}
 <div class="empty-state">
   <p>No team selected yet -- run
-  <code>scripts/load_sleeper.py</code> to refresh.</p>
+  <code>scripts/load_{{ league['platform'] }}.py</code> to refresh.</p>
 </div>
 {% elif not players %}
 <div class="empty-state">
   <p>No roster snapshot found for this league yet -- run
-  <code>scripts/load_sleeper.py</code> to pull it in.</p>
+  <code>scripts/load_{{ league['platform'] }}.py</code> to pull it in.</p>
 </div>
 {% else %}
 <table class="data-table">

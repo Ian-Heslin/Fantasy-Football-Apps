@@ -18,7 +18,7 @@
 {% if my_roster_id is none %}
 <div class="empty-state">
   <p>Your roster hasn't been identified in this league yet -- run
-  <code>scripts/load_sleeper.py</code> to refresh.</p>
+  <code>scripts/load_{{ league['platform'] }}.py</code> to refresh.</p>
 </div>
 {% elif not opponents %}
 <div class="empty-state"><p>No other teams found in this league yet.</p></div>

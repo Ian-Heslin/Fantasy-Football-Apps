@@ -1,0 +1,175 @@
+#!/usr/bin/env python3
+"""
+load_espn.py -- pulls Ian's ESPN leagues, rosters, and roster/player
+membership from ESPN's public (unofficial, no-auth) fantasy API and loads
+them into app.db, the same way load_sleeper.py does for Sleeper.
+
+Both of Ian's ESPN leagues are public, so no SWID/espn_s2 login cookies are
+needed -- see docs/sleeper-and-trade-value-pipeline.md's ESPN section. The
+working API host is `lm-api-reads.fantasy.espn.com`, NOT `fantasy.espn.com`
+itself (which blocks fetch-style tools via robots.txt) -- a plain
+`requests` GET against lm-api-reads works fine.
+
+NOTE: like load_sleeper.py, this can't reach ESPN's API from this sandbox
+(egress to lm-api-reads.fantasy.espn.com is blocked here). Run this on your
+own machine, or from wherever the web app actually runs.
+
+Usage:
+    python3 scripts/load_espn.py
+"""
+import os
+import sqlite3
+import sys
+from datetime import date
+
+import requests
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SQLITE_PATH = os.path.join(ROOT, "data", "app.db")
+TODAY = date.today().isoformat()
+BASE = "https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons"
+
+# Ian's ESPN leagues, from the project's pipeline notes -- both public, no
+# login cookies needed. Ian is always teamId=1 in both. Edit as leagues (or
+# the season) change; the names below are just a fallback if settings.name
+# doesn't come back for some reason.
+SEASON = 2026
+MY_TEAM_ID = "1"
+LEAGUE_IDS = {
+    "1532978": "The Deep's Dolphins",
+    "1062658": "'72 Dolphins",
+}
+
+
+def get_league(league_id):
+    resp = requests.get(
+        f"{BASE}/{SEASON}/segments/0/leagues/{league_id}",
+        params=[("view", "mTeam"), ("view", "mRoster"), ("view", "mSettings"), ("view", "mDraftDetail")],
+        timeout=15,
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
+def load_league(conn, league_id, fallback_name):
+    info = get_league(league_id)
+    if not info:
+        print(f"[load_espn] WARNING: no data for league {league_id}, skipping")
+        return
+
+    settings = info.get("settings", {}) or {}
+    name = settings.get("name") or fallback_name
+    lineup_slot_counts = (settings.get("rosterSettings") or {}).get("lineupSlotCounts") or {}
+    is_superflex = int(lineup_slot_counts.get("7", 0)) > 0  # ESPN slot 7 = "OP" (superflex)
+    drafted = bool((info.get("draftDetail") or {}).get("drafted"))
+    status = "in_season" if drafted else "pre_draft"
+
+    conn.execute(
+        """INSERT INTO leagues (league_id, platform, name, season, format, status, my_roster_id, updated_at)
+           VALUES (?, 'espn', ?, ?, ?, ?, ?, datetime('now'))
+           ON CONFLICT(league_id) DO UPDATE SET
+               name=excluded.name, season=excluded.season, format=excluded.format,
+               status=excluded.status, my_roster_id=excluded.my_roster_id, updated_at=datetime('now')""",
+        (league_id, name, SEASON, "SF" if is_superflex else "1QB", status, MY_TEAM_ID),
+    )
+
+    # mTeam's `members` array maps owner GUIDs to real display names -- fall
+    # back to the team's own name (location + nickname) when a member isn't
+    # resolvable, same idea as Sleeper's owner_name.
+    members = {m["id"]: m.get("displayName") for m in (info.get("members") or [])}
+    teams = info.get("teams") or []
+
+    for team in teams:
+        roster_id = str(team["id"])
+        owner_ids = team.get("owners") or []
+        owner_id = owner_ids[0] if owner_ids else None
+        team_name = " ".join(filter(None, [team.get("location"), team.get("nickname")])).strip()
+        owner_name = members.get(owner_id) or team_name or None
+        is_mine = 1 if roster_id == MY_TEAM_ID else 0
+
+        conn.execute(
+            """INSERT INTO rosters (league_id, roster_id, owner_id, owner_name, is_mine, updated_at)
+               VALUES (?, ?, ?, ?, ?, datetime('now'))
+               ON CONFLICT(league_id, roster_id) DO UPDATE SET
+                   owner_id=excluded.owner_id, owner_name=excluded.owner_name,
+                   is_mine=excluded.is_mine, updated_at=datetime('now')""",
+            (league_id, roster_id, owner_id, owner_name, is_mine),
+        )
+
+        for entry in (team.get("roster") or {}).get("entries", []):
+            player = (entry.get("playerPoolEntry") or {}).get("player") or {}
+            espn_player_id = player.get("id")
+            if espn_player_id is None:
+                continue
+            conn.execute(
+                """INSERT INTO roster_players (league_id, roster_id, player_id, as_of_date)
+                   VALUES (?, ?, ?, ?)
+                   ON CONFLICT DO NOTHING""",
+                (league_id, roster_id, f"espn:{espn_player_id}", TODAY),
+            )
+
+    conn.commit()
+    print(f"[load_espn] loaded league '{name}' ({league_id}): {len(teams)} teams")
+
+
+def resolve_espn_player_ids(conn):
+    """roster_players stores raw espn ids as 'espn:<id>' -- if a player also
+    has a fantasypros_id in the players table (loaded by build_db.py),
+    repoint roster_players at that canonical id so it joins cleanly against
+    trade_values/arbitrage_signals/model_predictions, which are keyed by
+    fantasypros_id. Players with no fantasypros match keep the espn: id."""
+    rows = conn.execute(
+        "SELECT player_id, espn_id FROM players WHERE espn_id IS NOT NULL"
+    ).fetchall()
+    remap = {f"espn:{espn_id}": canonical_id for canonical_id, espn_id in rows}
+
+    updated = 0
+    for raw_id, canonical_id in remap.items():
+        if raw_id == canonical_id:
+            continue
+        cur = conn.execute(
+            "UPDATE OR IGNORE roster_players SET player_id = ? WHERE player_id = ?",
+            (canonical_id, raw_id),
+        )
+        updated += cur.rowcount
+    conn.commit()
+    print(f"[load_espn] remapped {updated} roster_players rows to canonical player_id")
+
+
+def main():
+    if not os.path.exists(SQLITE_PATH):
+        print("app.db not found -- run scripts/build_db.py first.")
+        sys.exit(1)
+
+    conn = sqlite3.connect(SQLITE_PATH)
+    for league_id, fallback_name in LEAGUE_IDS.items():
+        try:
+            load_league(conn, league_id, fallback_name)
+        except requests.RequestException as e:
+            print(f"[load_espn] WARNING: failed to load league {league_id}: {e}")
+
+    resolve_espn_player_ids(conn)
+
+    # Separate sync_log row from Sleeper's ('rosters:espn' vs. 'rosters') --
+    # sync_log's PRIMARY KEY is just table_name, so sharing 'rosters' between
+    # both loaders would have each one silently overwrite the other's
+    # freshness record instead of tracking them independently.
+    conn.execute(
+        """INSERT INTO sync_log (table_name, source, last_synced_at, row_count, notes)
+           VALUES ('rosters:espn', 'espn', datetime('now'),
+                   (SELECT count(*) FROM rosters r JOIN leagues l ON l.league_id = r.league_id
+                    WHERE l.platform = 'espn'), ?)
+           ON CONFLICT(table_name) DO UPDATE SET
+               last_synced_at=datetime('now'),
+               row_count=(SELECT count(*) FROM rosters r JOIN leagues l ON l.league_id = r.league_id
+                          WHERE l.platform = 'espn'),
+               notes=excluded.notes""",
+        (f"{len(LEAGUE_IDS)} leagues configured",),
+    )
+    conn.commit()
+    conn.close()
+    print("[load_espn] done.")
+
+
+if __name__ == "__main__":
+    main()
