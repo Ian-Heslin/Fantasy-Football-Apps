@@ -1,18 +1,22 @@
 {% extends "base.html" %}
-{% block title %}Fantasy Football{% endblock %}
+{% block title %}Overview{% endblock %}
 {% block content %}
-<h1>Fantasy Football</h1>
+<div class="masthead">
+  <div class="masthead-eyebrow">Solaris &middot; Dynasty Desk</div>
+  <h1 class="masthead-title">Overview</h1>
+</div>
+<hr class="rule">
 
 <div class="stat-grid">
   <div class="stat-tile">
-    <div class="stat-value">{{ stats.players }}</div>
-    <div class="stat-label">Players</div>
-  </div>
-  <div class="stat-tile">
     <div class="stat-value">{{ stats.leagues }}</div>
-    <div class="stat-label">Leagues loaded</div>
+    <div class="stat-label">Leagues tracked</div>
   </div>
-  <div class="stat-tile">
+  <div class="stat-tile accent-secondary">
+    <div class="stat-value">{{ stats.players }}</div>
+    <div class="stat-label">Players indexed</div>
+  </div>
+  <div class="stat-tile accent-tertiary">
     <div class="stat-value">{{ stats.arbitrage_signals }}</div>
     <div class="stat-label">Arbitrage signals</div>
   </div>
@@ -20,7 +24,7 @@
     <div class="stat-value">{{ stats.breakout_predictions }}</div>
     <div class="stat-label">Breakout predictions</div>
   </div>
-  <div class="stat-tile">
+  <div class="stat-tile accent-secondary">
     <div class="stat-value">{{ stats.bounceback_predictions }}</div>
     <div class="stat-label">Bounce-back predictions</div>
   </div>
@@ -28,10 +32,55 @@
 
 {% if stats.leagues == 0 %}
 <div class="notice">
-  No leagues loaded yet. Run <code>scripts/load_sleeper.py</code> and
+  <p>No leagues loaded yet. Run <code>scripts/load_sleeper.py</code> and
   <code>scripts/load_espn.py</code> from a machine with real network access
   (both platforms' APIs are blocked from some sandboxed environments) to
-  pull your rosters in.
+  pull your rosters in.</p>
+</div>
+{% else %}
+
+<h2>Your Leagues</h2>
+<div class="card-grid">
+  {% for lg in leagues %}
+  <a class="solaris-card {{ 'accent-tertiary' if lg['platform'] == 'espn' else '' }}" href="/rosters/{{ lg['league_id'] }}">
+    <span class="badge {{ 'badge-tertiary' if lg['platform'] == 'espn' else 'badge-primary' }}">{{ lg['platform'] }}</span>
+    <h3 class="card-title">{{ lg['name'] or '(unnamed league)' }}</h3>
+    <div class="card-meta">{{ lg['season'] }} &middot; {{ lg['format'] }}</div>
+    <div class="card-row">
+      <span>
+        {% if lg['status'] == 'pre_draft' %}
+          <span class="status-dot status-dot--primary"></span>
+        {% elif lg['status'] == 'in_season' %}
+          <span class="status-dot status-dot--secondary"></span>
+        {% elif lg['status'] == 'complete' %}
+          <span class="status-dot status-dot--brown"></span>
+        {% else %}
+          <span class="status-dot"></span>
+        {% endif %}
+        {{ lg['status'] }}
+      </span>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if top_signals %}
+<h2>Arbitrage Signals</h2>
+<p class="subtle">Biggest dynasty-vs-redraft ECR gaps right now (1QB format) -- see <a href="/arbitrage">the full board</a>.</p>
+<div>
+  {% for s in top_signals %}
+  <div class="signal-row">
+    <span class="signal-icon {{ 'badge-brown' if s['signal'] == 'SELL_HIGH' else '' }}">{{ '↓' if s['signal'] == 'SELL_HIGH' else '↑' }}</span>
+    <div class="signal-body">
+      <div class="signal-label">{{ s['name'] }}</div>
+      <div class="signal-desc">{{ s['position'] }} &middot; {{ s['team'] }} &middot; {{ '%+.0f%%'|format(s['gap'] * 100) }} gap</div>
+    </div>
+    <span class="badge {{ 'badge-secondary' if s['signal'] == 'BUY_LOW' else 'badge-brown' }}">
+      {{ 'Buy Low' if s['signal'] == 'BUY_LOW' else 'Sell High' }}
+    </span>
+  </div>
+  {% endfor %}
 </div>
 {% endif %}
 

@@ -52,6 +52,29 @@ def apply_schema(sqlite_conn, duckdb_conn):
         duckdb_conn.execute(f.read())
     log("applied duckdb_schema.sql to analytics.duckdb")
 
+    apply_migrations(sqlite_conn)
+
+
+def apply_migrations(sqlite_conn):
+    """CREATE TABLE IF NOT EXISTS (above) only helps for brand-new tables --
+    it's a no-op against a table that already exists on a machine that ran
+    this before, so a new column added to an existing table (like users)
+    needs an explicit ALTER TABLE here. Guarded by "duplicate column" so
+    it's still safe to re-run once applied."""
+    migrations = [
+        ("users", "favorite_team", "ALTER TABLE users ADD COLUMN favorite_team TEXT"),
+        ("users", "team_colors_enabled",
+         "ALTER TABLE users ADD COLUMN team_colors_enabled INTEGER NOT NULL DEFAULT 0"),
+    ]
+    for table, column, statement in migrations:
+        try:
+            sqlite_conn.execute(statement)
+            sqlite_conn.commit()
+            log(f"migration: added {table}.{column}")
+        except sqlite3.OperationalError as e:
+            if "duplicate column name" not in str(e):
+                raise
+
 
 def clone_or_refresh_dynastyprocess():
     """Shallow-clone dynastyprocess/data, or pull if it already exists.

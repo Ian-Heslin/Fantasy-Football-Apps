@@ -65,6 +65,46 @@ roster instead of the league's own `my_roster_id` (which really just means
 they link one too) fall back to that `my_roster_id`/`is_mine` behavior
 unchanged.
 
+## Design system -- Solaris / Dynasty Desk
+
+Full spec: `docs/solaris-design-spec.md`. Mid-century/solarpunk WPA travel-
+poster look -- flat color blocks, bold black borders and rules, no
+gradients, no drop shadows, no rounded corners. The whole page sits inside
+a black picture-frame border (`.page-frame`/`.page-content` in
+`base.html`). Jost (headlines/titles/numbers) + Work Sans (everything
+else) via Google Fonts.
+
+Colors are CSS custom properties: fixed neutrals in `style.css`'s `:root`,
+plus three **dynamic accent slots** (`--yellow`/`--green`/`--sky`) that
+every component consumes through `var(...)` rather than a hardcoded color,
+so re-theming the three slots re-themes the whole page with no other
+changes needed. That's exactly what **Team Colors** does:
+
+- `/profile` (or the quick toggle+picker in the top bar, every page) lets
+  a user pick a favorite NFL team and turn Team Colors on/off
+  (`users.favorite_team`/`team_colors_enabled`).
+- `app/team_colors.py` resolves the three slots (+ their contrast-safe
+  text colors, since badges/icons render text *on* an accent fill and a
+  team's colors can be dark where the defaults are always light) from
+  whatever's currently logged in -- ported directly from the design
+  spec's JS, including the "team has only two brand colors" fallback
+  (white or black, whichever contrasts better) and the luminance-based
+  text contrast rule.
+- `app/auth.py`'s `load_current_user` (a global dependency, runs on every
+  request) resolves this into `request.state.colors`; `base.html` writes
+  it onto `:root` as an inline `<style>` block in `<head>`, after the main
+  stylesheet so it overrides the defaults. Off (or logged out) just
+  re-asserts the same defaults already in `style.css` -- harmless either
+  way, one code path for both states.
+- Turning the toggle off reverts to the defaults immediately even with a
+  team still selected; turning it back on re-applies that same team --
+  nothing destructive, per spec.
+
+Only the Dashboard (`/`) was actually mocked up in the design spec; every
+other page uses the same tokens/components (cards, badges, status dots,
+tables, buttons, the toggle switch) for a consistent look, without
+necessarily matching a layout the spec never drew.
+
 ## Pages
 
 - **`/`** -- data freshness dashboard (reads `sync_log`) and quick counts.
@@ -126,6 +166,9 @@ app/
   pickem.py            -- Pick'em scoring (winner/cover/score_pick), standings, and
                          current_season/current_week -- pure functions over DB rows,
                          no FastAPI/route code
+  team_colors.py         -- Team Colors: the 32-team color table + resolve()
+                         (ported from docs/solaris-design-spec.md's JS) --
+                         also pure functions, no FastAPI/route code
   db.py               -- SQLite + DuckDB connection helpers (path resolution, row_factory,
                          duckdb_rows() to give DuckDB's tuples the same dict-style
                          template access as sqlite3.Row)
@@ -154,5 +197,9 @@ requirements.txt
 - A dedicated "coach detail" view doesn't yet show `coach_tenure_segments`
   (continuous tenure spans) -- the per-season table on `/coaches/{name}`
   covers the same information less compactly.
+- Bespoke Solaris layouts for league/roster detail, player detail, and a
+  dedicated trade-signals board -- the design spec explicitly only mocked
+  up the Dashboard; those pages use the same tokens/components for a
+  consistent look, but haven't gotten a from-scratch layout pass.
 - Password reset -- an admin can't currently reset another user's
   password through the UI (would need a direct DB update for now).

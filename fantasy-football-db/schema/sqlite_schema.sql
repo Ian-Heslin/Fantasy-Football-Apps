@@ -162,6 +162,12 @@ CREATE INDEX IF NOT EXISTS idx_league_standings_league ON league_season_standing
 -- whatever owner_ids already showed up in rosters from load_sleeper.py/
 -- load_espn.py. NULL until the user links an account; roster pages fall
 -- back to the league's own my_roster_id (Ian's) until then.
+-- favorite_team (an id from app/team_colors.py's TEAMS, e.g. 'kc') +
+-- team_colors_enabled drive the Solaris design system's Team Colors
+-- feature (see app/team_colors.py) -- re-themes the site's three dynamic
+-- accent tokens to the user's chosen NFL team's brand colors when
+-- enabled. Off by default; a favorite team can be set without turning
+-- colors on (the toggle is independent of the picker, per spec).
 CREATE TABLE IF NOT EXISTS users (
     user_id             INTEGER PRIMARY KEY AUTOINCREMENT,
     username            TEXT NOT NULL UNIQUE,
@@ -169,6 +175,8 @@ CREATE TABLE IF NOT EXISTS users (
     tier                TEXT NOT NULL DEFAULT 'games',
     sleeper_owner_id    TEXT,
     espn_owner_id       TEXT,
+    favorite_team       TEXT,
+    team_colors_enabled INTEGER NOT NULL DEFAULT 0,
     created_at          TEXT DEFAULT (datetime('now'))
 );
 

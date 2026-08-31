@@ -28,6 +28,21 @@
       {% endfor %}
     </select>
   </label>
+
+  <label>Favorite team
+    <select name="favorite_team">
+      <option value="">(none)</option>
+      {% for t in teams %}
+      <option value="{{ t['id'] }}" {{ 'selected' if request.state.user['favorite_team'] == t['id'] else '' }}>{{ t['name'] }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label class="checkbox-label">
+    <input type="checkbox" name="team_colors_enabled" value="true"
+           {{ 'checked' if request.state.user['team_colors_enabled'] else '' }}>
+    Use my favorite team's colors as the site's accent colors
+  </label>
+
   <button type="submit">Save</button>
 </form>
 {% endblock %}

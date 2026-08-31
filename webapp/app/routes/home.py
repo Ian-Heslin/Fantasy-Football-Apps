@@ -38,9 +38,24 @@ def home(request: Request):
                 "SELECT count(*) FROM model_predictions WHERE model_name = 'bounceback'"
             ).fetchone()[0],
         }
+        leagues = conn.execute(
+            "SELECT league_id, platform, name, season, format, status FROM leagues ORDER BY name"
+        ).fetchall()
+
+        as_of_1qb = conn.execute(
+            "SELECT max(as_of_date) FROM arbitrage_signals WHERE format = '1qb'"
+        ).fetchone()[0]
+        top_signals = conn.execute(
+            """SELECT s.signal, s.gap, p.name, p.position, p.team
+               FROM arbitrage_signals s JOIN players p ON p.player_id = s.player_id
+               WHERE s.format = '1qb' AND s.as_of_date = ? AND s.signal != 'FAIR'
+               ORDER BY abs(s.gap) DESC LIMIT 6""",
+            (as_of_1qb,),
+        ).fetchall() if as_of_1qb else []
     finally:
         conn.close()
 
     return templates.TemplateResponse(
-        request, "home.html", {"sync_log": sync_log, "stats": stats}
+        request, "home.html",
+        {"sync_log": sync_log, "stats": stats, "leagues": leagues, "top_signals": top_signals},
     )

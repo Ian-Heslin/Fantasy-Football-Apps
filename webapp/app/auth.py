@@ -7,11 +7,14 @@ via require_tier() as a router-level dependency -- see app/routes/*.py's
 
 load_current_user runs as a global app dependency (see main.py) on every
 request, logged in or not, so request.state.user is always populated (to
-a dict, or None) before any route-specific auth check runs.
+a dict, or None) before any route-specific auth check runs. It also
+resolves request.state.colors (see app/team_colors.py) from that same
+user, since every page's <head> needs it regardless of tier.
 """
 import bcrypt
 from fastapi import Depends, Request
 
+from app import team_colors
 from app.db import get_connection
 
 TIER_RANK = {"games": 1, "fantasy": 2, "admin": 3}
@@ -42,17 +45,19 @@ def load_current_user(request: Request) -> None:
     themselves (which need to know "already logged in?" too)."""
     user_id = request.session.get("user_id")
     request.state.user = None
-    if not user_id:
-        return
-    try:
-        conn = get_connection()
-    except FileNotFoundError:
-        return
-    try:
-        row = conn.execute("SELECT * FROM users WHERE user_id = ?", (user_id,)).fetchone()
-    finally:
-        conn.close()
-    request.state.user = dict(row) if row else None
+    if user_id:
+        try:
+            conn = get_connection()
+        except FileNotFoundError:
+            conn = None
+        if conn is not None:
+            try:
+                row = conn.execute("SELECT * FROM users WHERE user_id = ?", (user_id,)).fetchone()
+            finally:
+                conn.close()
+            request.state.user = dict(row) if row else None
+
+    request.state.colors = team_colors.resolve(request.state.user)
 
 
 def require_tier(min_tier: str):

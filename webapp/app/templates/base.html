@@ -4,37 +4,87 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Fantasy Football{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jost:wght@700;800&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/style.css">
+  {#
+    Team Colors: overrides the three dynamic accent tokens (+ their
+    contrast-safe text colors) for this request. request.state.colors is
+    resolved by app/auth.py's load_current_user -> app/team_colors.py, from
+    the logged-in user's saved favorite_team/team_colors_enabled -- see
+    /profile or the quick toggle in the top bar below. When Team Colors is
+    off (or no one's logged in), colors is just the same defaults already
+    in style.css's :root, so this is harmless either way.
+  #}
+  <style>
+    :root {
+      --yellow: {{ request.state.colors.yellow }};
+      --green: {{ request.state.colors.green }};
+      --sky: {{ request.state.colors.sky }};
+      --text-on-primary: {{ request.state.colors.text_on_primary }};
+      --text-on-secondary: {{ request.state.colors.text_on_secondary }};
+      --text-on-tertiary: {{ request.state.colors.text_on_tertiary }};
+    }
+  </style>
 </head>
 <body>
   {% set user = request.state.user %}
+  <div class="page-frame"><div class="page-content">
   <header class="topbar">
-    <a class="brand" href="/">Fantasy Football</a>
+    <a class="brand" href="/">
+      <span class="logo-mark"></span>
+      <span class="brand-text">
+        <span class="brand-name">Solaris</span>
+        <span class="brand-tagline">Dynasty Desk</span>
+      </span>
+    </a>
+    {% if user %}
     <nav>
-      {% if user %}
-        <a href="/games">Games</a>
-        {% if user['tier'] in ('fantasy', 'admin') %}
-          <a href="/rosters">Rosters</a>
-          <a href="/arbitrage">Arbitrage</a>
-          <a href="/predictions">Predictions</a>
-          <a href="/teams">Teams</a>
-          <a href="/coaches">Coaches</a>
-        {% endif %}
-        {% if user['tier'] == 'admin' %}
-          <a href="/admin/users">Admin</a>
-        {% endif %}
-        <a href="/profile">Profile</a>
-        <form method="post" action="/logout" class="inline-form">
-          <button type="submit" class="link-button">Log out ({{ user['username'] }})</button>
-        </form>
-      {% else %}
-        <a href="/login">Log in</a>
-        <a href="/signup">Sign up</a>
+      <a href="/games" class="{{ 'active' if request.url.path.startswith('/games') else '' }}">Games</a>
+      {% if user['tier'] in ('fantasy', 'admin') %}
+        <a href="/" class="{{ 'active' if request.url.path == '/' else '' }}">Dashboard</a>
+        <a href="/rosters" class="{{ 'active' if request.url.path.startswith('/rosters') else '' }}">Rosters</a>
+        <a href="/arbitrage" class="{{ 'active' if request.url.path.startswith('/arbitrage') else '' }}">Arbitrage</a>
+        <a href="/predictions" class="{{ 'active' if request.url.path.startswith('/predictions') else '' }}">Predictions</a>
+        <a href="/teams" class="{{ 'active' if request.url.path.startswith('/teams') else '' }}">Teams</a>
+        <a href="/coaches" class="{{ 'active' if request.url.path.startswith('/coaches') else '' }}">Coaches</a>
+      {% endif %}
+      {% if user['tier'] == 'admin' %}
+        <a href="/admin/users" class="{{ 'active' if request.url.path.startswith('/admin') else '' }}">Admin</a>
       {% endif %}
     </nav>
+    <div class="topbar-right">
+      <form method="post" action="/preferences/team-colors" class="team-colors-form">
+        <input type="hidden" name="next" value="{{ request.url.path }}">
+        <select name="favorite_team" onchange="this.form.submit()">
+          <option value="">Favorite team</option>
+          {% for t in teams %}
+          <option value="{{ t['id'] }}" {{ 'selected' if user['favorite_team'] == t['id'] else '' }}>{{ t['name'] }}</option>
+          {% endfor %}
+        </select>
+        <input type="checkbox" name="team_colors_enabled" value="true" class="toggle-switch"
+               title="Use my favorite team's colors"
+               {{ 'checked' if user['team_colors_enabled'] else '' }} onchange="this.form.submit()">
+      </form>
+      <a href="/profile" class="user-chip">{{ user['username'] }}</a>
+      <form method="post" action="/logout" class="inline-form">
+        <button type="submit" class="link-button">Log out</button>
+      </form>
+    </div>
+    {% endif %}
   </header>
+  <hr class="rule">
   <main>
     {% block content %}{% endblock %}
   </main>
+  <hr class="rule">
+  <footer class="site-footer">
+    <span class="subtle">Solaris Dynasty Desk</span>
+    <span>
+      <span class="footer-dots"><span class="footer-dot"></span><span class="footer-dot"></span><span class="footer-dot"></span></span>
+    </span>
+  </footer>
+  </div></div>
 </body>
 </html>
