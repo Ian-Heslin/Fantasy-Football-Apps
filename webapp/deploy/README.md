@@ -319,20 +319,111 @@ Live app logs:
 sudo journalctl -u fantasyfootball.service -f
 ```
 
-Live tunnel logs:
+Live tunnel logs -- `journalctl` only shows systemd's own start/restart
+bookkeeping for this one, not cloudflared's actual output (it's redirected
+to a file instead, per the service definition), so tail that file directly:
 
 ```bash
-sudo journalctl -u cloudflared-quicktunnel.service -f
+tail -f /opt/fantasy-football-apps/repo/webapp/deploy/cloudflared.log
 ```
 
-### Moving to a permanent domain later
+### Moving to a permanent domain
 
-Once you own a domain, switch from a quick tunnel to a **named tunnel**:
-`cloudflared tunnel login`, `cloudflared tunnel create fantasyfootball`,
-then `cloudflared tunnel route dns fantasyfootball fantasy.yourdomain.com`
--- that hostname stays fixed across restarts, unlike the quick tunnel's
-random one. Ask when you're ready to add your domain to Cloudflare (free)
-and I'll walk through the named-tunnel config swap.
+A **named tunnel** authenticates as your own Cloudflare account instead of
+hitting the quick tunnel's account-less, rate-limited endpoint -- fixes
+the instability quick tunnels have by design, and gives you a hostname
+that stays fixed across every restart instead of a new random one each
+time.
+
+#### 1. Add your domain to Cloudflare
+
+In the Cloudflare dashboard: **Add a Site** -> enter your domain -> Free
+plan. Cloudflare shows two nameservers -- set those at your domain
+registrar (wherever you bought the domain), replacing whatever's there
+now. This can take minutes to hours to go **Active**; Cloudflare emails
+you when it's done.
+
+#### 2. Authenticate cloudflared to your account
+
+On the Pi (as root, so the systemd service below can read the resulting
+files -- it runs as root, no `User=` set):
+
+```bash
+sudo cloudflared tunnel login
+```
+
+This prints a URL -- open it on **any device** with a browser (your phone,
+your Mac), log into Cloudflare, and select your domain. The Pi's `cloudflared`
+polls in the background and downloads a certificate once you've authorized it.
+
+#### 3. Create the tunnel and route your domain to it
+
+```bash
+sudo cloudflared tunnel create fantasyfootball
+```
+
+Note the **Tunnel ID** (a UUID) it prints, and that it wrote a credentials
+file to `/root/.cloudflared/<TUNNEL_ID>.json`.
+
+```bash
+sudo cloudflared tunnel route dns fantasyfootball solarisfantasyfootball.com
+```
+
+That creates the DNS record on Cloudflare automatically -- no manual DNS
+dashboard step needed. (Swap in a subdomain like `app.solarisfantasyfootball.com`
+here instead, if you'd rather keep the bare domain free for something else later.)
+
+#### 4. Configure and install the named-tunnel service
+
+```bash
+cd /opt/fantasy-football-apps/repo/webapp/deploy
+```
+
+Fill in the config (replace `TUNNEL_ID_HERE` with the UUID from step 3):
+
+```bash
+sudo mkdir -p /etc/cloudflared
+```
+```bash
+sed -e "s|__TUNNEL_ID__|TUNNEL_ID_HERE|g" -e "s|__CREDENTIALS_PATH__|/root/.cloudflared/TUNNEL_ID_HERE.json|g" -e "s|__HOSTNAME__|solarisfantasyfootball.com|g" cloudflared-config.yml > /tmp/config.yml
+```
+```bash
+sudo mv /tmp/config.yml /etc/cloudflared/config.yml
+```
+
+Install the new service:
+
+```bash
+sed -e "s|__REPO_PATH__|/opt/fantasy-football-apps/repo|g" cloudflared-tunnel.service > /tmp/cloudflared-tunnel.service
+```
+```bash
+sudo mv /tmp/cloudflared-tunnel.service /etc/systemd/system/cloudflared-tunnel.service
+```
+
+Retire the quick tunnel and switch to the named one:
+
+```bash
+sudo systemctl disable --now cloudflared-quicktunnel.service
+```
+```bash
+sudo systemctl daemon-reload
+```
+```bash
+sudo systemctl enable --now cloudflared-tunnel.service
+```
+
+Check it's up:
+
+```bash
+sudo systemctl status cloudflared-tunnel.service
+```
+```bash
+tail -20 cloudflared.log
+```
+
+Then just visit `https://solarisfantasyfootball.com` (or whatever
+hostname you routed) -- that link now works forever, no more grepping
+logs for a random URL after every restart.
 
 ## Multi-user login (still not built)
 

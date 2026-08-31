@@ -1,0 +1,13 @@
+# Cloudflare named-tunnel config -- see webapp/deploy/README.md's "Moving
+# to a permanent domain" section for how __TUNNEL_ID__/__CREDENTIALS_PATH__/
+# __HOSTNAME__ get filled in. Unlike the quick tunnel (cloudflared
+# tunnel --url ...), this doesn't hit the account-less, rate-limited
+# quick-tunnel endpoint at all -- it authenticates as your own Cloudflare
+# account, and the hostname below stays fixed across every restart.
+tunnel: __TUNNEL_ID__
+credentials-file: __CREDENTIALS_PATH__
+
+ingress:
+  - hostname: __HOSTNAME__
+    service: http://localhost:8000
+  - service: http_status:404

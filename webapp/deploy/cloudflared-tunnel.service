@@ -1,0 +1,24 @@
+[Unit]
+# Permanent Cloudflare named tunnel -- replaces cloudflared-quicktunnel.service
+# once you have your own domain on Cloudflare. See webapp/deploy/README.md's
+# "Moving to a permanent domain" section for setup. Unlike the quick tunnel,
+# this authenticates as your own Cloudflare account, so it doesn't hit the
+# account-less quick-tunnel endpoint's rate limit, and the hostname stays
+# fixed across every restart -- no more re-grepping a new URL.
+Description=Cloudflare Tunnel (named) for Fantasy Football web app
+After=network-online.target fantasyfootball.service
+Wants=network-online.target
+Requires=fantasyfootball.service
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/cloudflared tunnel --config /etc/cloudflared/config.yml run
+Restart=on-failure
+RestartSec=15
+StandardOutput=append:__REPO_PATH__/webapp/deploy/cloudflared.log
+StandardError=append:__REPO_PATH__/webapp/deploy/cloudflared.log
+
+[Install]
+WantedBy=multi-user.target
