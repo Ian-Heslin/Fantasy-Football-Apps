@@ -18,6 +18,12 @@
   <key>WorkingDirectory</key>
   <string>__REPO_PATH__/webapp</string>
 
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>SESSION_SECRET_KEY</key>
+    <string>__SESSION_SECRET_KEY__</string>
+  </dict>
+
   <key>ProgramArguments</key>
   <array>
     <string>__PYTHON_PATH__</string>

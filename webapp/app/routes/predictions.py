@@ -1,13 +1,14 @@
 from typing import Optional
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 
+from app.auth import require_tier
 from app.common import POSITIONS, db_missing_response
 from app.db import get_connection
 from app.templating import templates
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_tier("fantasy"))])
 
 
 @router.get("/predictions", response_class=HTMLResponse)

@@ -11,6 +11,7 @@ Wants=network-online.target
 Type=simple
 User=__SERVICE_USER__
 WorkingDirectory=__REPO_PATH__/webapp
+Environment=SESSION_SECRET_KEY=__SESSION_SECRET_KEY__
 ExecStart=__VENV_PATH__/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
 Restart=on-failure
 RestartSec=5

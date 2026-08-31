@@ -1,15 +1,22 @@
-from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 
+from app.auth import require_tier
 from app.common import db_missing_response
 from app.db import get_connection
 from app.templating import templates
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_tier("games"))])
 
 
 @router.get("/", response_class=HTMLResponse)
 def home(request: Request):
+    # This dashboard is fantasy-flavored (data freshness for rosters/models);
+    # games-tier-only users don't have anything to see here, so send them
+    # straight to the section they actually have access to.
+    if request.state.user["tier"] == "games":
+        return RedirectResponse("/games", status_code=303)
+
     try:
         conn = get_connection()
     except FileNotFoundError as e:

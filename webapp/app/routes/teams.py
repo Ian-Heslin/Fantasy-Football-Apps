@@ -1,13 +1,14 @@
 from typing import Optional
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 
+from app.auth import require_tier
 from app.common import db_missing_response
 from app.db import duckdb_rows, get_duckdb_connection
 from app.templating import templates
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_tier("fantasy"))])
 
 TEAM_SEASON_COLUMNS = """
     t.season, t.team, t.games, t.ppg, t.yards_per_game, t.epa_per_play,

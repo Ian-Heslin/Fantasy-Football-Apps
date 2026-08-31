@@ -21,15 +21,65 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-Then open http://127.0.0.1:8000.
+Then open http://127.0.0.1:8000 -- you'll land on `/signup` since every
+page now requires an account (see Accounts & tiers below). Sign up, then
+promote yourself to admin:
+
+```bash
+python3 fantasy-football-db/scripts/promote_user.py <your-username> admin
+```
 
 To stop starting this manually every time and instead have it run
 persistently on your home network at a friendly hostname, see
 `deploy/README.md`.
 
+## Accounts & tiers
+
+Every page requires a logged-in account except `/login` and `/signup`.
+Three tiers, strictly nested (`app/auth.py`'s `TIER_RANK`):
+
+- **`games`** -- what self-signup grants automatically. Games section
+  (`/games`, Pick'em) and leaderboards only.
+- **`fantasy`** -- also gets `/rosters`, `/arbitrage`, `/predictions`,
+  `/teams`, `/coaches`. Granted by an admin (`/admin/users`), not
+  self-service -- new accounts always start at `games`.
+- **`admin`** -- also gets `/admin/users` (change anyone's tier). The very
+  first admin has to be promoted by hand (`scripts/promote_user.py`, above)
+  since there's no admin yet to do it through the UI.
+
+A page declares its own minimum tier at the router level --
+`APIRouter(dependencies=[Depends(require_tier("fantasy"))])` -- rather than
+per-route, so a new route file just needs that one line, not a check in
+every function. `request.state.user` (a dict, or `None`) is populated for
+every request by a global app dependency (`load_current_user`), so any
+route or template can read `request.state.user['tier']` without an extra
+DB lookup.
+
+**"My team" is per-account, not hardcoded to one person**: `/profile` lets
+a user link their account to whichever Sleeper/ESPN owner_id is theirs
+(picked from whatever's already showed up in `rosters` -- no live lookup).
+`/rosters/{league}` and the trade finder then default to *that* linked
+roster instead of the league's own `my_roster_id` (which really just means
+"whoever ran `load_sleeper.py`/`load_espn.py` set MY_USER_ID/MY_TEAM_ID to
+-- the site owner). Unlinked accounts (including the site owner's, until
+they link one too) fall back to that `my_roster_id`/`is_mine` behavior
+unchanged.
+
 ## Pages
 
 - **`/`** -- data freshness dashboard (reads `sync_log`) and quick counts.
+  Fantasy-tier+ only; a `games`-tier user hitting `/` is redirected
+  straight to `/games` instead, since this dashboard has nothing for them.
+- **`/games`**, **`/games/pickem`**, **`/games/pickem/picks`**,
+  **`/games/pickem/standings`** -- NFL Pick'em: pick every game's winner
+  (or who covers the spread -- a league-wide, admin-only setting) each
+  week, with optional confidence points. Real schedule/spreads/scores come
+  from `scripts/load_pickem_schedule.py` (nflverse/nfldata's `games.csv`,
+  re-run periodically during the season); picks lock at kickoff. Standings
+  (season and week-by-week) are computed live from picks + settings every
+  time they're viewed, not stored, so toggling straight-up/spread or
+  confidence on/off recomputes everything immediately. A "Daily Trivia"
+  card sits alongside Pick'em on `/games` as a placeholder -- not built yet.
 - **`/rosters`** -- your Sleeper and ESPN leagues; click through to any
   team's roster (a picker lets you view league-mates' rosters too, not just
   yours) valued against current dynasty trade values (1QB or superflex,
@@ -67,7 +117,15 @@ request; each route just picks whichever connection it needs.
 
 ```
 app/
-  main.py            -- creates the FastAPI app, mounts static files, includes routers
+  main.py            -- creates the FastAPI app, mounts static files, includes routers,
+                         wires up SessionMiddleware + load_current_user + the
+                         NotAuthenticated/Forbidden exception handlers
+  auth.py              -- accounts, sessions, tiers: hash/verify_password, load_current_user,
+                         require_tier() (the router-level dependency every protected
+                         router uses)
+  pickem.py            -- Pick'em scoring (winner/cover/score_pick), standings, and
+                         current_season/current_week -- pure functions over DB rows,
+                         no FastAPI/route code
   db.py               -- SQLite + DuckDB connection helpers (path resolution, row_factory,
                          duckdb_rows() to give DuckDB's tuples the same dict-style
                          template access as sqlite3.Row)
@@ -75,7 +133,14 @@ app/
                          db_missing_response() helper every route uses
   templating.py         -- the single shared Jinja2Templates instance
   routes/
+    auth.py              -- signup/login/logout (no tier requirement -- these are the
+                           pages you need to reach without being logged in yet)
+    admin.py             -- /admin/users, tier changes (admin-only)
+    profile.py           -- link your account to your Sleeper/ESPN team (games-tier+)
+    pickem.py            -- /games routes (games-tier+)
     home.py, rosters.py, predictions.py, arbitrage.py, teams.py, coaches.py
+                           (fantasy-tier+, except home.py which is games-tier+ but
+                           redirects games-tier users to /games)
   templates/             -- one Jinja2 template per page, extending base.html
   static/
     style.css             -- hand-written CSS, no framework
@@ -84,8 +149,10 @@ requirements.txt
 
 ## Not yet built
 
-- Trading/roster editing, auth, or anything beyond read-only display -- this
-  is a single-user local tool reading data the scripts already produced.
+- The Daily Trivia game -- a placeholder card on `/games`, rules still
+  being specced out.
 - A dedicated "coach detail" view doesn't yet show `coach_tenure_segments`
   (continuous tenure spans) -- the per-season table on `/coaches/{name}`
   covers the same information less compactly.
+- Password reset -- an admin can't currently reset another user's
+  password through the UI (would need a direct DB update for now).

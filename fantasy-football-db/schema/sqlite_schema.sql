@@ -148,6 +148,76 @@ CREATE TABLE IF NOT EXISTS league_season_standings (
 );
 CREATE INDEX IF NOT EXISTS idx_league_standings_league ON league_season_standings(league_id, season);
 
+-- Site accounts. tier is a strict hierarchy (see app/auth.py's TIER_RANK):
+-- 'games' (default on signup -- Games section + leaderboards only),
+-- 'fantasy' (also gets rosters/arbitrage/predictions/teams/coaches),
+-- 'admin' (also gets user management). New accounts always start at
+-- 'games' -- promoting someone to 'fantasy' or 'admin' is an admin-only
+-- action (see /admin/users). The very first admin has to be promoted by
+-- hand (scripts/promote_user.py) since there's no admin yet to do it
+-- through the UI.
+--
+-- sleeper_owner_id/espn_owner_id link this account to "my team" in
+-- rosters.owner_id for that platform -- set via /profile, matched against
+-- whatever owner_ids already showed up in rosters from load_sleeper.py/
+-- load_espn.py. NULL until the user links an account; roster pages fall
+-- back to the league's own my_roster_id (Ian's) until then.
+CREATE TABLE IF NOT EXISTS users (
+    user_id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    username            TEXT NOT NULL UNIQUE,
+    password_hash       TEXT NOT NULL,
+    tier                TEXT NOT NULL DEFAULT 'games',
+    sleeper_owner_id    TEXT,
+    espn_owner_id       TEXT,
+    created_at          TEXT DEFAULT (datetime('now'))
+);
+
+-- NFL Pick'em -- see fantasy-football-db/scripts/load_pickem_schedule.py
+-- (pulls the real schedule/spreads/scores from nflverse/nfldata) and
+-- webapp/app/routes/pickem.py.
+CREATE TABLE IF NOT EXISTS pickem_settings (
+    id                  INTEGER PRIMARY KEY CHECK (id = 1),
+    pick_mode           TEXT NOT NULL DEFAULT 'straight_up',  -- 'straight_up' | 'spread'
+    confidence_enabled  INTEGER NOT NULL DEFAULT 0
+);
+
+-- One row per real NFL game. spread_line follows nfldata's convention:
+-- POSITIVE means the home team is favored (e.g. 6.5 = home favored by
+-- 6.5) -- verified empirically against ~2,900 real games (2015-2025):
+-- spread_line correlates +0.44 with actual home-team margin, not
+-- negatively, which is the opposite of the sign convention a couple of
+-- other pick'em implementations assume. Don't flip this without
+-- re-checking. is_final flips to 1 (and scores get filled in) as the
+-- season progresses -- see load_pickem_schedule.py, meant to be re-run
+-- periodically during the season.
+CREATE TABLE IF NOT EXISTS pickem_games (
+    game_id         TEXT PRIMARY KEY,
+    season          INTEGER NOT NULL,
+    week            INTEGER NOT NULL,
+    home_team       TEXT NOT NULL,
+    away_team       TEXT NOT NULL,
+    kickoff_at      TEXT,
+    spread_line     REAL,
+    home_score      INTEGER,
+    away_score      INTEGER,
+    is_final        INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_pickem_games_week ON pickem_games(season, week);
+
+-- One row per user per game they've picked. Points aren't stored here --
+-- standings are computed live from picks + pickem_settings each time
+-- they're viewed (see pickem.py's score_pick()), so toggling
+-- straight-up/spread or confidence on/off recomputes every standings page
+-- immediately instead of needing a re-scoring pass.
+CREATE TABLE IF NOT EXISTS pickem_picks (
+    user_id         INTEGER NOT NULL REFERENCES users(user_id),
+    game_id         TEXT NOT NULL REFERENCES pickem_games(game_id),
+    picked_team     TEXT NOT NULL,
+    confidence      INTEGER,
+    submitted_at    TEXT DEFAULT (datetime('now')),
+    PRIMARY KEY (user_id, game_id)
+);
+
 -- Freshness tracking, so the web page can show "last updated" per source
 -- instead of silently serving stale data.
 CREATE TABLE IF NOT EXISTS sync_log (

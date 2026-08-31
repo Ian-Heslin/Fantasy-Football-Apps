@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Sign up{% endblock %}
+{% block content %}
+<h1>Sign up</h1>
+<p class="subtle">
+  New accounts get Games access (Pick&rsquo;em, leaderboards) right away.
+  Fantasy-section access (rosters, arbitrage, predictions, teams, coaches)
+  is granted by an admin afterward -- ask whoever runs this site.
+</p>
+
+{% if error %}<div class="notice notice-error"><p>{{ error }}</p></div>{% endif %}
+
+<form method="post" action="/signup" class="auth-form">
+  <label>Username
+    <input type="text" name="username" required autofocus>
+  </label>
+  <label>Password
+    <input type="password" name="password" required>
+  </label>
+  <label>Confirm password
+    <input type="password" name="confirm_password" required>
+  </label>
+  <button type="submit">Create account</button>
+</form>
+<p class="subtle">Already have an account? <a href="/login">Log in</a>.</p>
+{% endblock %}

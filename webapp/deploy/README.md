@@ -54,17 +54,20 @@ From inside your existing clone of this repo:
 cd webapp/deploy
 ```
 
-Fill in your actual repo path and python3 path:
+Fill in your actual repo path, python3 path, and a stable session secret
+(without one, everyone gets logged out of the site every time this
+restarts):
 
 ```bash
 REPO_PATH="$(cd .. && cd .. && pwd)"
 PYTHON_PATH="$(which python3)"
+SESSION_SECRET_KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
 ```
 
 Generate the filled-in service file and install it:
 
 ```bash
-sed -e "s|__REPO_PATH__|$REPO_PATH|g" -e "s|__PYTHON_PATH__|$PYTHON_PATH|g" com.ianheslin.fantasyfootball.plist > /tmp/com.ianheslin.fantasyfootball.plist
+sed -e "s|__REPO_PATH__|$REPO_PATH|g" -e "s|__PYTHON_PATH__|$PYTHON_PATH|g" -e "s|__SESSION_SECRET_KEY__|$SESSION_SECRET_KEY|g" com.ianheslin.fantasyfootball.plist > /tmp/com.ianheslin.fantasyfootball.plist
 cp /tmp/com.ianheslin.fantasyfootball.plist ~/Library/LaunchAgents/
 ```
 
@@ -197,12 +200,20 @@ sudo chown fantasyapp:fantasyapp /opt/fantasy-football-apps/repo/fantasy-footbal
 ```bash
 cd /opt/fantasy-football-apps/repo/webapp/deploy
 ```
+
+Generate a stable session secret -- without one, everyone gets logged out
+of the site every time this service restarts:
+
+```bash
+SESSION_SECRET_KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
+```
+
 `sudo` only covers `sed` itself, not the `>` redirect (your normal shell
 sets that up before `sudo` runs) -- write to a temp file first, then move
 it into place with `sudo`:
 
 ```bash
-sed -e "s|__REPO_PATH__|/opt/fantasy-football-apps/repo|g" -e "s|__VENV_PATH__|/opt/fantasy-football-apps/venv|g" -e "s|__SERVICE_USER__|fantasyapp|g" fantasyfootball.service > /tmp/fantasyfootball.service
+sed -e "s|__REPO_PATH__|/opt/fantasy-football-apps/repo|g" -e "s|__VENV_PATH__|/opt/fantasy-football-apps/venv|g" -e "s|__SERVICE_USER__|fantasyapp|g" -e "s|__SESSION_SECRET_KEY__|$SESSION_SECRET_KEY|g" fantasyfootball.service > /tmp/fantasyfootball.service
 ```
 ```bash
 sudo mv /tmp/fantasyfootball.service /etc/systemd/system/fantasyfootball.service

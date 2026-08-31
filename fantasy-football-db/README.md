@@ -56,6 +56,19 @@ python3 scripts/build_bounceback_model.py  # the v7 bounce-back model:
 python3 scripts/build_breakout_model.py  # the v11 breakout model (4
                                    # per-position logistic regressions):
                                    # does a below-Star player break out?
+python3 scripts/load_pickem_schedule.py  # loads the real NFL schedule/
+                                   # spreads/scores for the web app's
+                                   # Pick'em game, from nflverse/nfldata's
+                                   # games.csv -- re-run periodically
+                                   # during the season as games finish
+```
+
+After setting up the web app itself (see `webapp/README.md`) and signing
+up, promote your account to admin (there's no admin yet to do this through
+the UI the first time):
+
+```bash
+python3 scripts/promote_user.py <your-username> admin
 ```
 
 Re-run either script any time to refresh -- both are safe to run repeatedly
@@ -229,6 +242,11 @@ scripts/
   load_player_stats.py                -- loads player_stats_season + player_bio
   build_bounceback_model.py            -- rebuilds the v7 bounce-back model
   build_breakout_model.py              -- rebuilds the v11 breakout model
+  load_pickem_schedule.py              -- loads the real schedule/spreads/scores
+                                          for the web app's Pick'em game
+  promote_user.py                      -- sets a web app user's tier (bootstrap
+                                          the first admin; ongoing changes go
+                                          through /admin/users instead)
   requirements.txt
 data/
   app.db                -- committed

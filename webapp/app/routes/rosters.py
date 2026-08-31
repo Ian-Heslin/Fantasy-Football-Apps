@@ -1,13 +1,14 @@
 from typing import Optional
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 
+from app.auth import require_tier
 from app.common import SIGNAL_LABELS, db_missing_response
 from app.db import get_connection
 from app.templating import templates
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_tier("fantasy"))])
 
 # 1-for-1 trades where the two players' values are within this fraction of
 # each other count as "fair value" -- see _suggest_trades().
@@ -47,6 +48,26 @@ def _team_players(conn, league_id, roster_id, arb_format, value_col):
         """,
         (arb_format, league_id, roster_id, league_id, roster_id),
     ).fetchall()
+
+
+def _resolve_my_roster_id(conn, league, current_user):
+    """Which roster in this league is the logged-in user's: prefer their
+    linked Sleeper/ESPN owner_id (see /profile) over the league's own
+    my_roster_id, which really means "Ian's team" (set by
+    load_sleeper.py/load_espn.py) -- that's only the right fallback for
+    whoever hasn't linked an account yet."""
+    owner_id = (
+        current_user.get("sleeper_owner_id") if league["platform"] == "sleeper"
+        else current_user.get("espn_owner_id")
+    )
+    if owner_id:
+        row = conn.execute(
+            "SELECT roster_id FROM rosters WHERE league_id = ? AND owner_id = ?",
+            (league["league_id"], owner_id),
+        ).fetchone()
+        if row:
+            return row["roster_id"]
+    return league["my_roster_id"]
 
 
 def _suggest_trades(mine, theirs, value_col):
@@ -126,7 +147,7 @@ def roster_detail(request: Request, league_id: str, roster_id: Optional[str] = N
         team_ids = {t["roster_id"] for t in teams}
 
         if roster_id not in team_ids:
-            roster_id = league["my_roster_id"]
+            roster_id = _resolve_my_roster_id(conn, league, request.state.user)
             if roster_id not in team_ids:
                 row = conn.execute(
                     "SELECT roster_id FROM rosters WHERE league_id = ? AND is_mine = 1",
@@ -172,7 +193,7 @@ def trade_finder(request: Request, league_id: str, opponent_roster_id: Optional[
                 status_code=404,
             )
 
-        my_roster_id = league["my_roster_id"]
+        my_roster_id = _resolve_my_roster_id(conn, league, request.state.user)
         if my_roster_id is None:
             row = conn.execute(
                 "SELECT roster_id FROM rosters WHERE league_id = ? AND is_mine = 1",

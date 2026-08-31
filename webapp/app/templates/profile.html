@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block content %}
+<h1>Profile</h1>
+<p class="subtle">
+  Link your account to your actual Sleeper/ESPN team so "my roster" shows
+  your team instead of the site owner's, on the rosters and trade finder
+  pages. Only teams that already showed up when the site's data was last
+  loaded appear below.
+</p>
+
+{% if saved %}<div class="notice"><p>Saved.</p></div>{% endif %}
+
+<form method="post" action="/profile" class="auth-form">
+  <label>My Sleeper team
+    <select name="sleeper_owner_id">
+      <option value="">(none linked)</option>
+      {% for o in sleeper_options %}
+      <option value="{{ o['owner_id'] }}">{{ o['owner_name'] or o['owner_id'] }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>My ESPN team
+    <select name="espn_owner_id">
+      <option value="">(none linked)</option>
+      {% for o in espn_options %}
+      <option value="{{ o['owner_id'] }}">{{ o['owner_name'] or o['owner_id'] }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <button type="submit">Save</button>
+</form>
+{% endblock %}

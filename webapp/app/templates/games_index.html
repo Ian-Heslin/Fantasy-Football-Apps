@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Games{% endblock %}
+{% block content %}
+<h1>Games</h1>
+<p class="subtle">Play against your friends. Pick a game below.</p>
+
+<div class="game-card-grid">
+  <a class="game-card" href="/games/pickem">
+    <h2 class="game-card-title">NFL Pick&rsquo;em</h2>
+    <p class="subtle">Pick the winner of every game each week. Toggle spread picks and
+      confidence points on to change the strategy.</p>
+    <span class="game-card-cta">Play &rarr;</span>
+  </a>
+  <div class="game-card game-card-disabled">
+    <h2 class="game-card-title">Daily Trivia</h2>
+    <p class="subtle">Coming soon.</p>
+  </div>
+</div>
+{% endblock %}

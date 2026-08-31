@@ -115,3 +115,53 @@ a:hover { text-decoration: underline; }
   position: relative; z-index: 1; display: block; text-align: center;
   font-size: 0.78rem; line-height: 18px; font-variant-numeric: tabular-nums;
 }
+
+button, .filter-bar button {
+  background: var(--accent); color: #fff; border: none; border-radius: 6px;
+  padding: 8px 16px; font-size: 0.9rem; cursor: pointer;
+}
+button:hover { opacity: 0.9; }
+
+.notice-error { border-color: var(--red); }
+
+.inline-form { display: inline; }
+.link-button {
+  background: none; border: none; padding: 0; color: var(--text-dim);
+  font-size: 0.9rem; cursor: pointer; margin-left: 20px;
+}
+.link-button:hover { color: var(--text); opacity: 1; }
+
+.auth-form {
+  display: flex; flex-direction: column; gap: 14px; max-width: 320px; margin-top: 16px;
+}
+.auth-form label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: var(--text-dim); }
+.auth-form input {
+  background: var(--panel); color: var(--text); border: 1px solid var(--border);
+  border-radius: 6px; padding: 8px 10px; font-size: 0.95rem;
+}
+
+.game-card-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px; margin: 20px 0;
+}
+.game-card {
+  display: block; background: var(--panel); border: 1px solid var(--border);
+  border-radius: 10px; padding: 18px; color: var(--text);
+}
+.game-card:hover { border-color: var(--accent); text-decoration: none; }
+.game-card-title { margin: 0 0 6px; font-size: 1.05rem; }
+.game-card-cta { display: inline-block; margin-top: 10px; color: var(--accent); font-weight: 600; }
+.game-card-disabled { opacity: 0.5; }
+
+.pick-option {
+  display: inline-flex; align-items: center; gap: 4px; margin-right: 16px;
+  font-size: 0.9rem;
+}
+.pick-option input { accent-color: var(--accent); }
+
+.confidence-input {
+  width: 60px; background: var(--bg); color: var(--text); border: 1px solid var(--border);
+  border-radius: 6px; padding: 6px 8px; font-size: 0.9rem; font-variant-numeric: tabular-nums;
+}
+
+.pickem-table td { vertical-align: middle; }

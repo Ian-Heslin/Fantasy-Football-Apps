@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}NFL Pick'em{% endblock %}
+{% block content %}
+<h1>NFL Pick&rsquo;em</h1>
+<p class="subtle"><a href="/games">&larr; Games</a></p>
+
+{% if season is none %}
+<div class="empty-state">
+  <p>No schedule loaded yet -- run
+  <code>fantasy-football-db/scripts/load_pickem_schedule.py</code>.</p>
+</div>
+{% else %}
+
+<h2>League settings</h2>
+{% if request.state.user['tier'] == 'admin' %}
+<form class="filter-bar" method="post" action="/games/pickem/settings">
+  <label>Pick mode
+    <select name="pick_mode">
+      <option value="straight_up" {{ 'selected' if settings.pick_mode == 'straight_up' else '' }}>Straight-up winner</option>
+      <option value="spread" {{ 'selected' if settings.pick_mode == 'spread' else '' }}>Against the spread</option>
+    </select>
+  </label>
+  <label class="checkbox-label">
+    <input type="checkbox" name="confidence_enabled" value="true" {{ 'checked' if settings.confidence_enabled else '' }}>
+    Confidence points
+  </label>
+  <label style="justify-content:flex-end;">
+    <button type="submit">Save settings</button>
+  </label>
+</form>
+{% else %}
+<p class="subtle">
+  Scored {% if settings.pick_mode == 'spread' %}against the spread{% else %}straight-up{% endif %},
+  {% if settings.confidence_enabled %}with confidence points{% else %}1 point per correct pick{% endif %}.
+  (An admin can change this.)
+</p>
+{% endif %}
+
+<h2>Week {{ week }}</h2>
+<table class="data-table">
+  <thead><tr><th>Matchup</th><th>Kickoff</th><th>Status</th></tr></thead>
+  <tbody>
+    {% for g in games %}
+    <tr>
+      <td>{{ team_names.get(g['away_team'], g['away_team']) }} ({{ g['away_team'] }}) @
+          {{ team_names.get(g['home_team'], g['home_team']) }} ({{ g['home_team'] }})</td>
+      <td>{{ g['kickoff_at'] or '—' }}</td>
+      <td>{{ 'Final ' ~ g['away_score']|string ~ '-' ~ g['home_score']|string if g['is_final'] else 'Upcoming' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p><a href="/games/pickem/picks?week={{ week }}">Make your picks &rarr;</a></p>
+
+<h2>Standings (top 5)</h2>
+<table class="data-table">
+  <thead><tr><th>#</th><th>Player</th><th>Points</th><th>Correct</th></tr></thead>
+  <tbody>
+    {% for row in standings %}
+    <tr>
+      <td>{{ row.rank }}</td>
+      <td>{{ row.username }}</td>
+      <td>{{ row.points }}</td>
+      <td>{{ row.correct }} / {{ row.total }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p><a href="/games/pickem/standings">Full standings &amp; week-by-week breakdown &rarr;</a></p>
+{% endif %}
+{% endblock %}

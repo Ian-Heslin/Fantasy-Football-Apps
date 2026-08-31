@@ -35,14 +35,22 @@ def log(msg):
 
 
 def clone_or_refresh_nfldata():
-    # Matches the same clone/pull pattern scripts/load_nflverse.py used to
-    # use for this repo -- "git pull" rather than fetch+reset to a
-    # hardcoded branch name, since nfldata's default branch is "master",
-    # not "main" (a mismatch that broke an earlier version of this script).
+    # fetch + reset --hard, NOT pull: a shallow clone's "pull" tries to
+    # merge/rebase onto the fetched history, which fails outright if
+    # nfldata's upstream master was ever force-pushed (confirmed this
+    # actually happens, while building scripts/load_pickem_schedule.py).
+    # fetch+reset just snaps the local branch to whatever origin/master
+    # currently is, which is really what a read-only mirror wants anyway.
+    # nfldata's default branch is "master", not "main" (a mismatch that
+    # broke an even earlier version of this script).
     if os.path.isdir(os.path.join(NFLDATA_CLONE_DIR, ".git")):
-        log("nflverse/nfldata already cloned, pulling latest...")
+        log("nflverse/nfldata already cloned, refreshing...")
         subprocess.run(
-            ["git", "-C", NFLDATA_CLONE_DIR, "pull", "--depth", "1"],
+            ["git", "-C", NFLDATA_CLONE_DIR, "fetch", "--depth", "1", "origin", "master"],
+            check=True,
+        )
+        subprocess.run(
+            ["git", "-C", NFLDATA_CLONE_DIR, "reset", "--hard", "origin/master"],
             check=True,
         )
     else:

@@ -1,11 +1,12 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 
+from app.auth import require_tier
 from app.common import db_missing_response
 from app.db import duckdb_rows, get_duckdb_connection
 from app.templating import templates
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(require_tier("fantasy"))])
 
 
 MIN_SEASON_OPTIONS = [1, 3, 6]

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Pick'em standings{% endblock %}
+{% block content %}
+<h1>Standings</h1>
+<p class="subtle"><a href="/games/pickem">&larr; NFL Pick&rsquo;em</a></p>
+
+{% if season is none %}
+<div class="empty-state">
+  <p>No schedule loaded yet -- run
+  <code>fantasy-football-db/scripts/load_pickem_schedule.py</code>.</p>
+</div>
+{% else %}
+<p class="subtle">
+  Scored as
+  {% if settings.pick_mode == 'spread' %}against the spread{% else %}straight-up winners{% endif %},
+  {% if settings.confidence_enabled %}with confidence points{% else %}1 point per correct pick{% endif %}.
+</p>
+
+<h2>Season</h2>
+<table class="data-table">
+  <thead><tr><th>#</th><th>Player</th><th>Points</th><th>Correct</th></tr></thead>
+  <tbody>
+    {% for row in standings %}
+    <tr>
+      <td>{{ row.rank }}</td>
+      <td>{{ row.username }}</td>
+      <td>{{ row.points }}</td>
+      <td>{{ row.correct }} / {{ row.total }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% for week in weeks %}
+<h2>Week {{ week.num }}</h2>
+<table class="data-table">
+  <thead><tr><th>#</th><th>Player</th><th>Points</th><th>Correct</th></tr></thead>
+  <tbody>
+    {% for r in week.results %}
+    <tr>
+      <td>{{ r.rank }}</td>
+      <td>{{ r.username }}</td>
+      <td>{{ r.points }}</td>
+      <td>{{ r.correct }} / {{ r.total }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endfor %}
+{% endif %}
+{% endblock %}

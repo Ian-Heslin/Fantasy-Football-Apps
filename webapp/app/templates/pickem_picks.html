@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Make picks{% endblock %}
+{% block content %}
+<h1>Make picks</h1>
+<p class="subtle"><a href="/games/pickem">&larr; NFL Pick&rsquo;em</a></p>
+
+{% if season is none %}
+<div class="empty-state">
+  <p>No schedule loaded yet -- run
+  <code>fantasy-football-db/scripts/load_pickem_schedule.py</code>.</p>
+</div>
+{% else %}
+
+<div class="filter-bar">
+  {% if week > 1 %}<a href="/games/pickem/picks?week={{ week - 1 }}">&larr; Week {{ week - 1 }}</a>{% endif %}
+  <strong>Week {{ week }}</strong>
+  <a href="/games/pickem/picks?week={{ week + 1 }}">Week {{ week + 1 }} &rarr;</a>
+</div>
+
+{% if saved %}<div class="notice"><p>Picks saved.</p></div>{% endif %}
+{% if settings.confidence_enabled %}
+<div class="notice">
+  <p>Confidence points are on. Assign each pick a unique number from 1 to {{ n_games }} --
+    {{ n_games }} for your most confident pick, 1 for your least confident. Duplicate numbers
+    won&rsquo;t score correctly, so use each one once.</p>
+</div>
+{% endif %}
+
+<form method="post" action="/games/pickem/picks">
+  <input type="hidden" name="season" value="{{ season }}">
+  <input type="hidden" name="week" value="{{ week }}">
+  <table class="data-table pickem-table">
+    <thead>
+      <tr>
+        <th>Matchup</th>
+        <th>{{ 'Spread' if settings.pick_mode == 'spread' else 'Line (ref.)' }}</th>
+        <th>Your pick</th>
+        {% if settings.confidence_enabled %}<th>Confidence</th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for g in games %}
+      {% set pick = existing.get(g['game_id']) %}
+      {% set locked = is_locked(g) %}
+      {% set fav = favorite_team(g) %}
+      <tr>
+        <td>{{ team_names.get(g['away_team'], g['away_team']) }} ({{ g['away_team'] }}) @
+            {{ team_names.get(g['home_team'], g['home_team']) }} ({{ g['home_team'] }})
+          <div class="subtle">{{ g['kickoff_at'] or 'TBD' }}{% if locked %} &middot; locked{% endif %}</div>
+        </td>
+        <td>{{ (fav ~ ' -' ~ (g['spread_line']|abs|string)) if fav else "Pick'em" }}</td>
+        <td>
+          {% if locked %}
+            {{ pick['picked_team'] if pick else '—' }}
+          {% else %}
+          <label class="pick-option">
+            <input type="radio" name="pick_{{ g['game_id'] }}" value="{{ g['away_team'] }}"
+                   {{ 'checked' if pick and pick['picked_team'] == g['away_team'] else '' }}>
+            {{ g['away_team'] }}
+          </label>
+          <label class="pick-option">
+            <input type="radio" name="pick_{{ g['game_id'] }}" value="{{ g['home_team'] }}"
+                   {{ 'checked' if pick and pick['picked_team'] == g['home_team'] else '' }}>
+            {{ g['home_team'] }}
+          </label>
+          {% endif %}
+        </td>
+        {% if settings.confidence_enabled %}
+        <td>
+          {% if locked %}
+            {{ pick['confidence'] if pick else '—' }}
+          {% else %}
+          <input type="number" class="confidence-input" name="confidence_{{ g['game_id'] }}"
+                 min="1" max="{{ n_games }}" value="{{ pick['confidence'] if pick else '' }}">
+          {% endif %}
+        </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p><button type="submit">Save picks</button></p>
+</form>
+{% endif %}
+{% endblock %}
