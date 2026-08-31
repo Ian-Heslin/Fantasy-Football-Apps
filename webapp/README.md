@@ -47,6 +47,11 @@ Then open http://127.0.0.1:8000.
   noise from dominating the list -- see
   `docs/breakout-falloff-methodology.md`'s v13-v18 coaching-effects research
   for why this ranking alone doesn't prove a coaching effect.
+- **`/games`**, **`/games/pickem`** -- a new "play with friends" area; NFL
+  Pick'em is the first game (pick every matchup each week, with settings
+  for against-the-spread and confidence-point scoring). Currently a mock
+  -- in-memory sample data, no persistence -- see
+  `docs/pickem-mockup.md` for the full writeup.
 
 `/`, `/rosters`, `/arbitrage`, and `/predictions` read `app.db` only
 (`app/db.py`'s `get_connection()`). `/teams` and `/coaches` read
@@ -67,11 +72,15 @@ app/
                          db_missing_response() helper every route uses
   templating.py         -- the single shared Jinja2Templates instance
   routes/
-    home.py, rosters.py, predictions.py, arbitrage.py, teams.py, coaches.py
+    home.py, rosters.py, predictions.py, arbitrage.py, teams.py, coaches.py,
+    pickem.py            -- the /games/pickem mock (see docs/pickem-mockup.md)
+  pickem_data.py          -- in-memory mock data/scoring for pickem.py
   templates/             -- one Jinja2 template per page, extending base.html
   static/
     style.css             -- hand-written CSS, no framework
 requirements.txt
+docs/
+  pickem-mockup.md          -- NFL Pick'em mockup writeup
 ```
 
 ## Not yet built
