@@ -12,12 +12,20 @@ Description=Cloudflare Tunnel (quick tunnel) for Fantasy Football web app
 After=network-online.target fantasyfootball.service
 Wants=network-online.target
 Requires=fantasyfootball.service
+# Give up after 3 failures within 10 minutes rather than restarting
+# forever -- see RestartSec below for why that matters here.
+StartLimitIntervalSec=600
+StartLimitBurst=3
 
 [Service]
 Type=simple
 ExecStart=/usr/local/bin/cloudflared tunnel --url http://localhost:8000
 Restart=on-failure
-RestartSec=5
+# 5s was too aggressive: requesting a quick tunnel hits a rate-limited
+# Cloudflare endpoint (no account behind it), and retrying that fast
+# after a failure keeps it rate-limited -- confirmed this actually
+# happens (repeated 429s), not just a theoretical risk.
+RestartSec=60
 StandardOutput=append:__REPO_PATH__/webapp/deploy/cloudflared.log
 StandardError=append:__REPO_PATH__/webapp/deploy/cloudflared.log
 

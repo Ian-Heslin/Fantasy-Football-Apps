@@ -262,17 +262,42 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now cloudflared-quicktunnel.service
 ```
 
-Find your public URL (it takes a few seconds to appear after starting):
+Find your public URL (it takes a few seconds to appear after starting).
+If the tunnel has ever restarted before, the log has multiple old (now
+dead) URLs in it -- grab the last one, not just any match:
 
 ```bash
-grep trycloudflare /opt/fantasy-football-apps/repo/webapp/deploy/cloudflared.log
+grep trycloudflare /opt/fantasy-football-apps/repo/webapp/deploy/cloudflared.log | tail -1
 ```
 
 That `https://<random-words>.trycloudflare.com` URL works from anywhere --
 send it to a friend on a different network to confirm. Remember: it
 changes if this service restarts (Pi reboot, `cloudflared` crash, etc.) --
-re-run the `grep` above to find the new one. This is why it's a testing
+re-run the command above to find the new one. This is why it's a testing
 step, not the final link.
+
+**If you click the link and get Cloudflare's Error 1033**, that means
+`cloudflared` itself isn't currently connected -- check
+`sudo systemctl status cloudflared-quicktunnel.service`. If it's stuck in
+`activating (auto-restart)`, check
+`tail -50 /opt/fantasy-football-apps/repo/webapp/deploy/cloudflared.log`
+for a `429 Too Many Requests` error: requesting a quick tunnel hits a
+rate-limited, account-less Cloudflare endpoint, so restarting too fast
+after a failure just keeps it rate-limited (confirmed this happens, not
+just a theoretical risk -- the systemd unit here waits 60s between
+restarts and gives up after 3 failures in 10 minutes specifically because
+of this). If you're already stuck in that loop, stop it and let the rate
+limit clear before trying again:
+
+```bash
+sudo systemctl stop cloudflared-quicktunnel.service
+```
+
+Wait a few minutes, then start it again:
+
+```bash
+sudo systemctl start cloudflared-quicktunnel.service
+```
 
 ### Managing the Pi services
 
