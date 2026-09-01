@@ -234,7 +234,12 @@ requirements.txt
   play, chosen deliberately as the simpler first version.
 - An "NFL Top 100" guessing game (guess a player's rank on the NFL's
   annual fan-voted Top 100 list) -- explicitly wanted as a separate game
-  from Award Winners, but no data source for it has been found/loaded yet.
+  from Award Winners. `fantasy-football-db/scripts/load_nfl_top100.py` is
+  written (a Wikipedia scraper, same idea as `load_team_executives.py`)
+  but genuinely unverified and not yet run for real -- see that script's
+  docstring and the database README's note on it. Once `nfl_top_100` is
+  loaded and spot-checked, the game itself (routes/templates) still needs
+  building -- same shape as the Award Winners trivia already built.
 - `fantasy_draft_stats` (the source spreadsheet's per-year tables) has at
   least one confirmed gap: Rob Gronkowski's excellent 2011 season is
   missing from that year's tab entirely (only his brothers Chris/Dan

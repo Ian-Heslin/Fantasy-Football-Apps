@@ -311,3 +311,16 @@ CREATE TABLE IF NOT EXISTS fantasy_draft_stats (
     PRIMARY KEY (year, player, position)
 );
 CREATE INDEX IF NOT EXISTS idx_fantasy_draft_stats_year_pos ON fantasy_draft_stats(year, position);
+
+-- "Guess the rank" version of the NFL Network's fan-voted annual Top 100
+-- list -- a real, separate game from Award Winners (see
+-- load_nfl_top100.py's docstring for why this needs a Wikipedia scraper
+-- like team_executives_season, and is unverified from this sandbox).
+CREATE TABLE IF NOT EXISTS nfl_top_100 (
+    year        INTEGER NOT NULL,
+    rank        INTEGER NOT NULL,   -- 1 = best
+    player      VARCHAR NOT NULL,
+    team        VARCHAR,
+    source_url  VARCHAR,
+    PRIMARY KEY (year, rank)
+);

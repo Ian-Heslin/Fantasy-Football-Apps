@@ -270,6 +270,17 @@ source so the extracted data is committed directly:
   scraped from each team's per-season Wikipedia page (e.g.
   `en.wikipedia.org/wiki/2023_Arizona_Cardinals_season`) by a script run
   locally, or via the Claude-in-Chrome extension.
+- `nfl_top_100` (DuckDB) -- the NFL Network's fan-voted annual "Top 100
+  Players" list, 2011-present, for a "guess the rank" trivia game separate
+  from Award Winners. No ready-made dataset exists anywhere (checked); the
+  only real source is Wikipedia's per-year "NFL Top 100 Players of
+  &lt;year&gt;" articles, same wall as `team_executives_season` above.
+  `load_nfl_top100.py` is written but genuinely **unverified** -- unlike
+  every other loader here, its wikitext parsing couldn't be checked
+  against a real page from this sandbox, so it tries three plausible
+  formats and logs which one matched (or that none did) per year. Run it
+  for one recent year first and spot-check the output against the real
+  page before trusting the full range.
 
 Worth flagging so the web page doesn't silently show stale numbers: check
 `sync_log` in `app.db` for when each table was last refreshed.
