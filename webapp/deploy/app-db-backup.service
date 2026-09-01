@@ -1,0 +1,10 @@
+[Unit]
+# One-shot backup of app.db, triggered on a schedule by app-db-backup.timer
+# (not run directly) -- see webapp/deploy/README.md's Backups section.
+Description=Backup app.db (Fantasy Football)
+After=fantasyfootball.service
+
+[Service]
+Type=oneshot
+User=__SERVICE_USER__
+ExecStart=__VENV_PATH__/bin/python3 __REPO_PATH__/fantasy-football-db/scripts/backup_app_db.py

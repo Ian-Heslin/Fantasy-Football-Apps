@@ -4,10 +4,15 @@ Two local, file-based databases replace the Excel workbook this project was
 using before, and give the future web page something to query directly.
 
 - **`data/app.db`** (SQLite) -- operational, current-state data: the player
-  crosswalk, your Sleeper leagues/rosters, current dynasty trade values,
-  buy-low/sell-high signals, and model predictions. Small, fast, and
-  **committed to this repo** so roster/value history persists across
-  machines and sessions instead of living only in one place.
+  crosswalk, your Sleeper/ESPN leagues/rosters, current dynasty trade
+  values, buy-low/sell-high signals, model predictions, and (once the web
+  app is running) live user accounts and Pick'em data. **Not committed**
+  (gitignored) -- it used to be, back when it was just a periodically-
+  rebuilt snapshot, but that stopped being safe once the running app
+  itself started writing live, irreplaceable data into it with no other
+  source of truth. See `webapp/deploy/README.md`'s Backups section for how
+  it's kept safe instead (an independent local backup rotation) and for
+  the one-time migration if a machine still has it tracked from before.
 - **`data/analytics.duckdb`** (DuckDB) -- the large historical/analytical
   data behind the breakout/fall-off models: nflverse play-by-play, the full
   FantasyPros ECR archive, ADP history, coaching staff data, Vegas odds.
@@ -247,9 +252,13 @@ scripts/
   promote_user.py                      -- sets a web app user's tier (bootstrap
                                           the first admin; ongoing changes go
                                           through /admin/users instead)
+  backup_app_db.py                     -- hourly-scheduled backup of app.db
+                                          (see webapp/deploy/README.md)
   requirements.txt
 data/
-  app.db                -- committed
+  app.db                -- gitignored (see the note above) -- back it up,
+                            don't rely on git for it
+  backups/               -- gitignored: rotating app.db backups
   analytics.duckdb       -- gitignored, regenerate locally (~800MB with full
                             play-by-play history loaded)
   final_workbooks/       -- committed: the 10 Excel deliverables produced
