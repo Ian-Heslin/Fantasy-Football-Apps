@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_macros.html" as macros %}
 {% block title %}Make picks{% endblock %}
 {% block content %}
 <h1>Make picks</h1>
@@ -20,10 +21,20 @@
 {% if saved %}<div class="notice"><p>Picks saved.</p></div>{% endif %}
 {% if settings.confidence_enabled %}
 <div class="notice">
-  <p>Confidence points are on. Assign each pick a unique number from 1 to {{ n_games }} --
-    {{ n_games }} for your most confident pick, 1 for your least confident. Duplicate numbers
-    won&rsquo;t score correctly, so use each one once.</p>
+  <p>Confidence points are on -- {{ n_games }} for your most confident pick, 1 for your least
+    confident. Every game already has a number; change one and the rest reorder automatically
+    to keep them unique. (A game needs a team picked before its number can be changed.)</p>
 </div>
+{% endif %}
+
+{% if settings.confidence_enabled %}
+{# Target forms for each row's confidence <select>, declared outside the
+   main picks form and wired up via the select's form="" attribute below --
+   <form> elements can't nest in HTML, and each confidence change needs to
+   submit independently of the team-pick radios (see the picks route). #}
+{% for g in games %}
+<form id="conf-{{ g['game_id'] }}" method="post" action="/games/pickem/confidence"></form>
+{% endfor %}
 {% endif %}
 
 <form method="post" action="/games/pickem/picks">
@@ -44,24 +55,23 @@
       {% set locked = is_locked(g) %}
       {% set fav = favorite_team(g) %}
       <tr>
-        <td>{{ team_names.get(g['away_team'], g['away_team']) }} ({{ g['away_team'] }}) @
-            {{ team_names.get(g['home_team'], g['home_team']) }} ({{ g['home_team'] }})
+        <td>{{ macros.matchup(g, team_names) }}
           <div class="subtle">{{ g['kickoff_at'] or 'TBD' }}{% if locked %} &middot; locked{% endif %}</div>
         </td>
         <td>{{ (fav ~ ' -' ~ (g['spread_line']|abs|string)) if fav else "Pick'em" }}</td>
         <td>
           {% if locked %}
-            {{ pick['picked_team'] if pick else '—' }}
+            {{ macros.team_label(pick['picked_team'], team_names) if pick else '—' }}
           {% else %}
           <label class="pick-option">
             <input type="radio" name="pick_{{ g['game_id'] }}" value="{{ g['away_team'] }}"
                    {{ 'checked' if pick and pick['picked_team'] == g['away_team'] else '' }}>
-            {{ g['away_team'] }}
+            {{ macros.team_label(g['away_team'], team_names) }}
           </label>
           <label class="pick-option">
             <input type="radio" name="pick_{{ g['game_id'] }}" value="{{ g['home_team'] }}"
                    {{ 'checked' if pick and pick['picked_team'] == g['home_team'] else '' }}>
-            {{ g['home_team'] }}
+            {{ macros.team_label(g['home_team'], team_names) }}
           </label>
           {% endif %}
         </td>
@@ -69,9 +79,18 @@
         <td>
           {% if locked %}
             {{ pick['confidence'] if pick else '—' }}
+          {% elif not pick %}
+            <span class="subtle" title="Pick a team first">{{ confidences.get(g['game_id'], '—') }}</span>
           {% else %}
-          <input type="number" class="confidence-input" name="confidence_{{ g['game_id'] }}"
-                 min="1" max="{{ n_games }}" value="{{ pick['confidence'] if pick else '' }}">
+          <input type="hidden" form="conf-{{ g['game_id'] }}" name="season" value="{{ season }}">
+          <input type="hidden" form="conf-{{ g['game_id'] }}" name="week" value="{{ week }}">
+          <input type="hidden" form="conf-{{ g['game_id'] }}" name="game_id" value="{{ g['game_id'] }}">
+          <select form="conf-{{ g['game_id'] }}" name="confidence" class="confidence-select"
+                  onchange="this.form.requestSubmit()">
+            {% for n in range(n_games, 0, -1) %}
+            <option value="{{ n }}" {{ 'selected' if confidences.get(g['game_id']) == n else '' }}>{{ n }}</option>
+            {% endfor %}
+          </select>
           {% endif %}
         </td>
         {% endif %}

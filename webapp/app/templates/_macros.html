@@ -1,0 +1,15 @@
+{# Shared team-label rendering (logo + name + abbreviation) for Pick'em
+   pages -- one place so the markup/classes stay consistent everywhere a
+   team shows up. #}
+
+{% macro team_label(code, team_names) -%}
+<span class="team-label">
+  {% set logo = logo_for(code) %}
+  {% if logo %}<img class="team-logo" src="{{ logo }}" alt="" loading="lazy">{% endif %}
+  {{ team_names.get(code, code) }} ({{ code }})
+</span>
+{%- endmacro %}
+
+{% macro matchup(g, team_names) -%}
+{{ team_label(g['away_team'], team_names) }} @ {{ team_label(g['home_team'], team_names) }}
+{%- endmacro %}

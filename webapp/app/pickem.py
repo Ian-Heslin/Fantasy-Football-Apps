@@ -86,6 +86,88 @@ def score_pick(game, pick_row, settings):
     return 1
 
 
+def compute_display_confidence(games, existing):
+    """Confidence value to show for every game this week, whether picked
+    yet or not -- always a full 1..len(games) permutation. Games with an
+    already-stored confidence (existing[game_id]['confidence']) keep it;
+    everything else gets whatever numbers are left over, largest first, in
+    `games`' order (kickoff order, same as the table). Doesn't write
+    anything -- callers persist by way of the normal picks/confidence
+    submit paths, at which point a real team pick exists for the row."""
+    n = len(games)
+    used = {
+        r["confidence"] for r in existing.values()
+        if r["confidence"] is not None and 1 <= r["confidence"] <= n
+    }
+    remaining = [v for v in range(n, 0, -1) if v not in used]
+    result = {}
+    it = iter(remaining)
+    for g in games:
+        row = existing.get(g["game_id"])
+        if row is not None and row["confidence"] is not None and row["confidence"] in used:
+            result[g["game_id"]] = row["confidence"]
+        else:
+            result[g["game_id"]] = next(it)
+    return result
+
+
+def reorder_confidence(conn, user_id, season, week, game_id, new_confidence):
+    """Sets one game's confidence for this user, shifting every other
+    already-picked game for the same week to keep a valid 1..n_games
+    permutation -- the standard "move to rank N, close the gap" reorder:
+    moving a pick to a HIGHER number shifts everything strictly above its
+    old spot and at-or-below the new one DOWN by one; moving it to a LOWER
+    number shifts everything at-or-above the new spot and below the old
+    one UP by one. Only touches games the user has already picked a team
+    for (confidence can't be stored without a picked_team row to attach
+    to -- schema requires it) -- a not-yet-picked game's displayed
+    confidence is just recomputed fresh next render, see
+    compute_display_confidence. No-ops if game_id has no existing pick."""
+    n_games = conn.execute(
+        "SELECT count(*) FROM pickem_games WHERE season = ? AND week = ?", (season, week)
+    ).fetchone()[0]
+    new_confidence = max(1, min(n_games, new_confidence))
+
+    current = conn.execute(
+        """SELECT game_id, confidence FROM pickem_picks
+           WHERE user_id = ? AND game_id IN
+               (SELECT game_id FROM pickem_games WHERE season = ? AND week = ?)""",
+        (user_id, season, week),
+    ).fetchall()
+    by_game = {r["game_id"]: r["confidence"] for r in current}
+
+    if game_id not in by_game:
+        return  # no team picked for this game yet -- nothing to reorder
+
+    old_confidence = by_game[game_id] or new_confidence
+    if old_confidence == new_confidence:
+        conn.execute(
+            "UPDATE pickem_picks SET confidence = ? WHERE user_id = ? AND game_id = ?",
+            (new_confidence, user_id, game_id),
+        )
+        conn.commit()
+        return
+
+    for other_id, conf in by_game.items():
+        if other_id == game_id or conf is None:
+            continue
+        if new_confidence > old_confidence and old_confidence < conf <= new_confidence:
+            conn.execute(
+                "UPDATE pickem_picks SET confidence = ? WHERE user_id = ? AND game_id = ?",
+                (conf - 1, user_id, other_id),
+            )
+        elif new_confidence < old_confidence and new_confidence <= conf < old_confidence:
+            conn.execute(
+                "UPDATE pickem_picks SET confidence = ? WHERE user_id = ? AND game_id = ?",
+                (conf + 1, user_id, other_id),
+            )
+    conn.execute(
+        "UPDATE pickem_picks SET confidence = ? WHERE user_id = ? AND game_id = ?",
+        (new_confidence, user_id, game_id),
+    )
+    conn.commit()
+
+
 def is_locked(game):
     """True once a game has started (or finished) -- picks for it can no
     longer be made or changed. kickoff_at has no timezone info (nfldata

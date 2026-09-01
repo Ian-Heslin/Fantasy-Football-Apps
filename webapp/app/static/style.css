@@ -351,12 +351,18 @@ button:hover { opacity: 0.85; }
 }
 .pick-option input { accent-color: var(--ink); }
 
-.confidence-input {
+.confidence-select {
   width: 60px; background: var(--paper); color: var(--ink); border: 1.5px solid var(--ink);
   padding: 6px 8px; font-size: 0.9rem; font-variant-numeric: tabular-nums; font-family: inherit;
 }
 
 .pickem-table td { vertical-align: middle; }
+
+/* -------------------------------------------------------------------------
+   Team labels (logo + name) -- Pick'em matchups, picks, standings
+   ------------------------------------------------------------------------- */
+.team-label { display: inline-flex; align-items: center; gap: 6px; }
+.team-logo { width: 22px; height: 22px; object-fit: contain; flex-shrink: 0; }
 
 /* -------------------------------------------------------------------------
    Footer

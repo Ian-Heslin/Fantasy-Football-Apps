@@ -7,11 +7,21 @@ same fallback-tertiary and text-contrast rules, same team color table.
 Hex values are drawn from common public team-color references, not
 pulled programmatically from an official source -- spot-check against
 your own source of truth if pixel-perfect brand accuracy matters.
+
+Logo URLs point at nflverse's github-hosted squared_logos (from
+teams_colors_logos.csv, the same dataset family used elsewhere in this
+project) -- github.com/raw.githubusercontent.com is reachable from every
+environment this app has run in, unlike ESPN's CDN or Wikipedia's, both
+of which are blocked from the dev sandbox (confirmed via curl: espncdn.com
+and upload.wikimedia.org both return nothing, raw.githubusercontent.com
+returns 200 for all 32 teams).
 """
 
 DEFAULT_YELLOW = "oklch(82% 0.15 95)"
 DEFAULT_GREEN = "oklch(52% 0.11 145)"
 DEFAULT_SKY = "oklch(74% 0.08 230)"
+
+_LOGO_BASE = "https://raw.githubusercontent.com/nflverse/nflverse-pbp/master/squared_logos"
 
 TEAMS = [
     {"id": "ari", "name": "Arizona Cardinals", "primary": "#97233F", "secondary": "#000000", "tertiary": "#FFB612"},
@@ -48,7 +58,18 @@ TEAMS = [
     {"id": "was", "name": "Washington Commanders", "primary": "#5A1414", "secondary": "#FFB612", "tertiary": None},
 ]
 
+for _t in TEAMS:
+    _t["logo"] = f"{_LOGO_BASE}/{_t['id'].upper()}.png"
+
 TEAMS_BY_ID = {t["id"]: t for t in TEAMS}
+
+
+def logo_for(team_code):
+    """Logo URL for a standard team abbreviation (any case), or None if
+    unrecognized. team_code is expected in this project's standard scheme
+    (matches TEAMS' id uppercased) -- see coach_table/pickem_games."""
+    team = TEAMS_BY_ID.get(team_code.lower()) if team_code else None
+    return team["logo"] if team else None
 
 
 def hex_luminance(hex_color):

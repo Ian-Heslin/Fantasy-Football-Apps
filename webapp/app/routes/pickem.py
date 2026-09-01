@@ -100,6 +100,7 @@ def picks_form(request: Request, week: Optional[int] = None):
         ).fetchall()
         existing = {r["game_id"]: r for r in existing_rows}
         settings = pickem.get_settings(conn)
+        confidences = pickem.compute_display_confidence(games, existing) if settings["confidence_enabled"] else {}
     finally:
         conn.close()
 
@@ -109,7 +110,7 @@ def picks_form(request: Request, week: Optional[int] = None):
             "season": season, "week": week, "games": games, "existing": existing,
             "settings": settings, "team_names": pickem.TEAM_NAMES,
             "n_games": len(games), "is_locked": pickem.is_locked,
-            "favorite_team": pickem.favorite_team,
+            "favorite_team": pickem.favorite_team, "confidences": confidences,
             "saved": request.query_params.get("saved") == "1",
         },
     )
@@ -131,26 +132,61 @@ async def submit_picks(request: Request):
         games = conn.execute(
             "SELECT * FROM pickem_games WHERE season = ? AND week = ?", (season, week)
         ).fetchall()
+        settings = pickem.get_settings(conn)
+        existing_rows = conn.execute(
+            """SELECT * FROM pickem_picks WHERE user_id = ? AND game_id IN
+               (SELECT game_id FROM pickem_games WHERE season = ? AND week = ?)""",
+            (user["user_id"], season, week),
+        ).fetchall()
+        existing = {r["game_id"]: r for r in existing_rows}
+        # Confidence isn't a form field here -- it's set/reordered via its
+        # own small form (see pickem_picks.html + /games/pickem/confidence)
+        # so a team-pick-only submit must not clobber it. Preserve whatever
+        # a game already has; a first-time pick gets the same default it
+        # was already showing read-only (see compute_display_confidence).
+        defaults = pickem.compute_display_confidence(games, existing) if settings["confidence_enabled"] else {}
+
         for g in games:
             if pickem.is_locked(g):
                 continue  # already started/final -- server-side lock, not just UI
             team = form.get(f"pick_{g['game_id']}")
             if not team or team not in (g["home_team"], g["away_team"]):
                 continue
-            confidence = form.get(f"confidence_{g['game_id']}")
+            prior = existing.get(g["game_id"])
+            confidence = prior["confidence"] if prior and prior["confidence"] is not None \
+                else defaults.get(g["game_id"])
             conn.execute(
                 """INSERT INTO pickem_picks (user_id, game_id, picked_team, confidence, submitted_at)
                    VALUES (?, ?, ?, ?, datetime('now'))
                    ON CONFLICT(user_id, game_id) DO UPDATE SET
                        picked_team=excluded.picked_team, confidence=excluded.confidence,
                        submitted_at=datetime('now')""",
-                (user["user_id"], g["game_id"], team, int(confidence) if confidence else None),
+                (user["user_id"], g["game_id"], team, confidence),
             )
         conn.commit()
     finally:
         conn.close()
 
     return RedirectResponse(f"/games/pickem/picks?week={week}&saved=1", status_code=303)
+
+
+@router.post("/games/pickem/confidence")
+def update_confidence(request: Request, season: int = Form(...), week: int = Form(...),
+                       game_id: str = Form(...), confidence: int = Form(...)):
+    # Separate endpoint from submit_picks so changing one confidence value
+    # auto-submits immediately (see the picks template's <select
+    # onchange>) without needing to also resend every team-pick radio on
+    # the page -- see pickem.reorder_confidence for the shift algorithm.
+    user = request.state.user
+    try:
+        conn = get_connection()
+    except FileNotFoundError as e:
+        return db_missing_response(request, e)
+    try:
+        pickem.reorder_confidence(conn, user["user_id"], season, week, game_id, confidence)
+    finally:
+        conn.close()
+    return RedirectResponse(f"/games/pickem/picks?week={week}", status_code=303)
 
 
 @router.get("/games/pickem/standings", response_class=HTMLResponse)
