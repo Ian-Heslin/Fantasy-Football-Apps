@@ -6,7 +6,36 @@
 <p class="subtle">Play anytime, on your own -- each round scores immediately and your best
   round per category counts toward that category&rsquo;s leaderboard.</p>
 
-{% for game_type, label in game_labels.items() %}
+{% if weekly_category %}
+<h2>Weekly Top Scorers</h2>
+<div class="card-grid">
+  <div class="solaris-card">
+    <h3>{{ weekly_category }}</h3>
+    <p class="subtle">Guess the 15 highest PPR scorers from the most recently played week --
+      computed live from actual play-by-play, not a fixed list.</p>
+    <form method="post" action="/games/trivia/start">
+      <input type="hidden" name="game_type" value="weekly_leaders">
+      <input type="hidden" name="category" value="{{ weekly_category }}">
+      <button type="submit">Start a round</button>
+    </form>
+    {% if weekly_board %}
+    <table class="data-table">
+      <thead><tr><th>#</th><th>Player</th><th>Best score</th></tr></thead>
+      <tbody>
+        {% for row in weekly_board %}
+        <tr><td>{{ row.rank }}</td><td>{{ row.username }}</td><td>{{ row.score }} / {{ row.total }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="subtle">No rounds played yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% for game_type in categories %}
+{% set label = game_labels[game_type] %}
 <h2>{{ label }}</h2>
 <div class="card-grid">
   {% for cat in categories[game_type] %}

@@ -5,10 +5,20 @@ user builds their own roster independently (not a shared draft board, so
 two users can pick the same year+player -- see schema/sqlite_schema.sql's
 fantasy_draft_entries comment for why that's the deliberate choice here).
 
-Reference data (fantasy_draft_stats, 1970-2023) lives in analytics.duckdb
--- see scripts/load_trivia_data.py. A pick's points are snapshotted into
-fantasy_draft_entries at pick time, so a roster's score doesn't shift
-under someone if that reference data is ever reloaded/corrected.
+Reference data comes from two sources in analytics.duckdb, chosen per
+year: `player_season_fantasy_points` (computed directly from play_by_play,
+see scripts/compute_fantasy_points.py) for any season it covers -- 1999
+onward, live-updating as play_by_play gets re-loaded during the season --
+and `fantasy_draft_stats` (a one-time personal-spreadsheet export, see
+scripts/load_trivia_data.py) only for 1970-1998, before nflverse's
+play-by-play coverage starts. The computed source is preferred wherever
+both exist, since it's the one that stays current and doesn't have the
+spreadsheet's known gaps (e.g. Rob Gronkowski's 2011 season, missing from
+that year's spreadsheet tab entirely, is present here).
+
+A pick's points are snapshotted into fantasy_draft_entries at pick time,
+so a roster's score doesn't shift under someone if the reference data is
+ever reloaded/corrected.
 
 Player lookup is a typed name (no live search-as-you-type datalist here,
 to keep this server-rendered/JS-free like the rest of the app) matched
@@ -31,14 +41,26 @@ SLOT_POSITIONS = {
     "SUPERFLEX": ["QB", "RB", "WR", "TE"],
 }
 
+# player_season_fantasy_points (computed from play_by_play) covers this
+# year and later; fantasy_draft_stats (the spreadsheet) is the only source
+# before it.
+COMPUTED_SOURCE_START_YEAR = 1999
+
 
 def year_range(duckdb_conn):
-    row = duckdb_conn.execute("SELECT min(year), max(year) FROM fantasy_draft_stats").fetchone()
-    return row[0], row[1]
+    spreadsheet_min = duckdb_conn.execute("SELECT min(year) FROM fantasy_draft_stats").fetchone()[0]
+    computed_max = duckdb_conn.execute("SELECT max(season) FROM player_season_fantasy_points").fetchone()[0]
+    return spreadsheet_min, max(computed_max, COMPUTED_SOURCE_START_YEAR - 1)
 
 
 def _position_pool(duckdb_conn, year, positions):
     placeholders = ",".join("?" for _ in positions)
+    if year >= COMPUTED_SOURCE_START_YEAR:
+        return duckdb_conn.execute(
+            f"SELECT player, team, position, games, ppr_pt FROM player_season_fantasy_points "
+            f"WHERE season = ? AND position IN ({placeholders})",
+            [year] + positions,
+        ).fetchall()
     return duckdb_conn.execute(
         f"SELECT player, team, position, games, ppr_pt FROM fantasy_draft_stats "
         f"WHERE year = ? AND position IN ({placeholders})",

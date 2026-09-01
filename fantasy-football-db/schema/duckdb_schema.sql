@@ -312,6 +312,49 @@ CREATE TABLE IF NOT EXISTS fantasy_draft_stats (
 );
 CREATE INDEX IF NOT EXISTS idx_fantasy_draft_stats_year_pos ON fantasy_draft_stats(year, position);
 
+-- Fantasy points computed directly from play_by_play (1999-2025, wherever
+-- nflverse's play-by-play covers), via scripts/compute_fantasy_points.py --
+-- standard PPR scoring, validated against player_offense_rank's
+-- independently-sourced season totals (exact match on 3 of 4 spot-checked
+-- seasons; a QB-only case was off by 0.36%, cause not chased down further).
+-- Re-running load_nflverse.py then this script picks up newly-played weeks
+-- automatically, unlike fantasy_draft_stats (the spreadsheet export,
+-- frozen at 1970-2023) -- this is the live-updating source Fantasy Draft
+-- prefers for any season it covers (see app/fantasy_draft.py), which also
+-- fixes fantasy_draft_stats' one known gap (Rob Gronkowski's 2011 season).
+CREATE TABLE IF NOT EXISTS player_week_fantasy_points (
+    season      INTEGER NOT NULL,
+    week        INTEGER NOT NULL,
+    player_id   VARCHAR NOT NULL,   -- nflverse gsis_id
+    player      VARCHAR NOT NULL,
+    position    VARCHAR,
+    team        VARCHAR,
+    passing_yards DOUBLE, passing_tds DOUBLE, interceptions DOUBLE,
+    rushing_yards DOUBLE, rushing_tds DOUBLE,
+    receptions DOUBLE, receiving_yards DOUBLE, receiving_tds DOUBLE,
+    fumbles_lost DOUBLE, two_point_conversions DOUBLE,
+    fant_pt     DOUBLE,   -- standard scoring
+    ppr_pt      DOUBLE,
+    PRIMARY KEY (season, week, player_id)
+);
+CREATE INDEX IF NOT EXISTS idx_pwfp_season_week ON player_week_fantasy_points(season, week);
+
+-- Season totals, aggregated from player_week_fantasy_points by the same
+-- script -- what app/fantasy_draft.py actually queries (same shape as
+-- fantasy_draft_stats, so the two are interchangeable at read time).
+CREATE TABLE IF NOT EXISTS player_season_fantasy_points (
+    season      INTEGER NOT NULL,
+    player_id   VARCHAR NOT NULL,
+    player      VARCHAR NOT NULL,
+    position    VARCHAR,
+    team        VARCHAR,     -- most common team that season (mode across weeks)
+    games       INTEGER,
+    fant_pt     DOUBLE,
+    ppr_pt      DOUBLE,
+    PRIMARY KEY (season, player_id)
+);
+CREATE INDEX IF NOT EXISTS idx_psfp_season_pos ON player_season_fantasy_points(season, position);
+
 -- "Guess the rank" version of the NFL Network's fan-voted annual Top 100
 -- list -- a real, separate game from Award Winners (see
 -- load_nfl_top100.py's docstring for why this needs a Wikipedia scraper

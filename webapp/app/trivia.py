@@ -30,6 +30,15 @@ SEASON_CATEGORIES = ["Points Leaders", "Official Sacks Leaders"]
 
 ROUND_SIZE = 10
 
+# Weekly Top Scorers: a "guess the rank" round like Season Leaders, but
+# scoped to one real week instead of all-time -- built on
+# player_week_fantasy_points (see scripts/compute_fantasy_points.py),
+# which is why it can point at "whatever week is most recently loaded"
+# instead of a fixed category list. Every one of the top N scorers that
+# week is a question (not a random sample of a larger pool) -- the whole
+# premise is "guess who these were", not sampling down further.
+WEEKLY_ROUND_SIZE = 15
+
 
 def normalize_name(name):
     """Loose match for a typed guess against a real player name -- casual
@@ -50,6 +59,36 @@ def _season_prompt(category, rank, stat_value, years_active, team_clue):
     stat_label = "career sacks" if "Sacks" in category else "career points"
     value = f"{stat_value:g}" if stat_value is not None else "?"
     return f"#{rank} all-time — {team_clue or '?'} — {value} {stat_label} ({years_active or '?'})"
+
+
+WEEKLY_CATEGORY_RE = re.compile(r"^(\d{4}) Week (\d+)$")
+
+
+def weekly_category(season, week):
+    return f"{season} Week {week}"
+
+
+def parse_weekly_category(category):
+    m = WEEKLY_CATEGORY_RE.match(category)
+    if not m:
+        raise ValueError(f"not a weekly-leaders category: {category!r}")
+    return int(m.group(1)), int(m.group(2))
+
+
+def latest_week(duckdb_conn):
+    """(season, week) of the most recently loaded week -- re-running
+    scripts/load_nflverse.py + compute_fantasy_points.py during the season
+    moves this forward automatically."""
+    row = duckdb_conn.execute(
+        """SELECT season, max(week) FROM player_week_fantasy_points
+           WHERE season = (SELECT max(season) FROM player_week_fantasy_points)
+           GROUP BY season"""
+    ).fetchone()
+    return (row[0], row[1]) if row else (None, None)
+
+
+def _weekly_prompt(rank, team, position, ppr_pt):
+    return f"#{rank} this week — {team or '?'} {position or ''} — {ppr_pt:.1f} PPR pts".replace("  ", " ")
 
 
 def start_round(sqlite_conn, duckdb_conn, user_id, game_type, category):
@@ -73,13 +112,27 @@ def start_round(sqlite_conn, duckdb_conn, user_id, game_type, category):
             (str(rank), _season_prompt(category, rank, stat_value, years_active, team_clue), player)
             for rank, player, stat_value, years_active, team_clue in rows
         ]
+    elif game_type == "weekly_leaders":
+        season, week = parse_weekly_category(category)
+        rows = duckdb_conn.execute(
+            """SELECT player, team, position, ppr_pt FROM player_week_fantasy_points
+               WHERE season = ? AND week = ? ORDER BY ppr_pt DESC LIMIT ?""",
+            (season, week, WEEKLY_ROUND_SIZE),
+        ).fetchall()
+        pool = [
+            (str(rank), _weekly_prompt(rank, team, position, ppr_pt), player)
+            for rank, (player, team, position, ppr_pt) in enumerate(rows, start=1)
+        ]
     else:
         raise ValueError(f"unknown game_type {game_type!r}")
 
     if not pool:
         return None
 
-    sample = random.sample(pool, k=min(ROUND_SIZE, len(pool)))
+    # Weekly Top Scorers uses every question in the pool (it IS the round,
+    # already capped to WEEKLY_ROUND_SIZE above); the other games sample a
+    # random subset of a much larger pool.
+    sample = pool if game_type == "weekly_leaders" else random.sample(pool, k=min(ROUND_SIZE, len(pool)))
     cur = sqlite_conn.execute(
         "INSERT INTO trivia_rounds (user_id, game_type, category, total) VALUES (?, ?, ?, ?)",
         (user_id, game_type, category, len(sample)),

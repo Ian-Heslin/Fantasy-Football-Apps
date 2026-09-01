@@ -12,7 +12,10 @@ from app.templating import templates
 
 router = APIRouter(dependencies=[Depends(require_tier("games"))])
 
-GAME_LABELS = {"award_winners": "Award Winners", "season_leaders": "Season Leaders"}
+GAME_LABELS = {
+    "award_winners": "Award Winners", "season_leaders": "Season Leaders",
+    "weekly_leaders": "Weekly Top Scorers",
+}
 CATEGORIES = {"award_winners": trivia.AWARD_CATEGORIES, "season_leaders": trivia.SEASON_CATEGORIES}
 
 
@@ -20,6 +23,7 @@ CATEGORIES = {"award_winners": trivia.AWARD_CATEGORIES, "season_leaders": trivia
 def trivia_index(request: Request):
     try:
         conn = get_connection()
+        duckdb_conn = get_duckdb_connection()
     except FileNotFoundError as e:
         return db_missing_response(request, e)
 
@@ -28,19 +32,28 @@ def trivia_index(request: Request):
             game_type: {cat: trivia.leaderboard(conn, game_type, cat)[:5] for cat in cats}
             for game_type, cats in CATEGORIES.items()
         }
+        latest_season, latest_week = trivia.latest_week(duckdb_conn)
+        weekly_category = trivia.weekly_category(latest_season, latest_week) if latest_season else None
+        weekly_board = trivia.leaderboard(conn, "weekly_leaders", weekly_category)[:5] if weekly_category else []
     finally:
         conn.close()
+        duckdb_conn.close()
 
     return templates.TemplateResponse(
         request, "trivia_index.html",
-        {"game_labels": GAME_LABELS, "categories": CATEGORIES, "boards": boards},
+        {
+            "game_labels": GAME_LABELS, "categories": CATEGORIES, "boards": boards,
+            "latest_season": latest_season, "latest_week": latest_week,
+            "weekly_category": weekly_category, "weekly_board": weekly_board,
+        },
     )
 
 
 @router.post("/games/trivia/start")
 def start_round(request: Request, game_type: str = Form(...), category: str = Form(...)):
     user = request.state.user
-    if game_type not in GAME_LABELS or category not in CATEGORIES[game_type]:
+    valid = (game_type in CATEGORIES and category in CATEGORIES[game_type]) or game_type == "weekly_leaders"
+    if not valid:
         return RedirectResponse("/games/trivia", status_code=303)
 
     try:

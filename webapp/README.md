@@ -135,13 +135,23 @@ necessarily matching a layout the spec never drew.
   spreadsheet's live, shared, host-run "strikes" format -- that's a real,
   different feature, not built yet (see "Not yet built" below).
 - **`/games/fantasy-draft`** -- draft any player from any NFL season,
-  1970-2023, at 9 roster slots (QB/WR/WR/RB/RB/TE/FLEX/FLEX/SUPERFLEX);
+  1970-2025, at 9 roster slots (QB/WR/WR/RB/RB/TE/FLEX/FLEX/SUPERFLEX);
   your score is that player's real PPR fantasy total from that exact
-  season (`scripts/load_trivia_data.py` again, the same spreadsheet's
-  `fantasy_draft_stats`). Async/individual like everything else here --
-  not a shared draft board, so two users can pick the same year+player
-  with no conflict. A typed name that doesn't match gets a handful of
-  close-spelling suggestions rather than just failing.
+  season. 1999 onward comes from `player_season_fantasy_points` --
+  computed directly from play-by-play (`scripts/compute_fantasy_points.py`),
+  so it live-updates as new weeks get loaded during the season and doesn't
+  have the personal spreadsheet's gaps (Rob Gronkowski's 2011 season, e.g.,
+  missing from that year's spreadsheet tab entirely, is present here).
+  1970-1998 (before nflverse's play-by-play coverage starts) still comes
+  from the spreadsheet's `fantasy_draft_stats`. Async/individual like
+  everything else here -- not a shared draft board, so two users can pick
+  the same year+player with no conflict. A typed name that doesn't match
+  gets a handful of close-spelling suggestions rather than just failing.
+- Also under **`/games/trivia`**: **Weekly Top Scorers** -- guess the 15
+  highest real PPR scorers from the most recently loaded week (same
+  `player_week_fantasy_points` data), rather than a fixed all-time
+  category. Re-running `load_nflverse.py` + `compute_fantasy_points.py`
+  during the season moves "most recent week" forward automatically.
 - A "Daily Trivia" card sits alongside these on `/games` as a
   placeholder -- a different, not-yet-specced game, not related to the
   Award Winners/Season Leaders trivia above.
@@ -241,11 +251,14 @@ requirements.txt
   loaded and spot-checked, the game itself (routes/templates) still needs
   building -- same shape as the Award Winners trivia already built.
 - `fantasy_draft_stats` (the source spreadsheet's per-year tables) has at
-  least one confirmed gap: Rob Gronkowski's excellent 2011 season is
-  missing from that year's tab entirely (only his brothers Chris/Dan
-  appear) -- a real hole in the source data itself, not a load bug. Likely
-  other similar gaps exist uncaught; nothing currently detects or
-  backfills these.
+  least one confirmed gap -- Rob Gronkowski's 2011 season is missing from
+  that year's tab entirely -- a real hole in the source data itself, not a
+  load bug. **No longer surfaced in the app**: Fantasy Draft now prefers
+  `player_season_fantasy_points` (computed from play-by-play) for any
+  season 1999+, which doesn't have this gap; `fantasy_draft_stats` is only
+  still used for 1970-1998. Likely similar spreadsheet gaps exist
+  uncaught in that pre-1999 range, where there's no play-by-play to
+  cross-check against.
 - A dedicated "coach detail" view doesn't yet show `coach_tenure_segments`
   (continuous tenure spans) -- the per-season table on `/coaches/{name}`
   covers the same information less compactly.

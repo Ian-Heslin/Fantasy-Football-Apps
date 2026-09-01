@@ -78,6 +78,11 @@ python3 scripts/load_trivia_data.py  # loads the web app's Award Winners/
                                    # reference data from the committed
                                    # CSVs under data/trivia/ (one-time
                                    # spreadsheet export, no live source)
+python3 scripts/compute_fantasy_points.py  # computes standard+PPR fantasy
+                                   # points per player per week from
+                                   # play_by_play, 1999-2025 -- re-run
+                                   # any time play_by_play gets reloaded
+                                   # to pick up new weeks during the season
 ```
 
 After setting up the web app itself (see `webapp/README.md`) and signing
@@ -257,11 +262,26 @@ source so the extracted data is committed directly:
 - `trivia_season_leaders` (DuckDB) -- all-time Sacks/Points leaders by
   rank (100 rows).
 - `fantasy_draft_stats` (DuckDB) -- season-level fantasy stats (standard
-  + PPR points), 1970-2023 (28,594 rows) -- much further back than
-  `player_stats_season` (nflverse only goes to 1999). **Known gap**: at
-  least one confirmed hole (Rob Gronkowski's 2011 season is missing
-  entirely from that year's source tab) -- a real gap in the source
-  spreadsheet, not a load bug; likely others exist uncaught.
+  + PPR points), 1970-2023 (28,594 rows) -- the web app's Fantasy Draft
+  game now only uses this for 1970-1998 (see below); it has a confirmed
+  gap (Rob Gronkowski's 2011 season missing from that year's source tab
+  entirely), but that's outside the range still sourced from here.
+
+Computed directly from `play_by_play`, by `compute_fantasy_points.py`
+(not a one-time export -- re-run any time `play_by_play` gets reloaded,
+e.g. `load_nflverse.py` mid-season, to pick up new weeks):
+- `player_week_fantasy_points` (DuckDB) -- standard + PPR fantasy points
+  per player per week, 1999-2025 (134,429 rows). Standard PFR-style
+  scoring; validated against `player_offense_rank`'s independently-sourced
+  season totals -- exact match to the decimal on 3 of 4 spot-checked
+  seasons (Rob Gronkowski 2011, Randy Moss 2007, Priest Holmes 2002; a
+  QB-only case, Tom Brady 2007, was off by 0.36%, not chased down
+  further). This is what the web app's Weekly Top Scorers trivia game
+  reads.
+- `player_season_fantasy_points` (DuckDB) -- the same, aggregated to
+  season totals (15,955 rows) -- what Fantasy Draft reads for any season
+  1999+, preferred over `fantasy_draft_stats` since it stays current and
+  doesn't have that table's Gronkowski-shaped gaps.
 
 **Still not populated -- needs a run outside this sandbox:**
 - `team_executives_season` (DuckDB) -- owner + GM per team-season, for
@@ -318,6 +338,9 @@ scripts/
                                           outcomes, 1980-2025
   load_trivia_data.py                    -- loads the web app's trivia game
                                           reference data from data/trivia/
+  compute_fantasy_points.py               -- computes weekly/season PPR
+                                          fantasy points from play_by_play
+                                          (re-run to pick up new weeks)
   promote_user.py                      -- sets a web app user's tier (bootstrap
                                           the first admin; ongoing changes go
                                           through /admin/users instead)
