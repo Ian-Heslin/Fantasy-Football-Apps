@@ -113,13 +113,38 @@ necessarily matching a layout the spec never drew.
 - **`/games`**, **`/games/pickem`**, **`/games/pickem/picks`**,
   **`/games/pickem/standings`** -- NFL Pick'em: pick every game's winner
   (or who covers the spread -- a league-wide, admin-only setting) each
-  week, with optional confidence points. Real schedule/spreads/scores come
-  from `scripts/load_pickem_schedule.py` (nflverse/nfldata's `games.csv`,
+  week, with optional confidence points. When confidence is on, every
+  pick gets a 1..N number automatically (N = that week's game count, most
+  confident pick highest); changing one number reorders the rest to keep
+  them unique (see `pickem.reorder_confidence`) instead of leaving that to
+  manual free-entry. Team logos (nflverse's github-hosted `squared_logos`)
+  render next to every team name. Real schedule/spreads/scores come from
+  `scripts/load_pickem_schedule.py` (nflverse/nfldata's `games.csv`,
   re-run periodically during the season); picks lock at kickoff. Standings
   (season and week-by-week) are computed live from picks + settings every
   time they're viewed, not stored, so toggling straight-up/spread or
-  confidence on/off recomputes everything immediately. A "Daily Trivia"
-  card sits alongside Pick'em on `/games` as a placeholder -- not built yet.
+  confidence on/off recomputes everything immediately.
+- **`/games/trivia`** -- Award Winners (9 categories: MVP, Super Bowl MVP,
+  Coach of the Year, etc.) and Season Leaders (all-time Sacks/Points)
+  guessing games, one-time exported from a personal spreadsheet (see
+  `scripts/load_trivia_data.py`). Played async/individually, like
+  Pick'em -- anyone starts a round anytime (a random sample of that
+  category's years/ranks), submits guesses, gets scored immediately
+  (loose name matching -- case/punctuation/suffix-insensitive), and each
+  category has a "best score" leaderboard. **Not** the original
+  spreadsheet's live, shared, host-run "strikes" format -- that's a real,
+  different feature, not built yet (see "Not yet built" below).
+- **`/games/fantasy-draft`** -- draft any player from any NFL season,
+  1970-2023, at 9 roster slots (QB/WR/WR/RB/RB/TE/FLEX/FLEX/SUPERFLEX);
+  your score is that player's real PPR fantasy total from that exact
+  season (`scripts/load_trivia_data.py` again, the same spreadsheet's
+  `fantasy_draft_stats`). Async/individual like everything else here --
+  not a shared draft board, so two users can pick the same year+player
+  with no conflict. A typed name that doesn't match gets a handful of
+  close-spelling suggestions rather than just failing.
+- A "Daily Trivia" card sits alongside these on `/games` as a
+  placeholder -- a different, not-yet-specced game, not related to the
+  Award Winners/Season Leaders trivia above.
 - **`/rosters`** -- your Sleeper and ESPN leagues; click through to any
   team's roster (a picker lets you view league-mates' rosters too, not just
   yours) valued against current dynasty trade values (1QB or superflex,
@@ -163,10 +188,15 @@ app/
   auth.py              -- accounts, sessions, tiers: hash/verify_password, load_current_user,
                          require_tier() (the router-level dependency every protected
                          router uses)
-  pickem.py            -- Pick'em scoring (winner/cover/score_pick), standings, and
-                         current_season/current_week -- pure functions over DB rows,
-                         no FastAPI/route code
-  team_colors.py         -- Team Colors: the 32-team color table + resolve()
+  pickem.py            -- Pick'em scoring (winner/cover/score_pick), standings,
+                         current_season/current_week, and confidence auto-assign/
+                         reorder (compute_display_confidence/reorder_confidence) --
+                         pure functions over DB rows, no FastAPI/route code
+  trivia.py             -- Award Winners/Season Leaders round sampling, scoring
+                         (normalize_name), and leaderboards -- pure functions
+  fantasy_draft.py        -- Fantasy Draft slot/position rules, player lookup +
+                         close-spelling suggestions, leaderboard -- pure functions
+  team_colors.py         -- Team Colors: the 32-team color/logo table + resolve()
                          (ported from docs/solaris-design-spec.md's JS) --
                          also pure functions, no FastAPI/route code
   db.py               -- SQLite + DuckDB connection helpers (path resolution, row_factory,
@@ -180,7 +210,9 @@ app/
                            pages you need to reach without being logged in yet)
     admin.py             -- /admin/users, tier changes (admin-only)
     profile.py           -- link your account to your Sleeper/ESPN team (games-tier+)
-    pickem.py            -- /games routes (games-tier+)
+    pickem.py            -- /games/pickem routes (games-tier+)
+    trivia.py             -- /games/trivia routes (games-tier+)
+    fantasy_draft.py        -- /games/fantasy-draft routes (games-tier+)
     home.py, rosters.py, predictions.py, arbitrage.py, teams.py, coaches.py
                            (fantasy-tier+, except home.py which is games-tier+ but
                            redirects games-tier users to /games)
@@ -193,7 +225,22 @@ requirements.txt
 ## Not yet built
 
 - The Daily Trivia game -- a placeholder card on `/games`, rules still
-  being specced out.
+  being specced out (a different game from the Award Winners/Season
+  Leaders trivia, which is built).
+- A live, shared, host-run version of the Award Winners/Season Leaders
+  trivia (the original spreadsheet's format -- one person runs a round,
+  everyone answers within a window, "strikes" tracked per contestant as
+  the group plays together). What's built instead is async/individual
+  play, chosen deliberately as the simpler first version.
+- An "NFL Top 100" guessing game (guess a player's rank on the NFL's
+  annual fan-voted Top 100 list) -- explicitly wanted as a separate game
+  from Award Winners, but no data source for it has been found/loaded yet.
+- `fantasy_draft_stats` (the source spreadsheet's per-year tables) has at
+  least one confirmed gap: Rob Gronkowski's excellent 2011 season is
+  missing from that year's tab entirely (only his brothers Chris/Dan
+  appear) -- a real hole in the source data itself, not a load bug. Likely
+  other similar gaps exist uncaught; nothing currently detects or
+  backfills these.
 - A dedicated "coach detail" view doesn't yet show `coach_tenure_segments`
   (continuous tenure spans) -- the per-season table on `/coaches/{name}`
   covers the same information less compactly.

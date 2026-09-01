@@ -1,0 +1,502 @@
+category,year,position,player,team
+Super Bowl MVP,2023,QB,Patrick Mahomes,Kansas City Chiefs
+Super Bowl MVP,2022,QB,Patrick Mahomes,Kansas City Chiefs
+Super Bowl MVP,2021,WR,Cooper Kupp,Los Angeles Rams
+Super Bowl MVP,2020,QB,Tom Brady,Tampa Bay Buccaneers
+Super Bowl MVP,2019,QB,Patrick Mahomes,Kansas City Chiefs
+Super Bowl MVP,2018,WR,Julian Edelman,New England Patriots
+Super Bowl MVP,2017,QB,Nick Foles,Philadelphia Eagles
+Super Bowl MVP,2016,QB,Tom Brady,New England Patriots
+Super Bowl MVP,2015,OLB,Von Miller,Denver Broncos
+Super Bowl MVP,2014,QB,Tom Brady,New England Patriots
+Super Bowl MVP,2013,MLB,Malcolm Smith,Seattle Seahawks
+Super Bowl MVP,2012,QB,Joe Flacco,Baltimore Ravens
+Super Bowl MVP,2011,QB,Eli Manning,New York Giants
+Super Bowl MVP,2010,QB,Aaron Rodgers,Green Bay Packers
+Super Bowl MVP,2009,QB,Drew Brees,New Orleans Saints
+Super Bowl MVP,2008,WR,Santonio Holmes,Pittsburgh Steelers
+Super Bowl MVP,2007,QB,Eli Manning,New York Giants
+Super Bowl MVP,2006,QB,Peyton Manning,Indianapolis Colts
+Super Bowl MVP,2005,WR,Hines Ward,Pittsburgh Steelers
+Super Bowl MVP,2004,WR,Deion Branch,New England Patriots
+Super Bowl MVP,2003,QB,Tom Brady,New England Patriots
+Super Bowl MVP,2002,FS,Dexter Jackson,Tampa Bay Buccaneers
+Super Bowl MVP,2001,QB,Tom Brady,New England Patriots
+Super Bowl MVP,2000,MLB,Ray Lewis,Baltimore Ravens
+Super Bowl MVP,1999,QB,Kurt Warner,St. Louis Rams
+Super Bowl MVP,1998,QB,John Elway,Denver Broncos
+Super Bowl MVP,1997,RB,Terrell Davis,Denver Broncos
+Super Bowl MVP,1996,WR,Desmond Howard,Green Bay Packers
+Super Bowl MVP,1995,RCB,Larry Brown,Dallas Cowboys
+Super Bowl MVP,1994,QB,Steve Young,San Francisco 49ers
+Super Bowl MVP,1993,RB,Emmitt Smith,Dallas Cowboys
+Super Bowl MVP,1992,QB,Troy Aikman,Dallas Cowboys
+Super Bowl MVP,1991,QB,Mark Rypien,Washington Redskins
+Super Bowl MVP,1990,RB,Ottis Anderson,New York Giants
+Super Bowl MVP,1989,QB,Joe Montana,San Francisco 49ers
+Super Bowl MVP,1988,WR,Jerry Rice,San Francisco 49ers
+Super Bowl MVP,1987,QB,Doug Williams,Washington Redskins
+Super Bowl MVP,1986,QB,Phil Simms,New York Giants
+Super Bowl MVP,1985,RDE,Richard Dent,Chicago Bears
+Super Bowl MVP,1984,QB,Joe Montana,San Francisco 49ers
+Super Bowl MVP,1983,RB,Marcus Allen,Los Angeles Raiders
+Super Bowl MVP,1982,FB,John Riggins,Washington Redskins
+Super Bowl MVP,1981,QB,Joe Montana,San Francisco 49ers
+Super Bowl MVP,1980,QB,Jim Plunkett,Oakland Raiders
+Super Bowl MVP,1979,QB,Terry Bradshaw,Pittsburgh Steelers
+Super Bowl MVP,1978,QB,Terry Bradshaw,Pittsburgh Steelers
+Super Bowl MVP,1977,RDT,Randy White,Dallas Cowboys
+Super Bowl MVP,1977,RDE,Harvey Martin,Dallas Cowboys
+Super Bowl MVP,1976,WR,Fred Biletnikoff,Oakland Raiders
+Super Bowl MVP,1975,WR,Lynn Swann,Pittsburgh Steelers
+Super Bowl MVP,1974,FB,Franco Harris,Pittsburgh Steelers
+Super Bowl MVP,1973,FB,Larry Csonka,Miami Dolphins
+Super Bowl MVP,1972,FS,Jake Scott,Miami Dolphins
+Super Bowl MVP,1971,QB,Roger Staubach,Dallas Cowboys
+Super Bowl MVP,1970,LLB,Chuck Howley,Dallas Cowboys
+Super Bowl MVP,1969,QB,Len Dawson,Kansas City Chiefs
+Super Bowl MVP,1968,QB,Joe Namath,New York Jets
+Super Bowl MVP,1967,QB,Bart Starr,Green Bay Packers
+Super Bowl MVP,1966,QB,Bart Starr,Green Bay Packers
+MVP,2023,QB,Lamar Jackson,Baltimore Ravens
+MVP,2022,QB,Patrick Mahomes,Kansas City Chiefs
+MVP,2021,QB,Aaron Rodgers,Green Bay Packers
+MVP,2020,QB,Aaron Rodgers,Green Bay Packers
+MVP,2019,QB,Lamar Jackson,Baltimore Ravens
+MVP,2018,QB,Patrick Mahomes,Kansas City Chiefs
+MVP,2017,QB,Tom Brady,New England Patriots
+MVP,2016,QB,Matt Ryan,Atlanta Falcons
+MVP,2015,QB,Cam Newton,Carolina Panthers
+MVP,2014,QB,Aaron Rodgers,Green Bay Packers
+MVP,2013,QB,Peyton Manning,Denver Broncos
+MVP,2012,RB,Adrian Peterson,Minnesota Vikings
+MVP,2011,QB,Aaron Rodgers,Green Bay Packers
+MVP,2010,QB,Tom Brady,New England Patriots
+MVP,2009,QB,Peyton Manning,Indianapolis Colts
+MVP,2008,QB,Peyton Manning,Indianapolis Colts
+MVP,2007,QB,Tom Brady,New England Patriots
+MVP,2006,RB,LaDainian Tomlinson,San Diego Chargers
+MVP,2005,RB,Shaun Alexander,Seattle Seahawks
+MVP,2004,QB,Peyton Manning,Indianapolis Colts
+MVP,2003,QB,Steve McNair,Tennessee Titans
+MVP,2003,QB,Peyton Manning,Indianapolis Colts
+MVP,2002,QB,Rich Gannon,Oakland Raiders
+MVP,2001,QB,Kurt Warner,St. Louis Rams
+MVP,2000,RB,Marshall Faulk,St. Louis Rams
+MVP,1999,QB,Kurt Warner,St. Louis Rams
+MVP,1998,RB,Terrell Davis,Denver Broncos
+MVP,1997,RB,Barry Sanders,Detroit Lions
+MVP,1997,QB,Brett Favre,Green Bay Packers
+MVP,1996,QB,Brett Favre,Green Bay Packers
+MVP,1995,QB,Brett Favre,Green Bay Packers
+MVP,1994,QB,Steve Young,San Francisco 49ers
+MVP,1993,RB,Emmitt Smith,Dallas Cowboys
+MVP,1992,QB,Steve Young,San Francisco 49ers
+MVP,1991,RB,Thurman Thomas,Buffalo Bills
+MVP,1990,QB,Joe Montana,San Francisco 49ers
+MVP,1989,QB,Joe Montana,San Francisco 49ers
+MVP,1988,QB,Boomer Esiason,Cincinnati Bengals
+MVP,1987,QB,John Elway,Denver Broncos
+MVP,1986,ROLB,Lawrence Taylor,New York Giants
+MVP,1985,RB,Marcus Allen,Los Angeles Raiders
+MVP,1984,QB,Dan Marino,Miami Dolphins
+MVP,1983,QB,Joe Theismann,Washington Redskins
+MVP,1982,K,Mark Moseley,Washington Redskins
+MVP,1981,QB,Ken Anderson,Cincinnati Bengals
+MVP,1980,QB,Brian Sipe,Cleveland Browns
+MVP,1979,RB,Earl Campbell,Houston Oilers
+MVP,1978,QB,Terry Bradshaw,Pittsburgh Steelers
+MVP,1977,RB,Walter Payton,Chicago Bears
+MVP,1976,QB,Bert Jones,Baltimore Colts
+MVP,1975,QB,Fran Tarkenton,Minnesota Vikings
+MVP,1974,QB,Ken Stabler,Oakland Raiders
+MVP,1973,RB,O.J. Simpson,Buffalo Bills
+MVP,1972,RB,Larry Brown,Washington Redskins
+MVP,1971,RDT,Alan Page,Minnesota Vikings
+MVP,1970,QB,John Brodie,San Francisco 49ers
+MVP,1969,QB,Roman Gabriel,Los Angeles Rams
+MVP,1968,QB,Earl Morrall,Baltimore Colts
+MVP,1967,QB,Johnny Unitas,Baltimore Colts
+MVP,1966,QB,Bart Starr,Green Bay Packers
+MVP,1965,FB,Jim Brown,Cleveland Browns
+MVP,1964,QB,Johnny Unitas,Baltimore Colts
+MVP,1963,QB,Y.A. Tittle,New York Giants
+MVP,1962,FB,Jim Taylor,Green Bay Packers
+MVP,1961,HB,Paul Hornung,Green Bay Packers
+MVP,1959,QB,Johnny Unitas,Baltimore Colts
+MVP,1958,FB,Jim Brown,Cleveland Browns
+MVP,1957,FB,Jim Brown,Cleveland Browns
+Walter Payton Man of the Year,2023,DT,Cameron Heyward,Pittsburgh Steelers
+Walter Payton Man of the Year,2022,QB,Dak Prescott,Dallas Cowboys
+Walter Payton Man of the Year,2021,LT,Andrew Whitworth,Los Angeles Rams
+Walter Payton Man of the Year,2020,QB,Russell Wilson,Seattle Seahawks
+Walter Payton Man of the Year,2019,LDE,Calais Campbell,Jacksonville Jaguars
+Walter Payton Man of the Year,2018,DE,Chris Long,Philadelphia Eagles
+Walter Payton Man of the Year,2017,DE,J.J. Watt,Houston Texans
+Walter Payton Man of the Year,2016,QB,Eli Manning,New York Giants
+Walter Payton Man of the Year,2016,WR,Larry Fitzgerald,Arizona Cardinals
+Walter Payton Man of the Year,2015,WR,Anquan Boldin,San Francisco 49ers
+Walter Payton Man of the Year,2014,OLB,Thomas Davis,Carolina Panthers
+Walter Payton Man of the Year,2013,LCB,Charles Tillman,Chicago Bears
+Walter Payton Man of the Year,2012,TE,Jason Witten,Dallas Cowboys
+Walter Payton Man of the Year,2011,C,Matt Birk,Baltimore Ravens
+Walter Payton Man of the Year,2010,FS,Madieu Williams,Minnesota Vikings
+Walter Payton Man of the Year,2009,LG,Brian Waters,Kansas City Chiefs
+Walter Payton Man of the Year,2008,QB,Kurt Warner,Arizona Cardinals
+Walter Payton Man of the Year,2007,RDE,Jason Taylor,Miami Dolphins
+Walter Payton Man of the Year,2006,RB,LaDainian Tomlinson,San Diego Chargers
+Walter Payton Man of the Year,2006,QB,Drew Brees,New Orleans Saints
+Walter Payton Man of the Year,2005,QB,Peyton Manning,Indianapolis Colts
+Walter Payton Man of the Year,2004,RB,Warrick Dunn,Atlanta Falcons
+Walter Payton Man of the Year,2003,RG,Will Shields,Kansas City Chiefs
+Walter Payton Man of the Year,2002,LCB,Troy Vincent,Philadelphia Eagles
+Walter Payton Man of the Year,2001,RB,Jerome Bettis,Pittsburgh Steelers
+Walter Payton Man of the Year,2000,LDT,Jim Flanigan,Chicago Bears
+Walter Payton Man of the Year,2000,RLB,Derrick Brooks,Tampa Bay Buccaneers
+Walter Payton Man of the Year,1999,WR,Cris Carter,Minnesota Vikings
+Walter Payton Man of the Year,1998,QB,Dan Marino,Miami Dolphins
+Walter Payton Man of the Year,1997,QB,Troy Aikman,Dallas Cowboys
+Walter Payton Man of the Year,1996,RCB,Darrell Green,Washington Redskins
+Walter Payton Man of the Year,1995,QB,Boomer Esiason,New York Jets
+Walter Payton Man of the Year,1994,RLB,Junior Seau,San Diego Chargers
+Walter Payton Man of the Year,1993,ROLB,Derrick Thomas,Kansas City Chiefs
+Walter Payton Man of the Year,1992,QB,John Elway,Denver Broncos
+Walter Payton Man of the Year,1991,LT,Anthony Munoz,Cincinnati Bengals
+Walter Payton Man of the Year,1990,MLB,Mike Singletary,Chicago Bears
+Walter Payton Man of the Year,1989,QB,Warren Moon,Houston Oilers
+Walter Payton Man of the Year,1988,WR,Steve Largent,Seattle Seahawks
+Walter Payton Man of the Year,1987,DB,Dave Duerson,Chicago Bears
+Walter Payton Man of the Year,1986,ROLB,Reggie Williams,Cincinnati Bengals
+Walter Payton Man of the Year,1985,C,Dwight Stephenson,Miami Dolphins
+Walter Payton Man of the Year,1984,RDT,Marty Lyons,New York Jets
+Walter Payton Man of the Year,1983,K,Rolf Benirschke,San Diego Chargers
+Walter Payton Man of the Year,1982,QB,Joe Theismann,Washington Redskins
+Walter Payton Man of the Year,1981,WR,Lynn Swann,Pittsburgh Steelers
+Walter Payton Man of the Year,1980,WR,Harold Carmichael,Philadelphia Eagles
+Walter Payton Man of the Year,1979,LDT,Joe Greene,Pittsburgh Steelers
+Walter Payton Man of the Year,1978,QB,Roger Staubach,Dallas Cowboys
+Walter Payton Man of the Year,1977,RB,Walter Payton,Chicago Bears
+Walter Payton Man of the Year,1976,FB,Franco Harris,Pittsburgh Steelers
+Walter Payton Man of the Year,1975,QB,Ken Anderson,Cincinnati Bengals
+Walter Payton Man of the Year,1974,QB,George Blanda,Oakland Raiders
+Walter Payton Man of the Year,1973,QB,Len Dawson,Kansas City Chiefs
+Walter Payton Man of the Year,1972,MLB,Willie Lanier,Kansas City Chiefs
+Walter Payton Man of the Year,1971,QB,John Hadl,San Diego Chargers
+Walter Payton Man of the Year,1970,QB,Johnny Unitas,Baltimore Colts
+Offensive Player of the Year,2023,RB,Christian McCaffrey,San Francisco 49ers
+Offensive Player of the Year,2022,WR,Justin Jefferson,Minnesota Vikings
+Offensive Player of the Year,2021,WR,Cooper Kupp,Los Angeles Rams
+Offensive Player of the Year,2020,RB,Derrick Henry,Tennessee Titans
+Offensive Player of the Year,2019,WR,Michael Thomas,New Orleans Saints
+Offensive Player of the Year,2018,QB,Patrick Mahomes,Kansas City Chiefs
+Offensive Player of the Year,2017,RB,Todd Gurley,Los Angeles Rams
+Offensive Player of the Year,2016,QB,Matt Ryan,Atlanta Falcons
+Offensive Player of the Year,2015,QB,Cam Newton,Carolina Panthers
+Offensive Player of the Year,2014,RB,DeMarco Murray,Dallas Cowboys
+Offensive Player of the Year,2013,QB,Peyton Manning,Denver Broncos
+Offensive Player of the Year,2012,RB,Adrian Peterson,Minnesota Vikings
+Offensive Player of the Year,2011,QB,Drew Brees,New Orleans Saints
+Offensive Player of the Year,2010,QB,Tom Brady,New England Patriots
+Offensive Player of the Year,2009,RB,Chris Johnson,Tennessee Titans
+Offensive Player of the Year,2008,QB,Drew Brees,New Orleans Saints
+Offensive Player of the Year,2007,QB,Tom Brady,New England Patriots
+Offensive Player of the Year,2006,RB,LaDainian Tomlinson,San Diego Chargers
+Offensive Player of the Year,2005,RB,Shaun Alexander,Seattle Seahawks
+Offensive Player of the Year,2004,QB,Peyton Manning,Indianapolis Colts
+Offensive Player of the Year,2003,RB,Jamal Lewis,Baltimore Ravens
+Offensive Player of the Year,2002,RB,Priest Holmes,Kansas City Chiefs
+Offensive Player of the Year,2001,RB,Marshall Faulk,St. Louis Rams
+Offensive Player of the Year,2000,RB,Marshall Faulk,St. Louis Rams
+Offensive Player of the Year,1999,RB,Marshall Faulk,St. Louis Rams
+Offensive Player of the Year,1998,RB,Terrell Davis,Denver Broncos
+Offensive Player of the Year,1997,RB,Barry Sanders,Detroit Lions
+Offensive Player of the Year,1996,RB,Terrell Davis,Denver Broncos
+Offensive Player of the Year,1995,QB,Brett Favre,Green Bay Packers
+Offensive Player of the Year,1994,RB,Barry Sanders,Detroit Lions
+Offensive Player of the Year,1993,WR,Jerry Rice,San Francisco 49ers
+Offensive Player of the Year,1992,QB,Steve Young,San Francisco 49ers
+Offensive Player of the Year,1991,RB,Thurman Thomas,Buffalo Bills
+Offensive Player of the Year,1990,QB,Warren Moon,Houston Oilers
+Offensive Player of the Year,1989,QB,Joe Montana,San Francisco 49ers
+Offensive Player of the Year,1988,RB,Roger Craig,San Francisco 49ers
+Offensive Player of the Year,1987,WR,Jerry Rice,San Francisco 49ers
+Offensive Player of the Year,1986,RB,Eric Dickerson,Los Angeles Rams
+Offensive Player of the Year,1985,RB,Marcus Allen,Los Angeles Raiders
+Offensive Player of the Year,1984,QB,Dan Marino,Miami Dolphins
+Offensive Player of the Year,1983,QB,Joe Theismann,Washington Redskins
+Offensive Player of the Year,1982,QB,Dan Fouts,San Diego Chargers
+Offensive Player of the Year,1981,QB,Ken Anderson,Cincinnati Bengals
+Offensive Player of the Year,1980,RB,Earl Campbell,Houston Oilers
+Offensive Player of the Year,1979,RB,Earl Campbell,Houston Oilers
+Offensive Player of the Year,1978,RB,Earl Campbell,Houston Oilers
+Offensive Player of the Year,1977,RB,Walter Payton,Chicago Bears
+Offensive Player of the Year,1976,QB,Bert Jones,Baltimore Colts
+Offensive Player of the Year,1975,QB,Fran Tarkenton,Minnesota Vikings
+Offensive Player of the Year,1974,QB,Ken Stabler,Oakland Raiders
+Offensive Player of the Year,1973,RB,O.J. Simpson,Buffalo Bills
+Offensive Player of the Year,1972,RB,Larry Brown,Washington Redskins
+Defensive Player of the Year,2023,DE,Myles Garrett,Cleveland Browns
+Defensive Player of the Year,2022,DE,Nick Bosa,San Francisco 49ers
+Defensive Player of the Year,2021,OLB,T.J. Watt,Pittsburgh Steelers
+Defensive Player of the Year,2020,DT,Aaron Donald,Los Angeles Rams
+Defensive Player of the Year,2019,CB,Stephon Gilmore,New England Patriots
+Defensive Player of the Year,2018,DT,Aaron Donald,Los Angeles Rams
+Defensive Player of the Year,2017,DT,Aaron Donald,Los Angeles Rams
+Defensive Player of the Year,2016,OLB,Khalil Mack,Oakland Raiders
+Defensive Player of the Year,2015,DE,J.J. Watt,Houston Texans
+Defensive Player of the Year,2014,DE,J.J. Watt,Houston Texans
+Defensive Player of the Year,2013,ILB,Luke Kuechly,Carolina Panthers
+Defensive Player of the Year,2012,DE,J.J. Watt,Houston Texans
+Defensive Player of the Year,2011,LOLB,Terrell Suggs,Baltimore Ravens
+Defensive Player of the Year,2010,SS,Troy Polamalu,Pittsburgh Steelers
+Defensive Player of the Year,2009,LCB,Charles Woodson,Green Bay Packers
+Defensive Player of the Year,2008,ROLB,James Harrison,Pittsburgh Steelers
+Defensive Player of the Year,2007,DB,Bob Sanders,Indianapolis Colts
+Defensive Player of the Year,2006,RDE,Jason Taylor,Miami Dolphins
+Defensive Player of the Year,2005,MLB,Brian Urlacher,Chicago Bears
+Defensive Player of the Year,2004,FS,Ed Reed,Baltimore Ravens
+Defensive Player of the Year,2003,MLB,Ray Lewis,Baltimore Ravens
+Defensive Player of the Year,2002,RLB,Derrick Brooks,Tampa Bay Buccaneers
+Defensive Player of the Year,2001,LDE,Michael Strahan,New York Giants
+Defensive Player of the Year,2000,MLB,Ray Lewis,Baltimore Ravens
+Defensive Player of the Year,1999,RDT,Warren Sapp,Tampa Bay Buccaneers
+Defensive Player of the Year,1998,LDE,Reggie White,Green Bay Packers
+Defensive Player of the Year,1997,RDT,Dana Stubblefield,San Francisco 49ers
+Defensive Player of the Year,1996,RDE,Bruce Smith,Buffalo Bills
+Defensive Player of the Year,1995,LOLB,Bryce Paup,Buffalo Bills
+Defensive Player of the Year,1994,RCB,Deion Sanders,San Francisco 49ers
+Defensive Player of the Year,1993,DB,Rod Woodson,Pittsburgh Steelers
+Defensive Player of the Year,1992,RDT,Cortez Kennedy,Seattle Seahawks
+Defensive Player of the Year,1991,ROLB,Pat Swilling,New Orleans Saints
+Defensive Player of the Year,1990,RDE,Bruce Smith,Buffalo Bills
+Defensive Player of the Year,1989,RDT,Keith Millard,Minnesota Vikings
+Defensive Player of the Year,1988,MLB,Mike Singletary,Chicago Bears
+Defensive Player of the Year,1987,LDE,Reggie White,Philadelphia Eagles
+Defensive Player of the Year,1986,ROLB,Lawrence Taylor,New York Giants
+Defensive Player of the Year,1985,MLB,Mike Singletary,Chicago Bears
+Defensive Player of the Year,1984,SS,Kenny Easley,Seattle Seahawks
+Defensive Player of the Year,1983,LDE,Doug Betters,Miami Dolphins
+Defensive Player of the Year,1982,ROLB,Lawrence Taylor,New York Giants
+Defensive Player of the Year,1981,ROLB,Lawrence Taylor,New York Giants
+Defensive Player of the Year,1980,LCB,Lester Hayes,Oakland Raiders
+Defensive Player of the Year,1979,RDE,Lee Roy Selmon,Tampa Bay Buccaneers
+Defensive Player of the Year,1978,RILB,Randy Gradishar,Denver Broncos
+Defensive Player of the Year,1977,RDE,Harvey Martin,Dallas Cowboys
+Defensive Player of the Year,1976,MLB,Jack Lambert,Pittsburgh Steelers
+Defensive Player of the Year,1975,RCB,Mel Blount,Pittsburgh Steelers
+Defensive Player of the Year,1974,LDT,Joe Greene,Pittsburgh Steelers
+Defensive Player of the Year,1973,SS,Dick Anderson,Miami Dolphins
+Defensive Player of the Year,1972,LDT,Joe Greene,Pittsburgh Steelers
+Defensive Player of the Year,1971,RDT,Alan Page,Minnesota Vikings
+Offensive Rookie of the Year,2023,QB,C.J. Stroud,Houston Texans
+Offensive Rookie of the Year,2022,WR,Garrett Wilson,New York Jets
+Offensive Rookie of the Year,2021,WR,Ja'Marr Chase,Cincinnati Bengals
+Offensive Rookie of the Year,2020,QB,Justin Herbert,Los Angeles Chargers
+Offensive Rookie of the Year,2019,QB,Kyler Murray,Arizona Cardinals
+Offensive Rookie of the Year,2018,RB,Saquon Barkley,New York Giants
+Offensive Rookie of the Year,2017,RB,Alvin Kamara,New Orleans Saints
+Offensive Rookie of the Year,2016,QB,Dak Prescott,Dallas Cowboys
+Offensive Rookie of the Year,2015,RB,Todd Gurley,St. Louis Rams
+Offensive Rookie of the Year,2014,WR,Odell Beckham Jr.,New York Giants
+Offensive Rookie of the Year,2013,RB,Eddie Lacy,Green Bay Packers
+Offensive Rookie of the Year,2012,QB,Robert Griffin III,Washington Redskins
+Offensive Rookie of the Year,2011,QB,Cam Newton,Carolina Panthers
+Offensive Rookie of the Year,2010,QB,Sam Bradford,St. Louis Rams
+Offensive Rookie of the Year,2009,WR,Percy Harvin,Minnesota Vikings
+Offensive Rookie of the Year,2008,QB,Matt Ryan,Atlanta Falcons
+Offensive Rookie of the Year,2007,RB,Adrian Peterson,Minnesota Vikings
+Offensive Rookie of the Year,2006,QB,Vince Young,Tennessee Titans
+Offensive Rookie of the Year,2005,RB,Cadillac Williams,Tampa Bay Buccaneers
+Offensive Rookie of the Year,2004,QB,Ben Roethlisberger,Pittsburgh Steelers
+Offensive Rookie of the Year,2003,WR,Anquan Boldin,Arizona Cardinals
+Offensive Rookie of the Year,2002,RB,Clinton Portis,Denver Broncos
+Offensive Rookie of the Year,2001,RB,Anthony Thomas,Chicago Bears
+Offensive Rookie of the Year,2000,RB,Mike Anderson,Denver Broncos
+Offensive Rookie of the Year,1999,RB,Edgerrin James,Indianapolis Colts
+Offensive Rookie of the Year,1998,WR,Randy Moss,Minnesota Vikings
+Offensive Rookie of the Year,1997,RB,Warrick Dunn,Tampa Bay Buccaneers
+Offensive Rookie of the Year,1996,RB,Eddie George,Houston Oilers
+Offensive Rookie of the Year,1995,RB,Curtis Martin,New England Patriots
+Offensive Rookie of the Year,1994,RB,Marshall Faulk,Indianapolis Colts
+Offensive Rookie of the Year,1993,RB,Jerome Bettis,Los Angeles Rams
+Offensive Rookie of the Year,1992,WR,Carl Pickens,Cincinnati Bengals
+Offensive Rookie of the Year,1991,RB,Leonard Russell,New England Patriots
+Offensive Rookie of the Year,1990,RB,Emmitt Smith,Dallas Cowboys
+Offensive Rookie of the Year,1989,RB,Barry Sanders,Detroit Lions
+Offensive Rookie of the Year,1988,RB,John Stephens,New England Patriots
+Offensive Rookie of the Year,1987,RB,Troy Stradford,Miami Dolphins
+Offensive Rookie of the Year,1986,RB,Rueben Mayes,New Orleans Saints
+Offensive Rookie of the Year,1985,WR,Eddie Brown,Cincinnati Bengals
+Offensive Rookie of the Year,1984,WR,Louis Lipps,Pittsburgh Steelers
+Offensive Rookie of the Year,1983,RB,Eric Dickerson,Los Angeles Rams
+Offensive Rookie of the Year,1982,RB,Marcus Allen,Los Angeles Raiders
+Offensive Rookie of the Year,1981,RB,George Rogers,New Orleans Saints
+Offensive Rookie of the Year,1980,RB,Billy Sims,Detroit Lions
+Offensive Rookie of the Year,1979,RB,Ottis Anderson,St. Louis Cardinals
+Offensive Rookie of the Year,1978,RB,Earl Campbell,Houston Oilers
+Offensive Rookie of the Year,1977,RB,Tony Dorsett,Dallas Cowboys
+Offensive Rookie of the Year,1976,WR,Sammy White,Minnesota Vikings
+Offensive Rookie of the Year,1975,RB,Mike Thomas,Washington Redskins
+Offensive Rookie of the Year,1974,RB,Don Woods,San Diego Chargers
+Offensive Rookie of the Year,1973,RB,Chuck Foreman,Minnesota Vikings
+Offensive Rookie of the Year,1972,FB,Franco Harris,Pittsburgh Steelers
+Offensive Rookie of the Year,1971,FB,John Brockington,Green Bay Packers
+Offensive Rookie of the Year,1970,QB,Dennis Shaw,Buffalo Bills
+Offensive Rookie of the Year,1969,RB,Calvin Hill,Dallas Cowboys
+Offensive Rookie of the Year,1968,WR,Earl McCullouch,Detroit Lions
+Offensive Rookie of the Year,1967,RB,Mel Farr,Detroit Lions
+Defensive Rookie of the Year,2023,DE,Will Anderson,Houston Texans
+Defensive Rookie of the Year,2022,CB,Sauce Gardner,New York Jets
+Defensive Rookie of the Year,2021,OLB,Micah Parsons,Dallas Cowboys
+Defensive Rookie of the Year,2020,DL,Chase Young,Washington Football Team
+Defensive Rookie of the Year,2019,DE,Nick Bosa,San Francisco 49ers
+Defensive Rookie of the Year,2018,OLB,Shaquille Leonard,Indianapolis Colts
+Defensive Rookie of the Year,2017,CB,Marshon Lattimore,New Orleans Saints
+Defensive Rookie of the Year,2016,DE,Joey Bosa,San Diego Chargers
+Defensive Rookie of the Year,2015,CB,Marcus Peters,Kansas City Chiefs
+Defensive Rookie of the Year,2014,DT,Aaron Donald,St. Louis Rams
+Defensive Rookie of the Year,2013,DT,Sheldon Richardson,New York Jets
+Defensive Rookie of the Year,2012,ILB,Luke Kuechly,Carolina Panthers
+Defensive Rookie of the Year,2011,OLB,Von Miller,Denver Broncos
+Defensive Rookie of the Year,2010,LDT,Ndamukong Suh,Detroit Lions
+Defensive Rookie of the Year,2009,LLB,Brian Cushing,Houston Texans
+Defensive Rookie of the Year,2008,LILB,Jerod Mayo,New England Patriots
+Defensive Rookie of the Year,2007,RILB,Patrick Willis,San Francisco 49ers
+Defensive Rookie of the Year,2006,MLB,DeMeco Ryans,Houston Texans
+Defensive Rookie of the Year,2005,OLB,Shawne Merriman,San Diego Chargers
+Defensive Rookie of the Year,2004,MLB,Jonathan Vilma,New York Jets
+Defensive Rookie of the Year,2003,LOLB,Terrell Suggs,Baltimore Ravens
+Defensive Rookie of the Year,2002,LDE,Julius Peppers,Carolina Panthers
+Defensive Rookie of the Year,2001,RILB,Kendrell Bell,Pittsburgh Steelers
+Defensive Rookie of the Year,2000,MLB,Brian Urlacher,Chicago Bears
+Defensive Rookie of the Year,1999,LDE,Jevon Kearse,Tennessee Titans
+Defensive Rookie of the Year,1998,LCB,Charles Woodson,Oakland Raiders
+Defensive Rookie of the Year,1997,LLB,Peter Boulware,Baltimore Ravens
+Defensive Rookie of the Year,1996,RDE,Simeon Rice,Arizona Cardinals
+Defensive Rookie of the Year,1995,RDE,Hugh Douglas,New York Jets
+Defensive Rookie of the Year,1994,LDT,Tim Bowens,Miami Dolphins
+Defensive Rookie of the Year,1993,RDT,Dana Stubblefield,San Francisco 49ers
+Defensive Rookie of the Year,1992,LCB,Dale Carter,Kansas City Chiefs
+Defensive Rookie of the Year,1991,LOLB,Mike Croel,Denver Broncos
+Defensive Rookie of the Year,1990,FS,Mark Carrier,Chicago Bears
+Defensive Rookie of the Year,1989,ROLB,Derrick Thomas,Kansas City Chiefs
+Defensive Rookie of the Year,1988,FS,Erik McMillan,New York Jets
+Defensive Rookie of the Year,1987,LILB,Shane Conlan,Buffalo Bills
+Defensive Rookie of the Year,1986,RDE,Leslie O'Neal,San Diego Chargers
+Defensive Rookie of the Year,1985,ROLB,Duane Bickett,Indianapolis Colts
+Defensive Rookie of the Year,1984,NT,Bill Maas,Kansas City Chiefs
+Defensive Rookie of the Year,1983,ROLB,Vernon Maxwell,Baltimore Colts
+Defensive Rookie of the Year,1982,LOLB,Chip Banks,Cleveland Browns
+Defensive Rookie of the Year,1981,ROLB,Lawrence Taylor,New York Giants
+Defensive Rookie of the Year,1980,LOLB,Al Richardson,Atlanta Falcons
+Defensive Rookie of the Year,1980,RILB,Buddy Curry,Atlanta Falcons
+Defensive Rookie of the Year,1979,LILB,Jim Haslett,Buffalo Bills
+Defensive Rookie of the Year,1978,RDE,Al Baker,Detroit Lions
+Defensive Rookie of the Year,1977,LILB,A.J. Duhe,Miami Dolphins
+Defensive Rookie of the Year,1976,RCB,Mike Haynes,New England Patriots
+Defensive Rookie of the Year,1975,ROLB,Robert Brazile,Houston Oilers
+Defensive Rookie of the Year,1974,MLB,Jack Lambert,Pittsburgh Steelers
+Defensive Rookie of the Year,1973,RDT,Wally Chambers,Chicago Bears
+Defensive Rookie of the Year,1972,LCB,Willie Buchanon,Green Bay Packers
+Defensive Rookie of the Year,1971,RLB,Isiah Robertson,Los Angeles Rams
+Defensive Rookie of the Year,1970,RCB,Bruce Taylor,San Francisco 49ers
+Defensive Rookie of the Year,1969,LDT,Joe Greene,Pittsburgh Steelers
+Defensive Rookie of the Year,1968,LDE,Claude Humphrey,Atlanta Falcons
+Defensive Rookie of the Year,1967,LCB,Lem Barney,Detroit Lions
+Comeback Player of the Year,2023,QB,Joe Flacco,Cleveland Browns
+Comeback Player of the Year,2022,QB,Geno Smith,Seattle Seahawks
+Comeback Player of the Year,2021,QB,Joe Burrow,Cincinnati Bengals
+Comeback Player of the Year,2020,QB,Alex Smith,Washington Football Team
+Comeback Player of the Year,2019,QB,Ryan Tannehill,Tennessee Titans
+Comeback Player of the Year,2018,QB,Andrew Luck,Indianapolis Colts
+Comeback Player of the Year,2017,WR,Keenan Allen,Los Angeles Chargers
+Comeback Player of the Year,2016,WR,Jordy Nelson,Green Bay Packers
+Comeback Player of the Year,2015,SS,Eric Berry,Kansas City Chiefs
+Comeback Player of the Year,2014,TE,Rob Gronkowski,New England Patriots
+Comeback Player of the Year,2013,QB,Philip Rivers,San Diego Chargers
+Comeback Player of the Year,2012,QB,Peyton Manning,Denver Broncos
+Comeback Player of the Year,2011,QB,Matthew Stafford,Detroit Lions
+Comeback Player of the Year,2010,QB,Michael Vick,Philadelphia Eagles
+Comeback Player of the Year,2009,QB,Tom Brady,New England Patriots
+Comeback Player of the Year,2008,QB,Chad Pennington,Miami Dolphins
+Comeback Player of the Year,2007,LDE,Greg Ellis,Dallas Cowboys
+Comeback Player of the Year,2006,QB,Chad Pennington,New York Jets
+Comeback Player of the Year,2005,WR,Steve Smith Sr.,Carolina Panthers
+Comeback Player of the Year,2005,RILB,Tedy Bruschi,New England Patriots
+Comeback Player of the Year,2004,QB,Drew Brees,San Diego Chargers
+Comeback Player of the Year,2003,QB,Jon Kitna,Cincinnati Bengals
+Comeback Player of the Year,2002,QB,Tommy Maddox,Pittsburgh Steelers
+Comeback Player of the Year,2001,RB,Garrison Hearst,San Francisco 49ers
+Comeback Player of the Year,2000,RDE,Joe Johnson,New Orleans Saints
+Comeback Player of the Year,1999,LDT,Bryant Young,San Francisco 49ers
+Comeback Player of the Year,1998,QB,Doug Flutie,Buffalo Bills
+Comeback Player of the Year,1966,FB,Dick Bass,Los Angeles Rams
+Comeback Player of the Year,1965,QB,John Brodie,San Francisco 49ers
+Comeback Player of the Year,1964,HB,Lenny Moore,Baltimore Colts
+Coach of the Year,2023,Coach,Kevin Stefanski,Cleveland Browns
+Coach of the Year,2022,Coach,Brian Daboll,New York Giants
+Coach of the Year,2021,Coach,Mike Vrabel,Tennessee Titans
+Coach of the Year,2020,Coach,Kevin Stefanski,Cleveland Browns
+Coach of the Year,2019,Coach,John Harbaugh,Baltimore Ravens
+Coach of the Year,2018,Coach,Matt Nagy,Chicago Bears
+Coach of the Year,2017,Coach,Sean McVay,Los Angeles Rams
+Coach of the Year,2016,Coach,Jason Garrett,Dallas Cowboys
+Coach of the Year,2015,Coach,Ron Rivera,Carolina Panthers
+Coach of the Year,2014,Coach,Bruce Arians,Arizona Cardinals
+Coach of the Year,2013,Coach,Ron Rivera,Carolina Panthers
+Coach of the Year,2012,Coach,Bruce Arians,Indianapolis Colts
+Coach of the Year,2011,Coach,Jim Harbaugh,San Francisco 49ers
+Coach of the Year,2010,Coach,Bill Belichick,New England Patriots
+Coach of the Year,2009,Coach,Marvin Lewis,Cincinnati Bengals
+Coach of the Year,2008,Coach,Mike Smith,Atlanta Falcons
+Coach of the Year,2007,Coach,Bill Belichick,New England Patriots
+Coach of the Year,2006,Coach,Sean Payton,New Orleans Saints
+Coach of the Year,2005,Coach,Lovie Smith,Chicago Bears
+Coach of the Year,2004,Coach,Marty Schottenheimer,San Diego Chargers
+Coach of the Year,2003,Coach,Bill Belichick,New England Patriots
+Coach of the Year,2002,Coach,Andy Reid,Philadelphia Eagles
+Coach of the Year,2001,Coach,Dick Jauron,Chicago Bears
+Coach of the Year,2000,Coach,Jim Haslett,New Orleans Saints
+Coach of the Year,1999,Coach,Dick Vermeil,St. Louis Rams
+Coach of the Year,1998,Coach,Dan Reeves,Atlanta Falcons
+Coach of the Year,1997,Coach,Jim Fassel,New York Giants
+Coach of the Year,1996,Coach,Dom Capers,Carolina Panthers
+Coach of the Year,1995,Coach,Ray Rhodes,Philadelphia Eagles
+Coach of the Year,1994,Coach,Bill Parcells,New England Patriots
+Coach of the Year,1993,Coach,Dan Reeves,New York Giants
+Coach of the Year,1992,Coach,Bill Cowher,Pittsburgh Steelers
+Coach of the Year,1991,Coach,Wayne Fontes,Detroit Lions
+Coach of the Year,1990,Coach,Jimmy Johnson,Dallas Cowboys
+Coach of the Year,1989,Coach,Lindy Infante,Green Bay Packers
+Coach of the Year,1988,Coach,Mike Ditka,Chicago Bears
+Coach of the Year,1987,Coach,Jim Mora,New Orleans Saints
+Coach of the Year,1986,Coach,Bill Parcells,New York Giants
+Coach of the Year,1985,Coach,Mike Ditka,Chicago Bears
+Coach of the Year,1984,Coach,Chuck Knox,Seattle Seahawks
+Coach of the Year,1983,Coach,Joe Gibbs,Washington Redskins
+Coach of the Year,1982,Coach,Joe Gibbs,Washington Redskins
+Coach of the Year,1981,Coach,Bill Walsh,San Francisco 49ers
+Coach of the Year,1980,Coach,Chuck Knox,Buffalo Bills
+Coach of the Year,1979,Coach,Jack Pardee,Washington Redskins
+Coach of the Year,1978,Coach,Jack Patera,Seattle Seahawks
+Coach of the Year,1977,Coach,Red Miller,Denver Broncos
+Coach of the Year,1976,Coach,Forrest Gregg,Cleveland Browns
+Coach of the Year,1975,Coach,Ted Marchibroda,Baltimore Colts
+Coach of the Year,1974,Coach,Don Coryell,St. Louis Cardinals
+Coach of the Year,1973,Coach,Chuck Knox,Los Angeles Rams
+Coach of the Year,1972,Coach,Don Shula,Miami Dolphins
+Coach of the Year,1971,Coach,George Allen,Washington Redskins
+Coach of the Year,1970,Coach,Paul Brown,Cincinnati Bengals
+Coach of the Year,1969,Coach,Bud Grant,Minnesota Vikings
+Coach of the Year,1968,Coach,Don Shula,Baltimore Colts
+Coach of the Year,1967,Coach,Don Shula,Baltimore Colts
+Coach of the Year,1967,Coach,George Allen,Los Angeles Rams
+Coach of the Year,1966,Coach,Tom Landry,Dallas Cowboys
+Coach of the Year,1965,Coach,George Halas,Chicago Bears
+Coach of the Year,1964,Coach,Don Shula,Baltimore Colts
+Coach of the Year,1963,Coach,George Halas,Chicago Bears
+Coach of the Year,1962,Coach,Allie Sherman,New York Giants
+Coach of the Year,1961,Coach,Allie Sherman,New York Giants
+Coach of the Year,1959,Coach,Vince Lombardi,Green Bay Packers
+Coach of the Year,1958,Coach,Weeb Ewbank,Baltimore Colts
+Coach of the Year,1957,Coach,George Wilson,Detroit Lions

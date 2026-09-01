@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Trivia{% endblock %}
+{% block content %}
+<h1>Trivia</h1>
+<p class="subtle"><a href="/games">&larr; Games</a></p>
+<p class="subtle">Play anytime, on your own -- each round scores immediately and your best
+  round per category counts toward that category&rsquo;s leaderboard.</p>
+
+{% for game_type, label in game_labels.items() %}
+<h2>{{ label }}</h2>
+<div class="card-grid">
+  {% for cat in categories[game_type] %}
+  <div class="solaris-card">
+    <h3>{{ cat }}</h3>
+    <form method="post" action="/games/trivia/start">
+      <input type="hidden" name="game_type" value="{{ game_type }}">
+      <input type="hidden" name="category" value="{{ cat }}">
+      <button type="submit">Start a round</button>
+    </form>
+    {% set top = boards[game_type][cat] %}
+    {% if top %}
+    <table class="data-table">
+      <thead><tr><th>#</th><th>Player</th><th>Best score</th></tr></thead>
+      <tbody>
+        {% for row in top %}
+        <tr>
+          <td>{{ row.rank }}</td>
+          <td>{{ row.username }}</td>
+          <td>{{ row.score }} / {{ row.total }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="subtle">No rounds played yet.</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endfor %}
+{% endblock %}

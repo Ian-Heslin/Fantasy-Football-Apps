@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Fantasy Draft{% endblock %}
+{% block content %}
+<h1>Fantasy Draft</h1>
+<p class="subtle"><a href="/games">&larr; Games</a></p>
+<p class="subtle">Draft any player from any NFL season, {{ year_min }}-{{ year_max }}, at each
+  slot below. Your score is that player&rsquo;s real PPR fantasy points from that exact season.</p>
+
+{% if saved %}<div class="notice"><p>Roster saved.</p></div>{% endif %}
+
+<form method="post" action="/games/fantasy-draft">
+  <table class="data-table">
+    <thead><tr><th>Slot</th><th>Year</th><th>Player</th><th>Team</th><th>PPR pts</th></tr></thead>
+    <tbody>
+      {% for slot in slots %}
+      {% set entry = entries.get(slot) %}
+      <tr>
+        <td>{{ slot }} <span class="subtle">({{ slot_positions[slot]|join('/') }})</span></td>
+        <td><input type="number" name="year_{{ slot }}" min="{{ year_min }}" max="{{ year_max }}"
+                   value="{{ entry['year'] if entry else '' }}" placeholder="{{ year_min }}-{{ year_max }}"></td>
+        <td>
+          <input type="text" name="player_{{ slot }}" autocomplete="off"
+                 value="{{ entry['player'] if entry else '' }}" placeholder="Player name">
+          {% if errors.get(slot) %}<div class="notice notice-error"><p>{{ errors[slot] }}</p></div>{% endif %}
+        </td>
+        <td>{{ entry['team'] if entry else '—' }}</td>
+        <td>{{ '%.1f'|format(entry['points']) if entry and entry['points'] is not none else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr><td colspan="4"><strong>Total</strong></td><td><strong>{{ '%.1f'|format(total_points) }}</strong></td></tr>
+    </tfoot>
+  </table>
+  <p><button type="submit">Save roster</button></p>
+</form>
+
+<h2>Leaderboard</h2>
+{% if board %}
+<table class="data-table">
+  <thead><tr><th>#</th><th>Player</th><th>Total PPR points</th><th>Slots filled</th></tr></thead>
+  <tbody>
+    {% for row in board %}
+    <tr>
+      <td>{{ row.rank }}</td>
+      <td>{{ row.username }}</td>
+      <td>{{ '%.1f'|format(row.total_points) }}</td>
+      <td>{{ row.slots_filled }} / {{ slots|length }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="subtle">No rosters yet.</p>
+{% endif %}
+{% endblock %}

@@ -73,6 +73,11 @@ python3 scripts/load_draft_picks.py  # loads actual draft picks + career
                                    # outcomes (AV, Pro Bowls, All-Pros),
                                    # 1980-2025, from nflverse-data's
                                    # draft_picks release
+python3 scripts/load_trivia_data.py  # loads the web app's Award Winners/
+                                   # Season Leaders/Fantasy Draft trivia
+                                   # reference data from the committed
+                                   # CSVs under data/trivia/ (one-time
+                                   # spreadsheet export, no live source)
 ```
 
 After setting up the web app itself (see `webapp/README.md`) and signing
@@ -240,6 +245,24 @@ some teams/coaches better at making reaches work?):
   normalizes these to this project's standard codes before joining against
   `coach_table`.
 
+Loaded by `load_trivia_data.py`, from the committed CSVs under
+`data/trivia/` -- a one-time export from a personal spreadsheet of games
+played with friends (Award Winners/Season Leaders trivia, and the "draft
+any player from any year" redraft game), not re-fetchable from a live
+source so the extracted data is committed directly:
+- `trivia_award_winners` (DuckDB) -- 9 award categories by year, 1957-2023
+  (501 rows). No PRIMARY KEY on (category, year): several categories have
+  real co-winner years (confirmed against the source, not a load bug), so
+  a guess matching any name for that category+year counts as correct.
+- `trivia_season_leaders` (DuckDB) -- all-time Sacks/Points leaders by
+  rank (100 rows).
+- `fantasy_draft_stats` (DuckDB) -- season-level fantasy stats (standard
+  + PPR points), 1970-2023 (28,594 rows) -- much further back than
+  `player_stats_season` (nflverse only goes to 1999). **Known gap**: at
+  least one confirmed hole (Rob Gronkowski's 2011 season is missing
+  entirely from that year's source tab) -- a real gap in the source
+  spreadsheet, not a load bug; likely others exist uncaught.
+
 **Still not populated -- needs a run outside this sandbox:**
 - `team_executives_season` (DuckDB) -- owner + GM per team-season, for
   GM-level attribution alongside the HC-level analysis above. No reachable
@@ -282,6 +305,8 @@ scripts/
                                           (NFL.com/NGS), 2006-2025
   load_draft_picks.py                   -- loads actual draft picks + career
                                           outcomes, 1980-2025
+  load_trivia_data.py                    -- loads the web app's trivia game
+                                          reference data from data/trivia/
   promote_user.py                      -- sets a web app user's tier (bootstrap
                                           the first admin; ongoing changes go
                                           through /admin/users instead)
@@ -301,6 +326,9 @@ data/
                             v13-v18 coaching-effects and offense-quality
                             research -- source data for
                             load_coaching_and_offense.py
+  trivia/                 -- committed: CSVs behind the web app's trivia
+                            games, exported from a personal spreadsheet --
+                            source data for load_trivia_data.py
   _dynastyprocess_data/  -- gitignored, a working clone build_db.py manages
   _nflverse_data/        -- gitignored: cached play-by-play CSV.gz downloads
                             (~450MB for the full 1999-2025 range) so

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ game_label }} round{% endblock %}
+{% block content %}
+<h1>{{ game_label }}: {{ round['category'] }}</h1>
+<p class="subtle"><a href="/games/trivia">&larr; Trivia</a></p>
+
+{% if completed %}
+<div class="notice">
+  <p>Score: {{ round['score'] }} / {{ round['total'] }}</p>
+</div>
+<table class="data-table">
+  <thead><tr><th>Clue</th><th>Your guess</th><th>Correct answer</th><th></th></tr></thead>
+  <tbody>
+    {% for item in items %}
+    <tr>
+      <td>{{ item['prompt_label'] }}</td>
+      <td>{{ item['guess'] or '—' }}</td>
+      <td>{{ item['correct_answer'].replace('|', ' / ') }}</td>
+      <td>{{ '✓' if item['is_correct'] else '✗' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<form method="post" action="/games/trivia/start">
+  <input type="hidden" name="game_type" value="{{ round['game_type'] }}">
+  <input type="hidden" name="category" value="{{ round['category'] }}">
+  <button type="submit">Play another round</button>
+</form>
+{% else %}
+<form method="post" action="/games/trivia/round/{{ round['round_id'] }}">
+  <table class="data-table">
+    <thead><tr><th>Clue</th><th>Your guess</th></tr></thead>
+    <tbody>
+      {% for item in items %}
+      <tr>
+        <td>{{ item['prompt_label'] }}</td>
+        <td><input type="text" name="guess_{{ item['item_key'] }}" autocomplete="off"></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p><button type="submit">Submit answers</button></p>
+</form>
+{% endif %}
+{% endblock %}

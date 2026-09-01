@@ -19,7 +19,9 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.auth import Forbidden, NotAuthenticated, load_current_user
-from app.routes import admin, arbitrage, auth, coaches, home, pickem, predictions, profile, rosters, teams
+from app.routes import (
+    admin, arbitrage, auth, coaches, fantasy_draft, home, pickem, predictions, profile, rosters, teams, trivia,
+)
 from app.templating import templates
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -61,3 +63,5 @@ app.include_router(coaches.router)
 app.include_router(profile.router)
 app.include_router(admin.router)
 app.include_router(pickem.router)
+app.include_router(trivia.router)
+app.include_router(fantasy_draft.router)

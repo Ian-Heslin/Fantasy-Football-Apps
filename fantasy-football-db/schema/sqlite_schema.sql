@@ -226,6 +226,57 @@ CREATE TABLE IF NOT EXISTS pickem_picks (
     PRIMARY KEY (user_id, game_id)
 );
 
+-- Trivia games -- async, played anytime like Pick'em (not the original
+-- spreadsheet's live shared-session/strikes format -- see
+-- webapp/app/trivia.py's module docstring). One shared shape covers both
+-- Award Winners and Season Leaders (guess-a-name-for-a-clue, scored
+-- right/wrong); Fantasy Draft is structurally different (draft slots, not
+-- a clue-per-question) and gets its own table below.
+--
+-- A round snapshots its questions/answers at creation time (item_key,
+-- prompt_label, correct_answer) rather than joining live against
+-- analytics.duckdb's trivia_award_winners/trivia_season_leaders on every
+-- view -- so a past round's history stays exactly as played even if the
+-- reference data is ever corrected or reloaded.
+CREATE TABLE IF NOT EXISTS trivia_rounds (
+    round_id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id         INTEGER NOT NULL REFERENCES users(user_id),
+    game_type       TEXT NOT NULL,   -- 'award_winners' | 'season_leaders'
+    category        TEXT NOT NULL,   -- e.g. 'MVP', 'Official Sacks Leaders'
+    started_at      TEXT DEFAULT (datetime('now')),
+    completed_at    TEXT,
+    score           INTEGER,         -- correct count, filled in on submit
+    total           INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_trivia_rounds_user ON trivia_rounds(user_id, game_type, category);
+
+CREATE TABLE IF NOT EXISTS trivia_round_items (
+    round_id        INTEGER NOT NULL REFERENCES trivia_rounds(round_id),
+    item_key        TEXT NOT NULL,    -- the year (Award Winners) or rank (Season Leaders), as text
+    prompt_label    TEXT NOT NULL,    -- what's shown as the clue
+    correct_answer  TEXT NOT NULL,    -- pipe-separated if the item has real tied/co-winners
+    guess           TEXT,
+    is_correct      INTEGER,
+    PRIMARY KEY (round_id, item_key)
+);
+
+-- Fantasy Draft (all-time redraft): each user builds one roster by
+-- picking a (year, player) for every slot -- independent per user, not a
+-- shared draft board, so two users can pick the same year+player without
+-- conflict (matches the async-individual-play model everything else
+-- here uses; a real shared draft with pick conflicts would need a very
+-- different table). points is a snapshot of that player-year's PPR total
+-- at pick time, from fantasy_draft_stats -- stable even if that table is
+-- ever reloaded/corrected.
+CREATE TABLE IF NOT EXISTS fantasy_draft_entries (
+    user_id     INTEGER NOT NULL REFERENCES users(user_id),
+    slot        TEXT NOT NULL,   -- 'QB','WR1','WR2','RB1','RB2','TE','FLEX1','FLEX2','SUPERFLEX'
+    year        INTEGER,
+    player      TEXT,
+    points      REAL,
+    PRIMARY KEY (user_id, slot)
+);
+
 -- Freshness tracking, so the web page can show "last updated" per source
 -- instead of silently serving stale data.
 CREATE TABLE IF NOT EXISTS sync_log (

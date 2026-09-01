@@ -259,3 +259,55 @@ CREATE TABLE IF NOT EXISTS team_executives_season (
     source_url          VARCHAR,
     PRIMARY KEY (season, team)
 );
+
+-- Trivia game reference/answer data, one-time exported from a personal
+-- spreadsheet of games played with friends (see
+-- scripts/load_trivia_data.py) -- not re-fetchable from a live source, so
+-- the exported CSVs under data/trivia/ are committed directly.
+
+-- Award-winner-by-year guessing game. No PRIMARY KEY on (category, year):
+-- several categories have real co-winner years (e.g. 1977 Super Bowl
+-- co-MVPs Randy White + Harvey Martin, 1997 MVP co-winners Sanders +
+-- Favre) -- confirmed by the source data, not a load bug -- so a guess
+-- matching ANY row for that category+year counts as correct.
+CREATE TABLE IF NOT EXISTS trivia_award_winners (
+    category    VARCHAR NOT NULL,   -- 'MVP', 'Super Bowl MVP', 'Coach of the Year', etc. (9 total)
+    year        INTEGER NOT NULL,
+    position    VARCHAR,            -- position/'Coach' -- a hint, not used for scoring
+    player      VARCHAR NOT NULL,
+    team        VARCHAR
+);
+CREATE INDEX IF NOT EXISTS idx_trivia_award_winners_cat_year ON trivia_award_winners(category, year);
+
+-- All-time-leaderboard-by-rank guessing game (Career Sacks, Career Points
+-- so far). team_clue is the team abbreviation shown as a hint (PFR-style
+-- codes as-is, e.g. "2TM" for players who spent that career split across
+-- multiple teams -- a genuine, intentionally vague clue in the source
+-- game, not a code needing normalization here).
+CREATE TABLE IF NOT EXISTS trivia_season_leaders (
+    category        VARCHAR NOT NULL,   -- 'Points Leaders' | 'Official Sacks Leaders'
+    rank            INTEGER NOT NULL,
+    player          VARCHAR NOT NULL,
+    stat_value      DOUBLE,
+    years_active    VARCHAR,
+    team_clue       VARCHAR,
+    PRIMARY KEY (category, rank)
+);
+
+-- Season-level fantasy stats for the "draft any player from any year"
+-- redraft game, 1970-2023 -- much further back than player_stats_season
+-- (nflverse only goes to 1999), Pro-Football-Reference-sourced. Not
+-- deduped across the whole player history -- (year, player, position) is
+-- the natural key since the game only ever looks up one specific
+-- season's total for one specific player.
+CREATE TABLE IF NOT EXISTS fantasy_draft_stats (
+    year        INTEGER NOT NULL,
+    player      VARCHAR NOT NULL,
+    team        VARCHAR,
+    position    VARCHAR NOT NULL,
+    games       INTEGER,
+    fant_pt     DOUBLE,   -- standard scoring
+    ppr_pt      DOUBLE,
+    PRIMARY KEY (year, player, position)
+);
+CREATE INDEX IF NOT EXISTS idx_fantasy_draft_stats_year_pos ON fantasy_draft_stats(year, position);
