@@ -4,10 +4,15 @@ Two local, file-based databases replace the Excel workbook this project was
 using before, and give the future web page something to query directly.
 
 - **`data/app.db`** (SQLite) -- operational, current-state data: the player
-  crosswalk, your Sleeper leagues/rosters, current dynasty trade values,
-  buy-low/sell-high signals, and model predictions. Small, fast, and
-  **committed to this repo** so roster/value history persists across
-  machines and sessions instead of living only in one place.
+  crosswalk, your Sleeper/ESPN leagues/rosters, current dynasty trade
+  values, buy-low/sell-high signals, model predictions, and (once the web
+  app is running) live user accounts and Pick'em data. **Not committed**
+  (gitignored) -- it used to be, back when it was just a periodically-
+  rebuilt snapshot, but that stopped being safe once the running app
+  itself started writing live, irreplaceable data into it with no other
+  source of truth. See `webapp/deploy/README.md`'s Backups section for how
+  it's kept safe instead (an independent local backup rotation) and for
+  the one-time migration if a machine still has it tracked from before.
 - **`data/analytics.duckdb`** (DuckDB) -- the large historical/analytical
   data behind the breakout/fall-off models: nflverse play-by-play, the full
   FantasyPros ECR archive, ADP history, coaching staff data, Vegas odds.
@@ -61,6 +66,13 @@ python3 scripts/load_pickem_schedule.py  # loads the real NFL schedule/
                                    # Pick'em game, from nflverse/nfldata's
                                    # games.csv -- re-run periodically
                                    # during the season as games finish
+python3 scripts/load_draft_grades.py  # loads NFL.com/NGS pre-draft prospect
+                                   # grades, 2006-2025, from
+                                   # array-carpenter/nfl-draft-data
+python3 scripts/load_draft_picks.py  # loads actual draft picks + career
+                                   # outcomes (AV, Pro Bowls, All-Pros),
+                                   # 1980-2025, from nflverse-data's
+                                   # draft_picks release
 ```
 
 After setting up the web app itself (see `webapp/README.md`) and signing
@@ -214,6 +226,28 @@ machine):
   snapshot, not the 15-year time series the model needs -- not worth loading
   in place of the real thing.
 
+Loaded by `load_draft_grades.py` and `load_draft_picks.py`, for the
+draft-reach research in `analysis/analyze_draft_reaches.py` (does getting
+drafted well above your pre-draft grade predict underperformance, and are
+some teams/coaches better at making reaches work?):
+- `draft_prospect_grades` (DuckDB) -- NFL.com prospect grade + NGS draft
+  grade per combine invitee, 2006-2025 (6,568 rows; not a multi-analyst
+  "consensus big board" -- no clean, freely-reachable historical version of
+  that exists, see the script's docstring).
+- `draft_picks` (DuckDB) -- actual draft picks with career outcomes
+  (games, Pro Bowls, All-Pros, weighted career AV), 1980-2025 (12,927 rows).
+  Team codes are PFR-style (`SFO`, `GNB`, `KAN`, ...); `analyze_draft_reaches.py`
+  normalizes these to this project's standard codes before joining against
+  `coach_table`.
+
+**Still not populated -- needs a run outside this sandbox:**
+- `team_executives_season` (DuckDB) -- owner + GM per team-season, for
+  GM-level attribution alongside the HC-level analysis above. No reachable
+  source found from this sandbox (Wikipedia is blocked); intended to be
+  scraped from each team's per-season Wikipedia page (e.g.
+  `en.wikipedia.org/wiki/2023_Arizona_Cardinals_season`) by a script run
+  locally, or via the Claude-in-Chrome extension.
+
 Worth flagging so the web page doesn't silently show stale numbers: check
 `sync_log` in `app.db` for when each table was last refreshed.
 
@@ -244,12 +278,20 @@ scripts/
   build_breakout_model.py              -- rebuilds the v11 breakout model
   load_pickem_schedule.py              -- loads the real schedule/spreads/scores
                                           for the web app's Pick'em game
+  load_draft_grades.py                  -- loads pre-draft prospect grades
+                                          (NFL.com/NGS), 2006-2025
+  load_draft_picks.py                   -- loads actual draft picks + career
+                                          outcomes, 1980-2025
   promote_user.py                      -- sets a web app user's tier (bootstrap
                                           the first admin; ongoing changes go
                                           through /admin/users instead)
+  backup_app_db.py                     -- hourly-scheduled backup of app.db
+                                          (see webapp/deploy/README.md)
   requirements.txt
 data/
-  app.db                -- committed
+  app.db                -- gitignored (see the note above) -- back it up,
+                            don't rely on git for it
+  backups/               -- gitignored: rotating app.db backups
   analytics.duckdb       -- gitignored, regenerate locally (~800MB with full
                             play-by-play history loaded)
   final_workbooks/       -- committed: the 10 Excel deliverables produced

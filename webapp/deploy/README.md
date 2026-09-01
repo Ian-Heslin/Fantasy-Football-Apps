@@ -425,6 +425,98 @@ Then just visit `https://solarisfantasyfootball.com` (or whatever
 hostname you routed) -- that link now works forever, no more grepping
 logs for a random URL after every restart.
 
+## Backups
+
+`app.db` holds live, continuously-written data with no other source of
+truth -- accounts, Pick'em picks/settings, roster links -- so it needs its
+own backup story independent of git and independent of restarting or
+updating the app. **Restarting the service, or `git pull`-ing a code
+update, never touches `app.db` at all** -- it's just a file on disk that
+the running app happens to read/write; neither of those operations goes
+anywhere near it. The real risk was `app.db` having been a *git-tracked*
+file: if a future commit ever changed its tracked content, the next
+`git pull` on a machine with real accumulated data would have either
+hard-failed (blocking every future pull) or, worse, silently overwritten
+the live file -- confirmed both failure modes in a throwaway test before
+fixing this, not just a theoretical worry.
+
+### One-time migration (only needed once, if `app.db` still shows as tracked)
+
+Check first -- if this prints nothing, you're already on the fixed setup
+and can skip to "Install the backup timer" below:
+
+```bash
+git -C /opt/fantasy-football-apps/repo ls-files fantasy-football-db/data/app.db
+```
+
+If it printed a path, untrack it locally *before* pulling (pulling first
+would fail -- git won't silently discard a locally-modified tracked file):
+
+```bash
+cd /opt/fantasy-football-apps/repo
+```
+```bash
+sudo -u fantasyapp git rm --cached fantasy-football-db/data/app.db
+```
+```bash
+sudo -u fantasyapp git commit -m "stop tracking app.db locally"
+```
+```bash
+sudo -u fantasyapp git pull --no-rebase
+```
+
+That's safe -- `git rm --cached` only removes it from git's index, never
+touches the actual file, and the `--no-rebase` merge just reconciles your
+local "stop tracking it" commit with the same change already made
+upstream. `app.db` keeps every row it already has.
+
+### Install the backup timer
+
+Makes an hourly copy of `app.db` into `fantasy-football-db/data/backups/`
+(via SQLite's online backup API, not a plain file copy -- safe to run
+against a live, in-use database) and prunes anything older than 30 days.
+
+```bash
+cd /opt/fantasy-football-apps/repo/webapp/deploy
+```
+```bash
+sed -e "s|__REPO_PATH__|/opt/fantasy-football-apps/repo|g" -e "s|__VENV_PATH__|/opt/fantasy-football-apps/venv|g" -e "s|__SERVICE_USER__|fantasyapp|g" app-db-backup.service > /tmp/app-db-backup.service
+```
+```bash
+sudo mv /tmp/app-db-backup.service /etc/systemd/system/app-db-backup.service
+```
+```bash
+sudo cp app-db-backup.timer /etc/systemd/system/app-db-backup.timer
+```
+```bash
+sudo systemctl daemon-reload
+```
+```bash
+sudo systemctl enable --now app-db-backup.timer
+```
+
+Check it's scheduled, and trigger one manually to confirm it works right
+away rather than waiting an hour:
+
+```bash
+systemctl list-timers app-db-backup.timer
+```
+```bash
+sudo systemctl start app-db-backup.service
+```
+```bash
+ls -la /opt/fantasy-football-apps/repo/fantasy-football-db/data/backups/
+```
+
+**This still only protects you against a bad deploy, a mistaken delete,
+or the app corrupting its own data** -- all real risks, but not against
+the SD card itself failing, which is a well-known way Raspberry Pis lose
+data. These backups live on the same card. If you want protection against
+that too, the backups should periodically go somewhere else (rsync'd to
+your Mac, a cloud storage bucket, etc.) -- say so and I'll set that up as
+a follow-up; it needs its own piece of infrastructure (a way for the Pi
+to authenticate to wherever the backups end up).
+
 ## Multi-user login (still not built)
 
 Right now every page just reads the databases with no concept of "whose

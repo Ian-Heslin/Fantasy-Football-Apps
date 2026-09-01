@@ -62,3 +62,53 @@ runs both metrics automatically, writes `rb_carries_superstar_falloff_rows.csv`
 and `rb_touches_superstar_falloff_rows.csv`, and prints every Superstar+/
 League-Winner RB season at 250+ carries or touches with its next-season
 outcome.
+
+## `analyze_draft_reaches.py`
+
+Question: do players drafted well above their pre-draft grade ("reaches")
+underperform relative to realistic peers (others drafted in the same slot
+range that year), and are some teams/coaches better at making reaches work
+anyway -- specifically, does Kyle Shanahan's reputation for reaching at WR
+and having it pan out hold up?
+
+Method: rank every graded prospect by NGS draft grade within their year,
+match to actual `draft_picks` by normalized name + position, re-rank by
+actual pick number, `reach_score = grade_rank - actual_rank`. Outcome
+(weighted career AV) is compared against same-year peers within +/-32
+picks, not the whole league, so the comparison isn't just "early picks are
+better." Full method in the script's docstring.
+
+**Finding: reaches underperform on average, and Shanahan is a real, modest
+exception.** Across 2,739 matched players (2006-2025), `correlation(reach_score,
+AV vs. same-slot peers) = -0.094` -- weak but real, and consistent in the
+group comparison: big reaches (reach_score >= 32, n=337) averaged -1.81 AV
+vs. peers; players who matched-or-fell (reach_score <= 0, n=1,374) averaged
++2.13. League-wide, Kyle Shanahan is a genuinely aggressive drafter overall
+(45 picks, avg reach_score +8.8, one of the largest in the league) whose
+reaches come out close to break-even (-0.69 AV vs. peers on his 27 reaches
+-- much better than most equally-aggressive reachers, e.g. Bill Belichick
+at -6.66 or Jack Del Rio at -12.16). Restricted to just his WR picks
+(n=12), the reach is actually mild (avg reach_score +2.9, not a large jump)
+and the outcome is slightly below peers (-0.73 AV vs. peers) -- not the
+"reaches that consistently pan out" story, but not a bad outcome either;
+the more defensible version of the reputation is "reaches aggressively
+overall and it costs him less than it costs most equally aggressive GMs/
+coaches," not "reaches specifically at WR and it works."
+
+GM/owner attribution isn't in here yet -- `team_executives_season` (owner +
+GM per team-season) has no reachable source from this sandbox (Wikipedia is
+blocked); it needs a scraper run locally or via Claude-in-Chrome against
+each team's per-season Wikipedia page, then a follow-up to this script.
+
+**Known caveat**: `draft_picks`' team codes are PFR-style (`SFO`, `GNB`,
+`KAN`, ...); this script normalizes them (`TEAM_CODE_MAP`) to this
+project's standard codes before joining against `coach_table` -- without
+that, every relocated/renamed franchise (including SF/Shanahan) silently
+drops out of the HC-level results.
+
+Run `python3 analysis/analyze_draft_reaches.py` to reproduce -- reads
+`draft_prospect_grades`/`draft_picks`/`coach_table` from
+`analytics.duckdb` (needs `scripts/load_draft_grades.py` and
+`scripts/load_draft_picks.py` run first), writes
+`draft_reach_player_level.csv` (every matched player, one row each),
+`draft_reach_by_team.csv`, and `draft_reach_by_coach.csv`.

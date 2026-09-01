@@ -1,0 +1,12 @@
+[Unit]
+Description=Hourly backup of app.db (Fantasy Football)
+
+[Timer]
+OnCalendar=hourly
+Persistent=true
+# Persistent=true: if the Pi was off/rebooting when a scheduled backup
+# would have fired, it runs one as soon as the system's back up instead
+# of just skipping it.
+
+[Install]
+WantedBy=timers.target

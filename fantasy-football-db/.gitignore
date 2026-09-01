@@ -1,7 +1,20 @@
-# app.db IS committed on purpose -- it's small (a few MB) and it's the only
-# place roster/trade-value snapshot HISTORY lives; regenerating it from
-# scratch would lose that history. Everything below is either regenerable
-# from a source (dynastyprocess/Sleeper) or too large to belong in git.
+# app.db used to be committed on purpose (a small, periodically-rebuilt
+# snapshot). That stopped being safe once it started holding live,
+# continuously-written, irreplaceable data with no other source of truth
+# -- user accounts, Pick'em picks/settings, roster links -- that the
+# running app itself mutates on every request. A tracked file that the
+# app also writes to is a real data-loss risk: if a future commit ever
+# touches its blob, `git pull` on a machine with real accumulated data
+# either hard-fails (blocking every future pull until manually resolved)
+# or, in the worst case, silently overwrites the live file with git's
+# tracked version -- confirmed both failure modes in a throwaway test
+# repo before making this change. See webapp/deploy/README.md's "Backups"
+# section for the once-off migration steps this requires on any machine
+# that already has app.db tracked, and for how it's actually kept safe
+# now instead (an independent local backup rotation, since a database
+# holding data this irreplaceable needs backups regardless of git).
+data/app.db
+data/backups/
 data/analytics.duckdb
 data/_dynastyprocess_data/
 data/_nflverse_data/
