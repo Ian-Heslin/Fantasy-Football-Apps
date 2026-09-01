@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 .venv/
 venv/
+
+# systemd service stdout/stderr redirects on the Pi (see deploy/*.service) --
+# runtime output, not part of the repo
+deploy/*.log
