@@ -66,6 +66,13 @@ python3 scripts/load_pickem_schedule.py  # loads the real NFL schedule/
                                    # Pick'em game, from nflverse/nfldata's
                                    # games.csv -- re-run periodically
                                    # during the season as games finish
+python3 scripts/load_draft_grades.py  # loads NFL.com/NGS pre-draft prospect
+                                   # grades, 2006-2025, from
+                                   # array-carpenter/nfl-draft-data
+python3 scripts/load_draft_picks.py  # loads actual draft picks + career
+                                   # outcomes (AV, Pro Bowls, All-Pros),
+                                   # 1980-2025, from nflverse-data's
+                                   # draft_picks release
 ```
 
 After setting up the web app itself (see `webapp/README.md`) and signing
@@ -219,6 +226,28 @@ machine):
   snapshot, not the 15-year time series the model needs -- not worth loading
   in place of the real thing.
 
+Loaded by `load_draft_grades.py` and `load_draft_picks.py`, for the
+draft-reach research in `analysis/analyze_draft_reaches.py` (does getting
+drafted well above your pre-draft grade predict underperformance, and are
+some teams/coaches better at making reaches work?):
+- `draft_prospect_grades` (DuckDB) -- NFL.com prospect grade + NGS draft
+  grade per combine invitee, 2006-2025 (6,568 rows; not a multi-analyst
+  "consensus big board" -- no clean, freely-reachable historical version of
+  that exists, see the script's docstring).
+- `draft_picks` (DuckDB) -- actual draft picks with career outcomes
+  (games, Pro Bowls, All-Pros, weighted career AV), 1980-2025 (12,927 rows).
+  Team codes are PFR-style (`SFO`, `GNB`, `KAN`, ...); `analyze_draft_reaches.py`
+  normalizes these to this project's standard codes before joining against
+  `coach_table`.
+
+**Still not populated -- needs a run outside this sandbox:**
+- `team_executives_season` (DuckDB) -- owner + GM per team-season, for
+  GM-level attribution alongside the HC-level analysis above. No reachable
+  source found from this sandbox (Wikipedia is blocked); intended to be
+  scraped from each team's per-season Wikipedia page (e.g.
+  `en.wikipedia.org/wiki/2023_Arizona_Cardinals_season`) by a script run
+  locally, or via the Claude-in-Chrome extension.
+
 Worth flagging so the web page doesn't silently show stale numbers: check
 `sync_log` in `app.db` for when each table was last refreshed.
 
@@ -249,6 +278,10 @@ scripts/
   build_breakout_model.py              -- rebuilds the v11 breakout model
   load_pickem_schedule.py              -- loads the real schedule/spreads/scores
                                           for the web app's Pick'em game
+  load_draft_grades.py                  -- loads pre-draft prospect grades
+                                          (NFL.com/NGS), 2006-2025
+  load_draft_picks.py                   -- loads actual draft picks + career
+                                          outcomes, 1980-2025
   promote_user.py                      -- sets a web app user's tier (bootstrap
                                           the first admin; ongoing changes go
                                           through /admin/users instead)

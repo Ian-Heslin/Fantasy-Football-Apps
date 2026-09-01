@@ -194,3 +194,68 @@ CREATE TABLE IF NOT EXISTS model_feature_pool (
     outcome         INTEGER      -- 1 / 0 / NULL if unresolved
 );
 CREATE INDEX IF NOT EXISTS idx_feature_pool_player ON model_feature_pool(player_id, season);
+
+-- ============================================================================
+-- Draft reach analysis (see scripts/load_draft_grades.py, load_draft_picks.py,
+-- load_team_executives.py, analyze_draft_reaches.py)
+-- ============================================================================
+
+-- Pre-draft evaluation, one row per combine invitee. NOT a multi-analyst
+-- "consensus big board" -- no clean historical version of that was
+-- reachable/found (see the project chat log) -- this is NFL.com's own
+-- prospect grade + Next Gen Stats' draft grade, from
+-- github.com/array-carpenter/nfl-draft-data. 2021 has no rows at all (no
+-- combine grading that cycle). Matched to draft_picks by name -- no
+-- shared ID between the two sources, so the loader's join is fuzzy
+-- (normalized name + position) and worth spot-checking.
+CREATE TABLE IF NOT EXISTS draft_prospect_grades (
+    year                INTEGER NOT NULL,
+    player_name         VARCHAR NOT NULL,
+    college             VARCHAR,
+    position            VARCHAR,
+    nfl_grade           DOUBLE,     -- NFL.com prospect grade, ~5.0-8.0 scale
+    ngs_draft_grade     DOUBLE,     -- Next Gen Stats draft grade, 0-100 scale
+    draft_projection    VARCHAR     -- e.g. "Round 2" -- sparse, don't rely on it alone
+);
+CREATE INDEX IF NOT EXISTS idx_draft_grades_year ON draft_prospect_grades(year);
+
+-- Actual draft results + career outcomes, from nflverse-data's richer
+-- draft_picks release (not nfldata's thinner mirror -- this one has
+-- approximate value and Pro Bowl/All-Pro counts, needed to test whether
+-- reaches actually underperform).
+CREATE TABLE IF NOT EXISTS draft_picks (
+    season              INTEGER NOT NULL,
+    round               INTEGER,
+    pick                INTEGER NOT NULL,
+    team                VARCHAR NOT NULL,
+    gsis_id             VARCHAR,
+    pfr_player_id       VARCHAR,
+    player_name         VARCHAR NOT NULL,
+    position            VARCHAR,
+    college             VARCHAR,
+    age                 DOUBLE,
+    games               INTEGER,
+    allpro              INTEGER,
+    probowls            INTEGER,
+    seasons_started     INTEGER,
+    w_av                DOUBLE,     -- PFR's weighted career Approximate Value (source column
+                                    -- named car_av upstream, but is 100% empty there -- confirmed
+                                    -- across all ~13k rows -- w_av is what's actually populated)
+    PRIMARY KEY (season, pick)
+);
+CREATE INDEX IF NOT EXISTS idx_draft_picks_season_team ON draft_picks(season, team);
+
+-- Owner + GM per team-season, scraped from Wikipedia's per-team-season
+-- articles (e.g. "2023 Arizona Cardinals season") -- see
+-- load_team_executives.py's docstring for why this can't be verified from
+-- inside this sandbox (Wikipedia is blocked here) and needs spot-checking
+-- against a few real pages after running it. HC attribution for the same
+-- team-season comes from the existing coach_table -- not duplicated here.
+CREATE TABLE IF NOT EXISTS team_executives_season (
+    season              INTEGER NOT NULL,
+    team                VARCHAR NOT NULL,
+    owner               VARCHAR,
+    general_manager     VARCHAR,
+    source_url          VARCHAR,
+    PRIMARY KEY (season, team)
+);
