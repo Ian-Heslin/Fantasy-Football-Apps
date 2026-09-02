@@ -196,9 +196,17 @@ server; the right one has apparently worked all along. The browser's request als
 `mStatus`, `modular`, `mNav`) than the single `view=mTeam` this script was sending -- now matched in
 `HISTORY_VIEWS`. Not carried over: a `platformVersion=<hash>` query param the browser also sent,
 almost certainly frontend build/cache versioning rather than anything the API enforces -- worth
-adding back if seasons still fail to load without it. **Unverified from here** (this sandbox can't
-reach ESPN's API) -- next Pi run with `--history` will show whether this actually reaches 2015 and
-beyond for National Disasters.
+adding back if seasons still fail to load without it.
+
+**Confirmed working, 2026-09-02**: `--history` now correctly pulls National Disasters back to
+**2015** (14 teams that year, shrinking 14→12→10→8 through 2018-2025 -- real league contraction
+over time, not a data error) and stops at **2014** with a clean 404 -- no `platformVersion` param
+needed after all. Sophomores still correctly stops at 2018, but now with the same clean 404 instead
+of the earlier 403/empty-body confusion, which fits it simply being a younger league. Both leagues'
+real, distinct histories are now loaded into `league_season_standings`. This whole saga (401 wall →
+wrong-host guess → right host found from Ian's own browser Network tab) is the reason `--history`
+prints the actual per-season failure reason rather than a blanket "no more history" -- worth keeping
+that logging if this endpoint moves again.
 
 ## ESPN (public leagues — working, no auth needed)
 Both of Ian's ESPN leagues are public, so no `SWID`/`espn_s2` cookies are needed at all. Unlike
