@@ -63,6 +63,13 @@ CREATE INDEX IF NOT EXISTS idx_adp_name_season ON adp_history(player_name_norm, 
 -- by about a season -- scripts/build_breakout_model.py falls back to
 -- deriving the same counting stats from play_by_play for whichever season(s)
 -- aren't in this table yet.
+--
+-- player_stats_def_season -- the same release's defense-specific file:
+-- tackles, sacks, passes defended, forced fumbles/interceptions, defensive
+-- TDs, one row per player per season. Same inferred-schema pattern, loaded
+-- by the same script. Powers the NFL Top 100 game's optional "season
+-- stats" hint for defensive players (app/trivia.py's _top100_enrichment) --
+-- player_stats_season above only has offensive counting stats.
 
 -- nflverse player biographical/draft data (birth_date for age, draft_year/
 -- round/pick, rookie_season) -- keyed on gsis_id, the same id play_by_play/

@@ -45,7 +45,7 @@ def group_hub(request: Request):
         {
             "reveal_sessions": reveal_sessions, "draft_sessions": draft_sessions,
             "game_labels": group_games.GAME_LABELS, "reveal_categories": REVEAL_CATEGORIES,
-            "top100_years": top100_years,
+            "top100_years": top100_years, "top100_hint_labels": trivia.TOP100_HINT_LABELS,
         },
     )
 
@@ -78,7 +78,10 @@ async def new_session(request: Request):
             )
             if not valid_category:
                 return RedirectResponse("/games/group", status_code=303)
-            session_id = group_games.start_session(conn, duckdb_conn, user["user_id"], game_type, category, names)
+            hints = set(form.getlist("hint")) & set(trivia.TOP100_HINT_LABELS) if game_type == "nfl_top100" else None
+            session_id = group_games.start_session(
+                conn, duckdb_conn, user["user_id"], game_type, category, names, hints,
+            )
             if session_id is None:
                 return RedirectResponse("/games/group", status_code=303)
             dest = f"/games/group/session/{session_id}"

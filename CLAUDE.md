@@ -78,7 +78,15 @@ at the bare `/games` path; the other three are their own routes.
 - **Solo** (`/games/solo`) -- individual play, shared leaderboard. Award
   Winners / Season Leaders / NFL Top 100 trivia (`/games/trivia`,
   guess-a-name-for-a-clue, loose name matching, real co-winner years
-  handled correctly) and Fantasy Draft (`/games/fantasy-draft`, draft any
+  handled correctly). NFL Top 100 has 5 optional hint toggles (team,
+  position, side of the ball, years in the league, season stats --
+  offense yards/TDs/turnovers or defense tackles/sacks/PBUs/turnovers
+  forced/TDs), resolved per-player via `trivia._top100_enrichment()`
+  against nflverse's `player_stats_season`/`player_stats_def_season`/
+  `player_bio` (name-matched, disambiguating same-name players by whether
+  they were active in that year -- see `webapp/README.md`'s Pages section
+  for the full mechanism). Group mode's reveal engine shares the same
+  toggles. Fantasy Draft (`/games/fantasy-draft`, draft any
   player from any season 1970-2025 at 9 roster slots, scored by real PPR
   points -- 1999+ from `player_season_fantasy_points`, computed from
   play_by_play and live-updating during the season; 1970-1998 from the

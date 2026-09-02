@@ -58,6 +58,7 @@
 {% endfor %}
 
 <h3>NFL Top 100</h3>
+<p class="subtle">Optional hints make it easier -- leave them all off for the hardest version.</p>
 <div class="card-grid">
   {% for year in top100_years %}
   <div class="solaris-card">
@@ -65,6 +66,12 @@
     <form method="post" action="/games/group/new">
       <input type="hidden" name="game_type" value="nfl_top100">
       <input type="hidden" name="category" value="{{ year }}">
+      <fieldset class="hint-toggles">
+        <legend class="subtle">Hints</legend>
+        {% for key, label in top100_hint_labels.items() %}
+        <label><input type="checkbox" name="hint" value="{{ key }}"> {{ label }}</label>
+        {% endfor %}
+      </fieldset>
       <p><input type="text" name="participants" placeholder="Sean, Ian, Dick, Karris" required></p>
       <button type="submit">Start session</button>
     </form>

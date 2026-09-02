@@ -138,8 +138,20 @@ shared nav; each page passes which tab is active):
   randomly-picked players ranked on the NFL's fan-voted annual Top 100
   Players list, one category per year, 2011-2026) is Wikipedia-sourced
   via Claude/Cowork in a browser (`scripts/load_nfl_top100.py` --
-  this sandbox can't reach Wikipedia directly). Played async/individually,
-  like Pick'em -- anyone starts a round anytime (a random sample of that
+  this sandbox can't reach Wikipedia directly). NFL Top 100 has 5
+  optional hint toggles, checked when starting a round: Team, Position,
+  Side of the ball (Offense/Defense/Special Teams), Years in the league,
+  and Season stats (yards/TDs/turnovers for offense; tackles/sacks/PBUs/
+  turnovers forced/TDs for defense). All off is the hardest version --
+  just the rank. Real per-season stats come from nflverse's
+  `player_stats_season` (offense) and `player_stats_def_season` (defense,
+  added for this), position/rookie-season from `player_bio` --
+  `trivia._top100_enrichment()` loosely matches nfl_top_100's free-text
+  names against them (disambiguating same-name players across NFL history
+  by whether they were active in that list's year), and the chosen hints
+  get baked into the prompt text at round-creation time, same as
+  everything else here. Played async/individually, like Pick'em --
+  anyone starts a round anytime (a random sample of that
   category's years/ranks), submits guesses, gets scored immediately
   (loose name matching -- case/punctuation/suffix-insensitive), and each
   category has a "best score" leaderboard. `trivia.build_pool()` builds
@@ -180,7 +192,9 @@ shared nav; each page passes which tab is active):
   engines: a **reveal engine** for Award Winners/Season Leaders/NFL Top
   100 (host reads each clue aloud, checks off who got it right, reveals
   the answer, moves to the next item; standings and session-complete are
-  computed live), and a **live snake draft** for Fantasy Draft (host
+  computed live; NFL Top 100 sessions get the same 5 hint toggles as
+  Solo, checked once when starting the session), and a **live snake
+  draft** for Fantasy Draft (host
   enters each pick on the current participant's behalf in standard snake
   turn order -- `group_draft.whose_turn()` -- same real PPR scoring and
   slot/position rules as Solo's Fantasy Draft, with duplicate

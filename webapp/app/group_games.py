@@ -22,8 +22,8 @@ GAME_LABELS = {
 }
 
 
-def start_session(conn, duckdb_conn, host_user_id, game_type, category, participant_names):
-    pool = trivia.build_pool(duckdb_conn, game_type, category)
+def start_session(conn, duckdb_conn, host_user_id, game_type, category, participant_names, hints=None):
+    pool = trivia.build_pool(duckdb_conn, game_type, category, hints)
     if not pool:
         return None
     sample = random.sample(pool, k=min(trivia.ROUND_SIZE, len(pool)))

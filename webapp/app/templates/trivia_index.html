@@ -11,7 +11,8 @@
 {% if top100_years %}
 <h2>NFL Top 100</h2>
 <p class="subtle">Guess where 10 randomly-picked players ranked on the NFL's fan-voted Top 100
-  Players list for that year.</p>
+  Players list for that year. Optional hints below make it easier -- leave them all off for
+  the hardest version.</p>
 <div class="card-grid">
   {% for year in top100_years %}
   <div class="solaris-card">
@@ -19,6 +20,12 @@
     <form method="post" action="/games/trivia/start">
       <input type="hidden" name="game_type" value="nfl_top100">
       <input type="hidden" name="category" value="{{ year }}">
+      <fieldset class="hint-toggles">
+        <legend class="subtle">Hints</legend>
+        {% for key, label in top100_hint_labels.items() %}
+        <label><input type="checkbox" name="hint" value="{{ key }}"> {{ label }}</label>
+        {% endfor %}
+      </fieldset>
       <button type="submit">Start a round</button>
     </form>
     {% set top = top100_boards[year] %}

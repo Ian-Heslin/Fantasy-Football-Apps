@@ -43,12 +43,13 @@ def trivia_index(request: Request):
         {
             "game_labels": GAME_LABELS, "categories": CATEGORIES, "boards": boards,
             "top100_years": top100_years, "top100_boards": top100_boards,
+            "top100_hint_labels": trivia.TOP100_HINT_LABELS,
         },
     )
 
 
 @router.post("/games/trivia/start")
-def start_round(request: Request, game_type: str = Form(...), category: str = Form(...)):
+async def start_round(request: Request, game_type: str = Form(...), category: str = Form(...)):
     user = request.state.user
     valid = (
         (game_type in CATEGORIES and category in CATEGORIES[game_type])
@@ -58,13 +59,18 @@ def start_round(request: Request, game_type: str = Form(...), category: str = Fo
     if not valid:
         return RedirectResponse("/games/trivia", status_code=303)
 
+    hints = None
+    if game_type == "nfl_top100":
+        form = await request.form()
+        hints = set(form.getlist("hint")) & set(trivia.TOP100_HINT_LABELS)
+
     try:
         sqlite_conn = get_connection()
         duckdb_conn = get_duckdb_connection()
     except FileNotFoundError as e:
         return db_missing_response(request, e)
     try:
-        round_id = trivia.start_round(sqlite_conn, duckdb_conn, user["user_id"], game_type, category)
+        round_id = trivia.start_round(sqlite_conn, duckdb_conn, user["user_id"], game_type, category, hints)
     finally:
         sqlite_conn.close()
         duckdb_conn.close()
