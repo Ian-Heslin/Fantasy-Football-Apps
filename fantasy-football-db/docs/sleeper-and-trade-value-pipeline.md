@@ -158,6 +158,18 @@ the web app key on. Neither loader can run from this cloud sandbox (both `api.sl
 `python3 scripts/load_sleeper.py --history` and `python3 scripts/load_espn.py --history` on the Pi
 (or Ian's own machine) to actually pull the data in.
 
+**ESPN history hits an auth wall on older seasons, confirmed live 2026-09-02**: running
+`--history` on the Pi pulled 2020-2025 for both ESPN leagues with zero auth, then got a clean
+`401 Client Error` on 2019 and 2018 for both leagues. This is a real ESPN quirk, not "the league
+didn't exist yet" — ESPN enforces each SEASON's own privacy setting on these endpoints, not the
+league's current one, so a league that's fully public today can still require login cookies for
+its own older seasons. `load_espn.py` now reads optional `SWID`/`ESPN_S2` env vars (from a
+logged-in browser: DevTools → Application/Storage → Cookies → `fantasy.espn.com`) and sends them
+as cookies on every request when set — never hardcoded, same treatment as the FantasyPros API key
+below. Still unconfirmed: whether supplying them actually unlocks 2018-2019 and further back for
+these two specific leagues, or whether they turn out to predate Ian's own membership/ESPN's data
+entirely — next session with Pi access should set the env vars and re-run to find out.
+
 ## ESPN (public leagues — working, no auth needed)
 Both of Ian's ESPN leagues are public, so no `SWID`/`espn_s2` cookies are needed at all. Unlike
 `fantasy.espn.com` itself (blocked for WebFetch by robots.txt) and unlike the Bash-blocked domains
