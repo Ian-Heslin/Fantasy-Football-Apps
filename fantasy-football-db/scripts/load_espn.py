@@ -52,13 +52,9 @@ TODAY = date.today().isoformat()
 ESPN_COOKIES = None
 if os.environ.get("SWID") and os.environ.get("ESPN_S2"):
     ESPN_COOKIES = {"swid": os.environ["SWID"], "espn_s2": os.environ["ESPN_S2"]}
-# The legacy fantasy.espn.com host HISTORY_BASE hits below appears to bot-block
-# requests' default User-Agent for old seasons (2017 and earlier observed
-# 2026-09) -- it 302s to https://www.espn.com/fantasy/, which then 403s,
-# rather than ever reaching the actual JSON endpoint. lm-api-reads (BASE)
-# hasn't shown this problem. A plain desktop-browser UA is enough to look
-# like ordinary traffic; not sent as anything deceptive, just matching what
-# a real browser hitting this same URL would send.
+# Sent on every request just to look like ordinary browser traffic -- not
+# strictly proven necessary once HISTORY_BASE below got corrected, but
+# matches what a real browser hitting these URLs sends, so left in place.
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -66,14 +62,23 @@ HEADERS = {
 }
 BASE = "https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons"
 # BASE's /seasons/{year}/... pattern (same one get_league() uses for the
-# current season) actually works fine for any season back through 2018 --
-# confirmed live 2026-09, it pulled 2020-2025 for both of Ian's leagues in
-# one run. Only seasons BEFORE 2018 need this separate endpoint instead
-# (same cutoff the community espn-api library uses), and it only exists on
-# fantasy.espn.com, not the lm-api-reads mirror BASE uses (lm-api-reads
-# 404s on it even for recent years that BASE serves fine).
+# current season) works fine for any season back through 2018 -- confirmed
+# live 2026-09, it pulled 2020-2025 for both of Ian's leagues in one run.
+# Seasons before 2018 need leagueHistory instead (same cutoff the community
+# espn-api library uses) -- confirmed by capturing the ACTUAL request
+# fantasy.espn.com's own frontend makes when Ian loads a pre-2018 season in
+# his browser: it's leagueHistory on this SAME lm-api-reads host, with a
+# longer view= list than BASE needs. Earlier attempts pointed leagueHistory
+# at fantasy.espn.com instead (a guess, based on how a different community
+# library used to build in this URL) and chased 403s/empty bodies that were
+# just symptoms of hitting the wrong host -- not a real block on this one.
 LEAGUE_HISTORY_CUTOFF = 2018
-HISTORY_BASE = "https://fantasy.espn.com/apis/v3/games/ffl/leagueHistory"
+HISTORY_BASE = "https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/leagueHistory"
+HISTORY_VIEWS = [
+    ("view", v) for v in
+    ("mTeam", "mStandings", "mSettings", "mRoster", "mMatchupScore",
+     "mLiveScoring", "mStatus", "modular", "mNav")
+]
 
 # Ian's ESPN leagues, from the project's pipeline notes -- both public, no
 # login cookies needed for the current season (see ESPN_COOKIES above for
@@ -206,7 +211,7 @@ def get_season_teams(league_id, season):
         params = [("view", "mTeam")]
     else:
         url = f"{HISTORY_BASE}/{league_id}"
-        params = [("seasonId", season), ("view", "mTeam")]
+        params = [("seasonId", season)] + HISTORY_VIEWS
 
     try:
         resp = requests.get(url, params=params, cookies=ESPN_COOKIES, headers=HEADERS, timeout=15)

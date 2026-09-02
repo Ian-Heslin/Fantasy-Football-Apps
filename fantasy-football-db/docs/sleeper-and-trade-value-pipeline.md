@@ -177,17 +177,28 @@ redirected and blocked, almost certainly by ESPN's edge/bot-protection rejecting
 `python-requests` User-Agent — `lm-api-reads` (BASE, used for 2018+) hasn't shown this problem.
 Added a plain desktop-browser `User-Agent`/`Accept` header (`HEADERS` in `load_espn.py`).
 
-**2018 confirmed as the real wall, 2026-09-02**: with the browser header added, the 403 is gone --
-2017 now gets a clean HTTP 200 with a **completely empty body** for both leagues, which is a
-different failure mode than anything seen at 2018+ (those are always either real data or a
-same-shape "no teams" JSON response). `get_season_teams` now treats an empty body as end-of-history
-the same as a missing `teams` key, rather than crashing on `resp.json()`. Reading these three
-different signals together -- 401 without cookies on 2019/2018 (privacy wall), then real data once
-authenticated, then a distinct empty-body response specifically at 2017 -- 2018 looks like a
-genuine boundary for both leagues (plausibly when ESPN's fantasy platform itself started serving
-this data, or when these specific leagues were created), not another auth or bot-detection layer to
-work around. Nothing left to chase here unless Ian has independent reason to believe either league
-existed even earlier under a different ESPN league_id.
+**2018 was NOT actually the wall -- wrong host all along, found + fixed 2026-09-02**: with the
+browser header added, the 403 on 2017 turned into a clean HTTP 200 with a completely empty body for
+both leagues, which read at the time like a genuine end-of-history signal (`get_season_teams` was
+updated to treat it that way instead of crashing on `resp.json()`). But Ian confirmed via ESPN's own
+site that National Disasters (`1062658`) really does have standings back to at least 2015 -- both
+leagues stopping at exactly the same season regardless of their real age was the tell that this was
+a platform-wide artifact, not a per-league fact.
+
+Root cause found by capturing the actual XHR ESPN's own frontend makes for a pre-2018 season (Ian
+pulled it from his browser's Network tab loading `.../football/league/standings?seasonId=2015&
+leagueId=1062658`): the real request is `leagueHistory` on **`lm-api-reads.fantasy.espn.com`** --
+the SAME host `BASE` already uses successfully -- not `fantasy.espn.com`, which is what
+`HISTORY_BASE` had been pointed at (a guess based on how a different community library builds this
+URL). Every 403/redirect/empty-body seen chasing this was just a symptom of hitting the wrong
+server; the right one has apparently worked all along. The browser's request also sends a longer
+`view=` list (`mTeam`, `mStandings`, `mSettings`, `mRoster`, `mMatchupScore`, `mLiveScoring`,
+`mStatus`, `modular`, `mNav`) than the single `view=mTeam` this script was sending -- now matched in
+`HISTORY_VIEWS`. Not carried over: a `platformVersion=<hash>` query param the browser also sent,
+almost certainly frontend build/cache versioning rather than anything the API enforces -- worth
+adding back if seasons still fail to load without it. **Unverified from here** (this sandbox can't
+reach ESPN's API) -- next Pi run with `--history` will show whether this actually reaches 2015 and
+beyond for National Disasters.
 
 ## ESPN (public leagues — working, no auth needed)
 Both of Ian's ESPN leagues are public, so no `SWID`/`espn_s2` cookies are needed at all. Unlike
