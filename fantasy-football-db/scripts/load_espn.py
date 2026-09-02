@@ -211,11 +211,19 @@ def get_season_teams(league_id, season):
     try:
         resp = requests.get(url, params=params, cookies=ESPN_COOKIES, headers=HEADERS, timeout=15)
         resp.raise_for_status()
-    except requests.RequestException as e:
+        # A 200 with a completely empty body shows up for seasons this legacy
+        # endpoint has nothing for at all (observed 2026-09 on 2017 for both
+        # of Ian's leagues, right after 2018 loaded real data) -- ESPN's way
+        # of saying "no data" here, not a real request failure.
+        data = resp.json() if resp.text.strip() else None
+    except (requests.RequestException, ValueError) as e:
         print(f"[load_espn] history: {season} request failed for league {league_id}: {e}")
         return None
 
-    data = resp.json()
+    if data is None:
+        print(f"[load_espn] history: {season} returned an empty response for league "
+              f"{league_id} -- treating as end of history")
+        return None
     # leagueHistory replies with a list containing one league-season object;
     # BASE replies with that object directly.
     info = (data[0] if data else {}) if isinstance(data, list) else (data or {})

@@ -175,10 +175,19 @@ not a fluke). 2017 and earlier then hit a *different* wall: a 403 on `https://ww
 endpoint (used for pre-2018 seasons, see `HISTORY_BASE`/`LEAGUE_HISTORY_CUTOFF` above) was getting
 redirected and blocked, almost certainly by ESPN's edge/bot-protection rejecting the default
 `python-requests` User-Agent — `lm-api-reads` (BASE, used for 2018+) hasn't shown this problem.
-Added a plain desktop-browser `User-Agent`/`Accept` header (`HEADERS` in `load_espn.py`) to try to
-get past it. **Not yet verified** whether that actually unblocks 2017 and earlier, or whether 2018
-is simply where these two leagues' real ESPN history ends — next Pi run with the env vars set will
-tell us which.
+Added a plain desktop-browser `User-Agent`/`Accept` header (`HEADERS` in `load_espn.py`).
+
+**2018 confirmed as the real wall, 2026-09-02**: with the browser header added, the 403 is gone --
+2017 now gets a clean HTTP 200 with a **completely empty body** for both leagues, which is a
+different failure mode than anything seen at 2018+ (those are always either real data or a
+same-shape "no teams" JSON response). `get_season_teams` now treats an empty body as end-of-history
+the same as a missing `teams` key, rather than crashing on `resp.json()`. Reading these three
+different signals together -- 401 without cookies on 2019/2018 (privacy wall), then real data once
+authenticated, then a distinct empty-body response specifically at 2017 -- 2018 looks like a
+genuine boundary for both leagues (plausibly when ESPN's fantasy platform itself started serving
+this data, or when these specific leagues were created), not another auth or bot-detection layer to
+work around. Nothing left to chase here unless Ian has independent reason to believe either league
+existed even earlier under a different ESPN league_id.
 
 ## ESPN (public leagues — working, no auth needed)
 Both of Ian's ESPN leagues are public, so no `SWID`/`espn_s2` cookies are needed at all. Unlike
