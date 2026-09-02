@@ -5,10 +5,23 @@ membership from ESPN's public (unofficial, no-auth) fantasy API and loads
 them into app.db, the same way load_sleeper.py does for Sleeper.
 
 Both of Ian's ESPN leagues are public, so no SWID/espn_s2 login cookies are
-needed -- see docs/sleeper-and-trade-value-pipeline.md's ESPN section. The
-working API host is `lm-api-reads.fantasy.espn.com`, NOT `fantasy.espn.com`
-itself (which blocks fetch-style tools via robots.txt) -- a plain
-`requests` GET against lm-api-reads works fine.
+needed for the CURRENT season -- see docs/sleeper-and-trade-value-pipeline.md's
+ESPN section. The working API host is `lm-api-reads.fantasy.espn.com`, NOT
+`fantasy.espn.com` itself (which blocks fetch-style tools via robots.txt) --
+a plain `requests` GET against lm-api-reads works fine.
+
+--history is a different story: ESPN 401s on seasons more than a few years
+back even for a currently-public league -- confirmed live 2026-09, both of
+Ian's leagues 401'd on 2019 and 2018 while 2020-2025 worked with no auth at
+all. ESPN appears to enforce THAT season's own privacy setting rather than
+the league's current one, so older seasons need real login cookies even
+though nothing else in this script does. Set SWID and ESPN_S2 as env vars
+(pulled from a logged-in browser: DevTools -> Application/Storage ->
+Cookies -> fantasy.espn.com) to authenticate those requests -- never
+hardcode them here, they're full login credentials for Ian's ESPN account.
+Without them, --history just stops at whatever season first 401s (which is
+NOT the same thing as "the league didn't exist before this season" -- see
+the per-season failure reason this script prints).
 
 NOTE: like load_sleeper.py, this can't reach ESPN's API from this sandbox
 (egress to lm-api-reads.fantasy.espn.com is blocked here). Run this on your
@@ -19,6 +32,8 @@ Usage:
     python3 scripts/load_espn.py --history  # also walk back through every
                                              # past season's final standings
                                              # into league_season_standings
+                                             # (set SWID/ESPN_S2 to get past
+                                             # seasons that 401 without auth)
 """
 import argparse
 import os
@@ -31,6 +46,12 @@ import requests
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SQLITE_PATH = os.path.join(ROOT, "data", "app.db")
 TODAY = date.today().isoformat()
+# Optional -- only needed for --history seasons old enough to 401 without
+# auth (see the module docstring). None/None means "no cookies sent", which
+# is exactly today's no-auth behavior for everything that doesn't need them.
+ESPN_COOKIES = None
+if os.environ.get("SWID") and os.environ.get("ESPN_S2"):
+    ESPN_COOKIES = {"swid": os.environ["SWID"], "espn_s2": os.environ["ESPN_S2"]}
 BASE = "https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons"
 # BASE's /seasons/{year}/... pattern (same one get_league() uses for the
 # current season) actually works fine for any season back through 2018 --
@@ -43,9 +64,10 @@ LEAGUE_HISTORY_CUTOFF = 2018
 HISTORY_BASE = "https://fantasy.espn.com/apis/v3/games/ffl/leagueHistory"
 
 # Ian's ESPN leagues, from the project's pipeline notes -- both public, no
-# login cookies needed. Ian is always teamId=1 in both. Edit as leagues (or
-# the season) change; the names below are just a fallback if settings.name
-# doesn't come back for some reason.
+# login cookies needed for the current season (see ESPN_COOKIES above for
+# --history on older seasons). Ian is always teamId=1 in both. Edit as
+# leagues (or the season) change; the names below are just a fallback if
+# settings.name doesn't come back for some reason.
 SEASON = 2026
 MY_TEAM_ID = "1"
 LEAGUE_IDS = {
@@ -67,6 +89,7 @@ def get_league(league_id):
     resp = requests.get(
         f"{BASE}/{SEASON}/segments/0/leagues/{league_id}",
         params=[("view", "mTeam"), ("view", "mRoster"), ("view", "mSettings"), ("view", "mDraftDetail")],
+        cookies=ESPN_COOKIES,
         timeout=15,
     )
     resp.raise_for_status()
@@ -173,7 +196,7 @@ def get_season_teams(league_id, season):
         params = [("seasonId", season), ("view", "mTeam")]
 
     try:
-        resp = requests.get(url, params=params, timeout=15)
+        resp = requests.get(url, params=params, cookies=ESPN_COOKIES, timeout=15)
         resp.raise_for_status()
     except requests.RequestException as e:
         print(f"[load_espn] history: {season} request failed for league {league_id}: {e}")
