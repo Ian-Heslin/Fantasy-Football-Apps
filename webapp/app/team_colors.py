@@ -42,7 +42,7 @@ TEAMS = [
     {"id": "kc", "name": "Kansas City Chiefs", "primary": "#E31837", "secondary": "#FFB81C", "tertiary": None},
     {"id": "lv", "name": "Las Vegas Raiders", "primary": "#000000", "secondary": "#A5ACAF", "tertiary": None},
     {"id": "lac", "name": "Los Angeles Chargers", "primary": "#0080C6", "secondary": "#FFC20E", "tertiary": "#002244"},
-    {"id": "lar", "name": "Los Angeles Rams", "primary": "#003594", "secondary": "#FFA300", "tertiary": None},
+    {"id": "la", "name": "Los Angeles Rams", "primary": "#003594", "secondary": "#FFA300", "tertiary": None},
     {"id": "mia", "name": "Miami Dolphins", "primary": "#008E97", "secondary": "#FC4C02", "tertiary": "#005778"},
     {"id": "min", "name": "Minnesota Vikings", "primary": "#4F2683", "secondary": "#FFC62F", "tertiary": None},
     {"id": "ne", "name": "New England Patriots", "primary": "#002244", "secondary": "#C60C30", "tertiary": "#B0B7BC"},

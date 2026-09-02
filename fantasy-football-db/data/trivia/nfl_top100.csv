@@ -36,7 +36,7 @@ year,rank,player,team
 2011,35,Vince Wilfork,NE
 2011,36,Jason Witten,DAL
 2011,37,Jonathan Vilma,NO
-2011,38,Steven Jackson,LAR
+2011,38,Steven Jackson,LA
 2011,39,Logan Mankins,NE
 2011,40,Terrell Suggs,BAL
 2011,41,Ben Roethlisberger,PIT
@@ -135,7 +135,7 @@ year,rank,player,team
 2012,34,Tamba Hali,KC
 2012,35,Steve Smith Sr.,CAR
 2012,36,Charles Woodson,GB
-2012,37,Steven Jackson,LAR
+2012,37,Steven Jackson,LA
 2012,38,Ndamukong Suh,DET
 2012,39,Victor Cruz,NYG
 2012,40,Cam Newton,CAR
@@ -182,7 +182,7 @@ year,rank,player,team
 2012,81,Vince Wilfork,NE
 2012,82,Joe Thomas,CLE
 2012,83,Fred Jackson,BUF
-2012,84,Chris Long,LAR
+2012,84,Chris Long,LA
 2012,85,NaVorro Bowman,SF
 2012,86,Darren Sproles,NO
 2012,87,London Fletcher,WAS
@@ -191,7 +191,7 @@ year,rank,player,team
 2012,90,Hakeem Nicks,NYG
 2012,91,Tony Romo,DAL
 2012,92,John Kuhn,GB
-2012,93,Cortland Finnegan,LAR
+2012,93,Cortland Finnegan,LA
 2012,94,Marshawn Lynch,SEA
 2012,95,Tim Tebow,NYJ
 2012,96,D'Qwell Jackson,CLE
@@ -311,7 +311,7 @@ year,rank,player,team
 2014,10,Jimmy Graham,NO
 2014,11,Aaron Rodgers,GB
 2014,12,J.J. Watt,HOU
-2014,13,Robert Quinn,LAR
+2014,13,Robert Quinn,LA
 2014,14,Marshawn Lynch,SEA
 2014,15,Luke Kuechly,CAR
 2014,16,Josh Gordon,CLE
@@ -442,7 +442,7 @@ year,rank,player,team
 2015,41,Kam Chancellor,SEA
 2015,42,Mario Williams,BUF
 2015,43,Philip Rivers,LAC
-2015,44,Robert Quinn,LAR
+2015,44,Robert Quinn,LA
 2015,45,Julius Thomas,JAX
 2015,46,Elvis Dumervil,BAL
 2015,47,Trent Williams,WAS
@@ -490,7 +490,7 @@ year,rank,player,team
 2015,89,Greg Olsen,CAR
 2015,90,Michael Bennett,SEA
 2015,91,Julian Edelman,NE
-2015,92,Aaron Donald,LAR
+2015,92,Aaron Donald,LA
 2015,93,Jason Witten,DAL
 2015,94,C.J. Mosley,BAL
 2015,95,Emmanuel Sanders,DEN
@@ -512,7 +512,7 @@ year,rank,player,team
 2016,11,Josh Norman,WAS
 2016,12,Carson Palmer,ARI
 2016,13,Khalil Mack,LV
-2016,14,Aaron Donald,LAR
+2016,14,Aaron Donald,LA
 2016,15,Von Miller,DEN
 2016,16,A.J. Green,CIN
 2016,17,Russell Wilson,SEA
@@ -520,7 +520,7 @@ year,rank,player,team
 2016,19,DeAndre Hopkins,HOU
 2016,20,Richard Sherman,SEA
 2016,21,Ben Roethlisberger,PIT
-2016,22,Todd Gurley,LAR
+2016,22,Todd Gurley,LA
 2016,23,Joe Thomas,CLE
 2016,24,Darrelle Revis,NYJ
 2016,25,Brandon Marshall,NYJ
@@ -613,7 +613,7 @@ year,rank,player,team
 2017,12,David Johnson,ARI
 2017,13,Eric Berry,KC
 2017,14,Dak Prescott,DAL
-2017,15,Aaron Donald,LAR
+2017,15,Aaron Donald,LA
 2017,16,Drew Brees,NO
 2017,17,A.J. Green,CIN
 2017,18,Tyron Smith,DAL
@@ -704,8 +704,8 @@ year,rank,player,team
 2018,3,Carson Wentz,PHI
 2018,4,Julio Jones,ATL
 2018,5,Le'Veon Bell,PIT
-2018,6,Todd Gurley,LAR
-2018,7,Aaron Donald,LAR
+2018,6,Todd Gurley,LA
+2018,7,Aaron Donald,LA
 2018,8,Drew Brees,NO
 2018,9,Von Miller,DEN
 2018,10,Aaron Rodgers,GB
@@ -736,7 +736,7 @@ year,rank,player,team
 2018,35,A.J. Bouye,JAX
 2018,36,Adam Thielen,MIN
 2018,37,Joey Bosa,LAC
-2018,38,Jared Goff,LAR
+2018,38,Jared Goff,LA
 2018,39,Tyron Smith,DAL
 2018,40,Tyreek Hill,KC
 2018,41,Keenan Allen,LAC
@@ -751,7 +751,7 @@ year,rank,player,team
 2018,50,Deshaun Watson,HOU
 2018,51,Case Keenum,MIN
 2018,52,Jarvis Landry,MIA
-2018,53,Aqib Talib,LAR
+2018,53,Aqib Talib,LA
 2018,54,Ezekiel Elliott,DAL
 2018,55,Xavier Rhodes,MIN
 2018,56,Philip Rivers,LAC
@@ -785,7 +785,7 @@ year,rank,player,team
 2018,84,J.J. Watt,HOU
 2018,85,Bruce Irvin,LV
 2018,86,Chris Harris Jr.,DEN
-2018,87,Andrew Whitworth,LAR
+2018,87,Andrew Whitworth,LA
 2018,88,Yannick Ngakoue,JAX
 2018,89,Jimmy Graham,GB
 2018,90,Jimmy Garoppolo,SF
@@ -799,11 +799,11 @@ year,rank,player,team
 2018,98,C.J. Mosley,BAL
 2018,99,Doug Baldwin,SEA
 2018,100,Ha Ha Clinton-Dix,GB
-2019,1,Aaron Donald,LAR
+2019,1,Aaron Donald,LA
 2019,2,Drew Brees,NO
 2019,3,Khalil Mack,CHI
 2019,4,Patrick Mahomes,KC
-2019,5,Todd Gurley,LAR
+2019,5,Todd Gurley,LA
 2019,6,Tom Brady,NE
 2019,7,Antonio Brown,NE
 2019,8,Aaron Rodgers,GB
@@ -830,7 +830,7 @@ year,rank,player,team
 2019,29,George Kittle,SF
 2019,30,Eddie Jackson,CHI
 2019,31,Derwin James,LAC
-2019,32,Jared Goff,LAR
+2019,32,Jared Goff,LA
 2019,33,Adam Thielen,MIN
 2019,34,Melvin Gordon,LAC
 2019,35,Davante Adams,GB
@@ -874,7 +874,7 @@ year,rank,player,team
 2019,73,Stefon Diggs,MIN
 2019,74,Leighton Vander Esch,DAL
 2019,75,Gerald McCoy,CAR
-2019,76,Robert Woods,LAR
+2019,76,Robert Woods,LA
 2019,77,Taylor Lewan,TEN
 2019,78,Kirk Cousins,MIN
 2019,79,Geno Atkins,CIN
@@ -889,7 +889,7 @@ year,rank,player,team
 2019,88,Cameron Heyward,PIT
 2019,89,Devin McCourty,NE
 2019,90,Julian Edelman,NE
-2019,91,Andrew Whitworth,LAR
+2019,91,Andrew Whitworth,LA
 2019,92,Jurrell Casey,TEN
 2019,93,T. J. Watt,PIT
 2019,94,Mitchell Schwartz,KC
@@ -898,10 +898,10 @@ year,rank,player,team
 2019,97,Byron Jones,DAL
 2019,98,Tyler Lockett,SEA
 2019,99,Derrick Henry,TEN
-2019,100,Eric Weddle,LAR
+2019,100,Eric Weddle,LA
 2020,1,Lamar Jackson,BAL
 2020,2,Russell Wilson,SEA
-2020,3,Aaron Donald,LAR
+2020,3,Aaron Donald,LA
 2020,4,Patrick Mahomes,KC
 2020,5,Michael Thomas,NO
 2020,6,Christian McCaffrey,CAR
@@ -935,7 +935,7 @@ year,rank,player,team
 2020,34,Joey Bosa,LAC
 2020,35,Minkah Fitzpatrick,PIT
 2020,36,Nick Chubb,CLE
-2020,37,Jalen Ramsey,LAR
+2020,37,Jalen Ramsey,LA
 2020,38,Chris Godwin,TB
 2020,39,Tyrann Mathieu,KC
 2020,40,Danielle Hunter,MIN
@@ -987,7 +987,7 @@ year,rank,player,team
 2020,86,Marlon Humphrey,BAL
 2020,87,Josh Allen,BUF
 2020,88,Jaylon Smith,DAL
-2020,89,Cooper Kupp,LAR
+2020,89,Cooper Kupp,LA
 2020,90,Kyler Murray,ARI
 2020,91,Grady Jarrett,ATL
 2020,92,Darius Slay,PHI
@@ -1000,7 +1000,7 @@ year,rank,player,team
 2020,99,Darren Waller,LV
 2020,100,Lavonte David,TB
 2021,1,Patrick Mahomes,KC
-2021,2,Aaron Donald,LAR
+2021,2,Aaron Donald,LA
 2021,3,Aaron Rodgers,GB
 2021,4,Derrick Henry,TEN
 2021,5,Travis Kelce,KC
@@ -1011,7 +1011,7 @@ year,rank,player,team
 2021,10,Josh Allen,BUF
 2021,11,Stefon Diggs,BUF
 2021,12,Russell Wilson,SEA
-2021,13,Jalen Ramsey,LAR
+2021,13,Jalen Ramsey,LA
 2021,14,Alvin Kamara,NO
 2021,15,Tyreek Hill,KC
 2021,16,Myles Garrett,CLE
@@ -1100,14 +1100,14 @@ year,rank,player,team
 2021,99,Brandon Graham,PHI
 2021,100,James Robinson,JAX
 2022,1,Tom Brady,TB
-2022,2,Aaron Donald,LAR
+2022,2,Aaron Donald,LA
 2022,3,Aaron Rodgers,GB
-2022,4,Cooper Kupp,LAR
+2022,4,Cooper Kupp,LA
 2022,5,Jonathan Taylor,IND
 2022,6,T.J. Watt,PIT
 2022,7,Davante Adams,GB
 2022,8,Patrick Mahomes,KC
-2022,9,Jalen Ramsey,LAR
+2022,9,Jalen Ramsey,LA
 2022,10,Travis Kelce,KC
 2022,11,Myles Garrett,CLE
 2022,12,Derrick Henry,TEN
@@ -1125,9 +1125,9 @@ year,rank,player,team
 2022,24,Ja'Marr Chase,CIN
 2022,25,Nick Bosa,SF
 2022,26,Stefon Diggs,BUF
-2022,27,Matthew Stafford,LAR
+2022,27,Matthew Stafford,LA
 2022,28,Quenton Nelson,IND
-2022,29,Bobby Wagner,LAR
+2022,29,Bobby Wagner,LA
 2022,30,Joey Bosa,LAC
 2022,31,Dalvin Cook,MIN
 2022,32,Mark Andrews,BAL
@@ -1209,7 +1209,7 @@ year,rank,player,team
 2023,8,Josh Allen,BUF
 2023,9,Micah Parsons,DAL
 2023,10,Chris Jones,KC
-2023,11,Aaron Donald,LAR
+2023,11,Aaron Donald,LA
 2023,12,Josh Jacobs,LV
 2023,13,Davante Adams,LV
 2023,14,Trent Williams,SF
@@ -1245,7 +1245,7 @@ year,rank,player,team
 2023,44,Jaylen Waddle,MIA
 2023,45,Cameron Heyward,PIT
 2023,46,C.J. Mosley,NYJ
-2023,47,Cooper Kupp,LAR
+2023,47,Cooper Kupp,LA
 2023,48,Haason Reddick,PHI
 2023,49,Patrick Surtain II,DEN
 2023,50,Cameron Jordan,NO
@@ -1331,7 +1331,7 @@ year,rank,player,team
 2024,30,Deebo Samuel,SF
 2024,31,DaRon Bland,DAL
 2024,32,Quincy Williams,NYJ
-2024,33,Puka Nacua,LAR
+2024,33,Puka Nacua,LA
 2024,34,Jordan Love,GB
 2024,35,Josh Hines-Allen,JAX
 2024,36,Tua Tagovailoa,MIA
@@ -1340,7 +1340,7 @@ year,rank,player,team
 2024,39,Joe Burrow,CIN
 2024,40,Davante Adams,LV
 2024,41,Lane Johnson,PHI
-2024,42,Matthew Stafford,LAR
+2024,42,Matthew Stafford,LA
 2024,43,Kyle Hamilton,BAL
 2024,44,Demario Davis,NO
 2024,45,Ja'Marr Chase,CIN
@@ -1367,7 +1367,7 @@ year,rank,player,team
 2024,66,Brandon Aiyuk,SF
 2024,67,Terron Armstead,MIA
 2024,68,Danielle Hunter,HOU
-2024,69,Cooper Kupp,LAR
+2024,69,Cooper Kupp,LA
 2024,70,Amari Cooper,CLE
 2024,71,Laremy Tunsil,HOU
 2024,72,Garrett Wilson,NYJ
@@ -1376,7 +1376,7 @@ year,rank,player,team
 2024,75,Justin Herbert,LAC
 2024,76,Dre Greenlaw,SF
 2024,77,Trey Hendrickson,CIN
-2024,78,Kyren Williams,LAR
+2024,78,Kyren Williams,LA
 2024,79,Minkah Fitzpatrick,PIT
 2024,80,Sam LaPorta,DET
 2024,81,Kirk Cousins,ATL
@@ -1439,7 +1439,7 @@ year,rank,player,team
 2025,38,Nik Bonitto,DEN
 2025,39,C.J. Stroud,HOU
 2025,40,Roquan Smith,BAL
-2025,41,Puka Nacua,LAR
+2025,41,Puka Nacua,LA
 2025,42,Dion Dawkins,BUF
 2025,43,Jalen Carter,PHI
 2025,44,Mike Evans,TB
@@ -1451,13 +1451,13 @@ year,rank,player,team
 2025,50,Baker Mayfield,TB
 2025,51,Kyle Hamilton,BAL
 2025,52,Terry McLaurin,WAS
-2025,53,Jared Verse,LAR
+2025,53,Jared Verse,LA
 2025,54,Derwin James,LAC
 2025,55,Aidan Hutchinson,DET
 2025,56,Justin Herbert,LAC
 2025,57,Nick Bosa,SF
 2025,58,Joe Mixon,HOU
-2025,59,Matthew Stafford,LAR
+2025,59,Matthew Stafford,LA
 2025,60,Cooper DeJean,PHI
 2025,61,Brian Thomas Jr.,JAX
 2025,62,Bijan Robinson,ATL
@@ -1483,7 +1483,7 @@ year,rank,player,team
 2025,82,Jerry Jeudy,CLE
 2025,83,Cameron Heyward,PIT
 2025,84,Christian Gonzalez,NE
-2025,85,Kyren Williams,LAR
+2025,85,Kyren Williams,LA
 2025,86,Laremy Tunsil,WAS
 2025,87,Quinnen Williams,NYJ
 2025,88,Andrew Van Ginkel,MIN
@@ -1501,7 +1501,7 @@ year,rank,player,team
 2025,100,Ladd McConkey,LAC
 2026,5,Jaxon Smith-Njigba,SEA
 2026,6,Christian McCaffrey,SF
-2026,7,Puka Nacua,LAR
+2026,7,Puka Nacua,LA
 2026,8,Micah Parsons,GB
 2026,9,Jahmyr Gibbs,DET
 2026,10,Patrick Surtain II,DEN
@@ -1547,7 +1547,7 @@ year,rank,player,team
 2026,50,Derwin James,LAC
 2026,51,Caleb Williams,CHI
 2026,52,Tristan Wirfs,TB
-2026,53,Davante Adams,LAR
+2026,53,Davante Adams,LA
 2026,54,Fred Warner,SF
 2026,55,CeeDee Lamb,DAL
 2026,56,Jalen Hurts,PHI
@@ -1578,12 +1578,12 @@ year,rank,player,team
 2026,81,Bobby Wagner,WAS
 2026,82,Jalen Ramsey,PIT
 2026,83,Jeffery Simmons,TEN
-2026,84,Byron Young,LAR
+2026,84,Byron Young,LA
 2026,85,Brock Purdy,SF
 2026,86,Tuli Tuipulotu,LAC
 2026,87,Tetairoa McMillan,CAR
 2026,88,Jack Campbell,DET
-2026,89,Kyren Williams,LAR
+2026,89,Kyren Williams,LA
 2026,90,Derrick Brown,CAR
 2026,91,Montez Sweat,CHI
 2026,92,Azeez Al-Shaair,HOU

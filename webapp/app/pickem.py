@@ -18,7 +18,7 @@ TEAM_NAMES = {
     "DAL": "Cowboys", "NYG": "Giants", "PHI": "Eagles", "WAS": "Commanders",
     "CHI": "Bears", "DET": "Lions", "GB": "Packers", "MIN": "Vikings",
     "ATL": "Falcons", "CAR": "Panthers", "NO": "Saints", "TB": "Buccaneers",
-    "ARI": "Cardinals", "LAR": "Rams", "SF": "49ers", "SEA": "Seahawks",
+    "ARI": "Cardinals", "LA": "Rams", "SF": "49ers", "SEA": "Seahawks",
 }
 
 
