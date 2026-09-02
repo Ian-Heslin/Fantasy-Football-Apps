@@ -32,6 +32,13 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SQLITE_PATH = os.path.join(ROOT, "data", "app.db")
 TODAY = date.today().isoformat()
 BASE = "https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons"
+# ESPN serves a league's OLDER seasons through this separate endpoint, not
+# through BASE/{season}/... (that one 404s for anything more than a couple
+# years back even though the season's data does exist) -- same pattern the
+# community espn-api library uses. Confirmed necessary 2026-09: hitting BASE
+# for past seasons silently looked like "this league has no more history"
+# once two seasons in a row 404'd, when the real issue was the wrong URL.
+HISTORY_BASE = "https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/leagueHistory"
 
 # Ian's ESPN leagues, from the project's pipeline notes -- both public, no
 # login cookies needed. Ian is always teamId=1 in both. Edit as leagues (or
@@ -150,23 +157,32 @@ def resolve_espn_player_ids(conn):
 
 
 def get_season_teams(league_id, season):
-    """Returns (teams, members) for one league-season via the mTeam view,
-    or None if that season doesn't exist for this league -- observed both
-    as an HTTP error and as a response with no 'teams' key for seasons
-    before a league existed."""
+    """Returns (teams, members) for one PAST league-season via ESPN's
+    leagueHistory endpoint (mTeam view), or None if that season doesn't
+    exist for this league -- observed both as an HTTP error and as a
+    response with no 'teams' key for seasons before a league existed.
+    Prints the actual reason on failure so a real error (rate limit, auth)
+    doesn't look identical to "this league genuinely has no more history"
+    in the log."""
     try:
         resp = requests.get(
-            f"{BASE}/{season}/segments/0/leagues/{league_id}",
-            params=[("view", "mTeam")],
+            f"{HISTORY_BASE}/{league_id}",
+            params=[("seasonId", season), ("view", "mTeam")],
             timeout=15,
         )
         resp.raise_for_status()
-    except requests.RequestException:
+    except requests.RequestException as e:
+        print(f"[load_espn] history: {season} request failed for league {league_id}: {e}")
         return None
 
-    info = resp.json()
+    data = resp.json()
+    # leagueHistory replies with a list containing one league-season object
+    # (unlike BASE, which replies with that object directly).
+    info = (data[0] if isinstance(data, list) and data else None) or {}
     teams = info.get("teams")
     if not teams:
+        print(f"[load_espn] history: {season} has no teams for league {league_id} -- "
+              f"treating as end of history")
         return None
     members = {m["id"]: m.get("displayName") for m in (info.get("members") or [])}
     return teams, members
