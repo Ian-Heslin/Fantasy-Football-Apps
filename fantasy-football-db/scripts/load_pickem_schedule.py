@@ -16,19 +16,21 @@ loading once.
 
 Usage:
     python3 scripts/load_pickem_schedule.py
+    python3 scripts/load_pickem_schedule.py --season 2025   # backfill an older season
 """
+import argparse
 import csv
 import os
 import sqlite3
 import subprocess
 import sys
 
+from seasons import current_season
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(ROOT, "data")
 SQLITE_PATH = os.path.join(DATA_DIR, "app.db")
 NFLDATA_CLONE_DIR = os.path.join(DATA_DIR, "_nflverse_data", "nfldata")
-
-SEASON = 2026
 
 
 def log(msg):
@@ -54,12 +56,12 @@ def clone_or_refresh_nfldata():
         )
 
 
-def load_games():
+def load_games(season):
     path = os.path.join(NFLDATA_CLONE_DIR, "data", "games.csv")
     games = []
     with open(path, newline="", encoding="utf-8") as f:
         for r in csv.DictReader(f):
-            if r.get("game_type") != "REG" or int(r["season"]) != SEASON:
+            if r.get("game_type") != "REG" or int(r["season"]) != season:
                 continue
             kickoff_at = r["gameday"]
             if r.get("gametime"):
@@ -80,15 +82,25 @@ def load_games():
 
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--season", type=int, default=None,
+                         help="season to load (default: the current NFL season)")
+    args = parser.parse_args()
+    season = args.season or current_season()
+
     if not os.path.exists(SQLITE_PATH):
         log("app.db not found -- run scripts/build_db.py first.")
         sys.exit(1)
 
     clone_or_refresh_nfldata()
-    games = load_games()
+    games = load_games(season)
     if not games:
-        log(f"WARNING: no {SEASON} regular-season games found in games.csv -- nothing loaded.")
-        return
+        # Exit non-zero rather than logging and returning 0. This is the
+        # shape a silent failure takes -- nfldata not yet carrying next
+        # season, or a --season typo -- and a scheduled run that "passes"
+        # while loading nothing leaves Pick'em serving a stale season.
+        log(f"ERROR: no {season} regular-season games found in games.csv -- nothing loaded.")
+        sys.exit(1)
 
     conn = sqlite3.connect(SQLITE_PATH)
     for g in games:
@@ -109,13 +121,13 @@ def main():
            VALUES ('pickem_games', 'nflverse/nfldata', datetime('now'), ?, ?)
            ON CONFLICT(table_name) DO UPDATE SET
                last_synced_at=datetime('now'), row_count=excluded.row_count, notes=excluded.notes""",
-        (len(games), f"season {SEASON}, regular season only"),
+        (len(games), f"season {season}, regular season only"),
     )
     conn.commit()
     conn.close()
 
     n_final = sum(1 for g in games if g["is_final"])
-    log(f"loaded {len(games)} games for {SEASON} ({n_final} final)")
+    log(f"loaded {len(games)} games for {season} ({n_final} final)")
     log("done.")
 
 

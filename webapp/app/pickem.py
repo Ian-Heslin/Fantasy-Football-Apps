@@ -7,8 +7,13 @@ every standings view immediately.
 spread_line convention: POSITIVE means the home team is favored -- verified
 empirically against ~2,900 real games (see schema/sqlite_schema.sql's
 pickem_games comment). Don't flip the signs below without re-checking that.
+
+Confidence points: see confidence_layout() for the one rule everything
+else here depends on -- once a game kicks off its number is frozen, and
+only the games still to come renumber among themselves.
 """
-from datetime import datetime
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 TEAM_NAMES = {
     "BUF": "Bills", "MIA": "Dolphins", "NE": "Patriots", "NYJ": "Jets",
@@ -20,6 +25,11 @@ TEAM_NAMES = {
     "ATL": "Falcons", "CAR": "Panthers", "NO": "Saints", "TB": "Buccaneers",
     "ARI": "Cardinals", "LA": "Rams", "SF": "49ers", "SEA": "Seahawks",
 }
+
+# pickem_games.kickoff_at is stored naive, in the stadium's local time,
+# which nfldata reports as Eastern for every game (including the ones
+# played abroad). See is_locked().
+KICKOFF_TZ = ZoneInfo("America/New_York")
 
 
 def get_settings(conn):
@@ -86,103 +96,183 @@ def score_pick(game, pick_row, settings):
     return 1
 
 
-def compute_display_confidence(games, existing):
-    """Confidence value to show for every game this week, whether picked
-    yet or not -- always a full 1..len(games) permutation. Games with an
-    already-stored confidence (existing[game_id]['confidence']) keep it;
-    everything else gets whatever numbers are left over, largest first, in
-    `games`' order (kickoff order, same as the table). Doesn't write
-    anything -- callers persist by way of the normal picks/confidence
-    submit paths, at which point a real team pick exists for the row."""
+def confidence_layout(games, existing, now=None):
+    """The whole week's confidence picture in one pass.
+
+    Returns (assignment, frozen_ids, free_values):
+      assignment   {game_id: confidence} -- always a full 1..len(games)
+                   permutation, so every game shows a number whether it's
+                   been picked or not.
+      frozen_ids   game_ids whose number can no longer move (kicked off
+                   or final), whether or not a team was ever picked.
+      free_values  sorted confidence values still in play -- exactly the
+                   numbers held by the games that haven't kicked off, and
+                   the only values reorder_confidence will accept.
+
+    The rule that makes this correct: **a game that kicks off holds its
+    number, picked or not.** A kicked-off game with no pick scores
+    nothing (score_pick returns None without a pick row), but it still
+    burns its confidence value, so the games that are still open
+    renumber among free_values only. Without that, an unplayed game's
+    number could be handed to a game whose result is already known.
+
+    Numbers are handed out in three passes: real stored picks keep what
+    they have; kicked-off games with nothing stored take the LOWEST
+    values left (a missed pick burns the cheapest number rather than the
+    most valuable one); everything still open takes the rest, largest
+    first in kickoff order. That ordering is also what keeps a
+    kicked-off game's number stable as other games get picked -- the
+    open games only ever draw from values above the burned ones.
+
+    Pure: writes nothing. A pick's number is persisted by the normal
+    submit paths, at which point a real team pick exists to hang it on.
+    An open game with no pick has no row to store a number in, so its
+    displayed number is recomputed each render and can move as its
+    neighbours get picked -- it's a preview, not a commitment."""
     n = len(games)
-    used = {
-        r["confidence"] for r in existing.values()
-        if r["confidence"] is not None and 1 <= r["confidence"] <= n
-    }
-    remaining = [v for v in range(n, 0, -1) if v not in used]
-    result = {}
-    it = iter(remaining)
+
+    # Pass 1: stored picks keep their number. Defensive against
+    # duplicates and out-of-range values (a week whose game count shrank
+    # after a postponement) -- anything invalid falls through to be
+    # reassigned below rather than corrupting the permutation.
+    assignment, used = {}, set()
     for g in games:
         row = existing.get(g["game_id"])
-        if row is not None and row["confidence"] is not None and row["confidence"] in used:
-            result[g["game_id"]] = row["confidence"]
-        else:
-            result[g["game_id"]] = next(it)
-    return result
+        if row is None or row["confidence"] is None:
+            continue
+        value = row["confidence"]
+        if not 1 <= value <= n or value in used:
+            continue
+        assignment[g["game_id"]] = value
+        used.add(value)
+
+    pool = [v for v in range(1, n + 1) if v not in used]
+
+    # Pass 2: kicked off, nothing stored -- burn the lowest values left.
+    burned = 0
+    for g in games:
+        if g["game_id"] in assignment or not is_locked(g, now):
+            continue
+        assignment[g["game_id"]] = pool[burned]
+        burned += 1
+
+    # Pass 3: still open -- share out what's left, largest first.
+    remaining = sorted(pool[burned:], reverse=True)
+    for g, value in zip((g for g in games if g["game_id"] not in assignment), remaining):
+        assignment[g["game_id"]] = value
+
+    frozen_ids = {g["game_id"] for g in games if is_locked(g, now)}
+    free_values = sorted(v for gid, v in assignment.items() if gid not in frozen_ids)
+    return assignment, frozen_ids, free_values
 
 
-def reorder_confidence(conn, user_id, season, week, game_id, new_confidence):
-    """Sets one game's confidence for this user, shifting every other
-    already-picked game for the same week to keep a valid 1..n_games
-    permutation -- the standard "move to rank N, close the gap" reorder:
-    moving a pick to a HIGHER number shifts everything strictly above its
-    old spot and at-or-below the new one DOWN by one; moving it to a LOWER
-    number shifts everything at-or-above the new spot and below the old
-    one UP by one. Only touches games the user has already picked a team
-    for (confidence can't be stored without a picked_team row to attach
-    to -- schema requires it) -- a not-yet-picked game's displayed
-    confidence is just recomputed fresh next render, see
-    compute_display_confidence. No-ops if game_id has no existing pick."""
-    n_games = conn.execute(
-        "SELECT count(*) FROM pickem_games WHERE season = ? AND week = ?", (season, week)
-    ).fetchone()[0]
-    new_confidence = max(1, min(n_games, new_confidence))
-
-    current = conn.execute(
-        """SELECT game_id, confidence FROM pickem_picks
-           WHERE user_id = ? AND game_id IN
+def week_picks(conn, user_id, season, week):
+    """This user's picks for one week, keyed by game_id."""
+    rows = conn.execute(
+        """SELECT * FROM pickem_picks WHERE user_id = ? AND game_id IN
                (SELECT game_id FROM pickem_games WHERE season = ? AND week = ?)""",
         (user_id, season, week),
     ).fetchall()
-    by_game = {r["game_id"]: r["confidence"] for r in current}
+    return {r["game_id"]: r for r in rows}
 
-    if game_id not in by_game:
-        return  # no team picked for this game yet -- nothing to reorder
 
-    old_confidence = by_game[game_id] or new_confidence
-    if old_confidence == new_confidence:
-        conn.execute(
-            "UPDATE pickem_picks SET confidence = ? WHERE user_id = ? AND game_id = ?",
-            (new_confidence, user_id, game_id),
-        )
-        conn.commit()
-        return
+def week_games(conn, season, week):
+    return conn.execute(
+        "SELECT * FROM pickem_games WHERE season = ? AND week = ? ORDER BY kickoff_at",
+        (season, week),
+    ).fetchall()
 
-    for other_id, conf in by_game.items():
-        if other_id == game_id or conf is None:
-            continue
-        if new_confidence > old_confidence and old_confidence < conf <= new_confidence:
-            conn.execute(
-                "UPDATE pickem_picks SET confidence = ? WHERE user_id = ? AND game_id = ?",
-                (conf - 1, user_id, other_id),
-            )
-        elif new_confidence < old_confidence and new_confidence <= conf < old_confidence:
-            conn.execute(
-                "UPDATE pickem_picks SET confidence = ? WHERE user_id = ? AND game_id = ?",
-                (conf + 1, user_id, other_id),
-            )
+
+def reorder_confidence(conn, user_id, season, week, game_id, new_confidence, now=None):
+    """Sets one game's confidence for this user, shifting the other games
+    that are still open to keep a valid 1..n_games permutation. Returns
+    True if anything was written.
+
+    The shift is the standard "move to rank N, close the gap" reorder,
+    but it runs over confidence_layout's free_values rather than over
+    1..n: moving a pick to a HIGHER number shifts everything strictly
+    above its old spot and at-or-below the new one DOWN one free slot;
+    moving it LOWER shifts everything at-or-above the new spot and below
+    the old one UP one free slot. Because it walks free_values by index
+    rather than doing conf +/- 1 arithmetic, it steps *over* the numbers
+    frozen games are holding instead of stealing them.
+
+    Refuses outright when the target game has kicked off, or when the
+    requested number belongs to a game that has. That guard is the point
+    of this function: it used to shift every picked game in the week by
+    raw value, so changing an upcoming game's number silently rewrote
+    the number on a game that was already final and already scored --
+    and a direct POST could set a finished game's confidence once its
+    result was known.
+
+    Only writes rows that exist: an open game with no team picked yet has
+    nothing to store a number against (the schema requires picked_team),
+    so it keeps getting its number from confidence_layout each render."""
+    games = week_games(conn, season, week)
+    if not games:
+        return False
+    target = next((g for g in games if g["game_id"] == game_id), None)
+    if target is None or is_locked(target, now):
+        return False  # kicked off -- its number is locked in place
+
+    existing = week_picks(conn, user_id, season, week)
+    if game_id not in existing:
+        return False  # no team picked for this game yet -- nothing to reorder
+
+    assignment, frozen_ids, free_values = confidence_layout(games, existing, now)
+    if new_confidence not in free_values:
+        return False  # that number belongs to a game that's already kicked off
+
+    slot = {value: i for i, value in enumerate(free_values)}
+    old_i, new_i = slot[assignment[game_id]], slot[new_confidence]
+
+    if old_i != new_i:
+        for other_id, value in assignment.items():
+            if other_id == game_id or other_id in frozen_ids or other_id not in existing:
+                continue
+            i = slot[value]
+            if new_i > old_i and old_i < i <= new_i:
+                _set_confidence(conn, user_id, other_id, free_values[i - 1])
+            elif new_i < old_i and new_i <= i < old_i:
+                _set_confidence(conn, user_id, other_id, free_values[i + 1])
+
+    _set_confidence(conn, user_id, game_id, new_confidence)
+    conn.commit()
+    return True
+
+
+def _set_confidence(conn, user_id, game_id, value):
     conn.execute(
         "UPDATE pickem_picks SET confidence = ? WHERE user_id = ? AND game_id = ?",
-        (new_confidence, user_id, game_id),
+        (value, user_id, game_id),
     )
-    conn.commit()
 
 
-def is_locked(game):
+def is_locked(game, now=None):
     """True once a game has started (or finished) -- picks for it can no
-    longer be made or changed. kickoff_at has no timezone info (nfldata
-    gives local kickoff time, assumed ET), compared against the server's
-    local clock -- approximate by a few hours depending on server timezone,
-    good enough to block picking after a game's already well underway."""
+    longer be made or changed, and its confidence number is frozen.
+
+    kickoff_at carries no timezone (nfldata gives local kickoff time,
+    which is Eastern), so it's *interpreted* as ET here rather than
+    compared against a naive server clock. That comparison used to be
+    naive-vs-naive, which silently inherited whatever timezone the host
+    happened to run in -- on a UTC host (Debian's default) every game
+    locked 4-5 hours early, closing picks most of a morning before
+    kickoff with no error anywhere. Explicit zones both sides now, so
+    the host's timezone can't change the answer.
+
+    now: injectable for tests; defaults to the real current instant."""
     if game["is_final"]:
         return True
     if not game["kickoff_at"]:
         return False
     try:
         kickoff = datetime.fromisoformat(game["kickoff_at"])
-    except ValueError:
+    except (TypeError, ValueError):
         return False
-    return datetime.now() >= kickoff
+    if kickoff.tzinfo is None:
+        kickoff = kickoff.replace(tzinfo=KICKOFF_TZ)
+    return (now or datetime.now(timezone.utc)) >= kickoff
 
 
 def current_season(conn):

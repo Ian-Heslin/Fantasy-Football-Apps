@@ -48,6 +48,8 @@ import pandas as pd
 import statsmodels.api as sm
 from sklearn.metrics import roc_auc_score
 
+from seasons import last_complete_season
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(ROOT, "data")
 SQLITE_PATH = os.path.join(DATA_DIR, "app.db")
@@ -59,7 +61,10 @@ MODEL_VERSION = "v7"
 # From data/final_workbooks/Fantasy_Football_PPG_Tiers_2001-2025.xlsx,
 # "Tier Cutoffs" sheet -- fixed PPG thresholds, not re-derived per season.
 STAR_PPG_CUTOFF = {"QB": 17.65, "RB": 13.24, "WR": 14.71, "TE": 10.29}
-LAST_COMPLETE_SEASON = 2025
+# Derived: training on a season that is still being played skews every
+# fitted coefficient toward whoever started fast, and a pinned year
+# quietly stops advancing. See scripts/seasons.py.
+LAST_COMPLETE_SEASON = last_complete_season()
 
 FEATURES = ["age", "ppg_drop", "prior_ppg_above_star", "years_star_streak",
             "pos_RB", "pos_TE", "pos_WR"]

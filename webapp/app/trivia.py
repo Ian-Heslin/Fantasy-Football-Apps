@@ -212,8 +212,17 @@ def submit_round(conn, round_id, user_id, guesses):
 def leaderboard(conn, game_type, category=None):
     """Each user's best score (as a fraction of that round's total) for
     one category, or across all of a game_type's categories if category
-    is None. Ranked by best correct-fraction, most recent round breaks
-    ties (arbitrary but stable)."""
+    is None. Ranked by best correct-fraction, larger round breaking ties.
+
+    Also reports rounds_played. Nothing caps how many rounds a user
+    starts and a round samples ROUND_SIZE questions from a much larger
+    pool, so "best score" rewards persistence as well as knowledge --
+    keep rolling and an easy sample turns up eventually. Surfacing the
+    round count next to the score makes that visible rather than
+    silently baked into the ranking; the ranking rule itself is
+    unchanged, since changing it would re-rank every round already
+    played. Ranking on a rolling average instead would remove the
+    incentive outright -- that's a game-design call, not a bug fix."""
     where = "game_type = ? AND completed_at IS NOT NULL"
     params = [game_type]
     if category is not None:
@@ -231,12 +240,25 @@ def leaderboard(conn, game_type, category=None):
     for r in rows:
         key = r["user_id"]
         frac = r["score"] / r["total"] if r["total"] else 0
-        if key not in best or frac > best[key]["fraction"]:
+        entry = best.get(key)
+        if entry is None:
             best[key] = {
                 "user_id": r["user_id"], "username": r["username"], "category": r["category"],
                 "score": r["score"], "total": r["total"], "fraction": frac,
+                "rounds_played": 1,
             }
-    results = sorted(best.values(), key=lambda r: r["fraction"], reverse=True)
+            continue
+        entry["rounds_played"] += 1
+        # Tie-break a equal fractions on the larger round: 9/10 and 3/3
+        # both being "best" would otherwise rank the 3-question round
+        # first, which is only reachable in a category whose whole pool
+        # is smaller than ROUND_SIZE.
+        if (frac, r["total"]) > (entry["fraction"], entry["total"]):
+            entry.update(category=r["category"], score=r["score"],
+                         total=r["total"], fraction=frac)
+
+    results = sorted(best.values(),
+                     key=lambda r: (r["fraction"], r["total"]), reverse=True)
     for i, r in enumerate(results, start=1):
         r["rank"] = i
     return results

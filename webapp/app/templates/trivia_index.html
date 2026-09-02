@@ -4,7 +4,9 @@
 <h1>Trivia</h1>
 <p class="subtle"><a href="/games">&larr; Games</a></p>
 <p class="subtle">Play anytime, on your own -- each round scores immediately and your best
-  round per category counts toward that category&rsquo;s leaderboard.</p>
+  round per category counts toward that category&rsquo;s leaderboard. The rounds column
+  shows how many it took -- a best score off twenty attempts isn&rsquo;t the same as one
+  off two.</p>
 
 {% if weekly_category %}
 <h2>Weekly Top Scorers</h2>
@@ -20,10 +22,10 @@
     </form>
     {% if weekly_board %}
     <table class="data-table">
-      <thead><tr><th>#</th><th>Player</th><th>Best score</th></tr></thead>
+      <thead><tr><th>#</th><th>Player</th><th>Best score</th><th>Rounds</th></tr></thead>
       <tbody>
         {% for row in weekly_board %}
-        <tr><td>{{ row.rank }}</td><td>{{ row.username }}</td><td>{{ row.score }} / {{ row.total }}</td></tr>
+        <tr><td>{{ row.rank }}</td><td>{{ row.username }}</td><td>{{ row.score }} / {{ row.total }}</td><td class="subtle">{{ row.rounds_played }}</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -50,10 +52,10 @@
     {% set top = top100_boards[year] %}
     {% if top %}
     <table class="data-table">
-      <thead><tr><th>#</th><th>Player</th><th>Best score</th></tr></thead>
+      <thead><tr><th>#</th><th>Player</th><th>Best score</th><th>Rounds</th></tr></thead>
       <tbody>
         {% for row in top %}
-        <tr><td>{{ row.rank }}</td><td>{{ row.username }}</td><td>{{ row.score }} / {{ row.total }}</td></tr>
+        <tr><td>{{ row.rank }}</td><td>{{ row.username }}</td><td>{{ row.score }} / {{ row.total }}</td><td class="subtle">{{ row.rounds_played }}</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -80,13 +82,14 @@
     {% set top = boards[game_type][cat] %}
     {% if top %}
     <table class="data-table">
-      <thead><tr><th>#</th><th>Player</th><th>Best score</th></tr></thead>
+      <thead><tr><th>#</th><th>Player</th><th>Best score</th><th>Rounds</th></tr></thead>
       <tbody>
         {% for row in top %}
         <tr>
           <td>{{ row.rank }}</td>
           <td>{{ row.username }}</td>
           <td>{{ row.score }} / {{ row.total }}</td>
+          <td class="subtle">{{ row.rounds_played }}</td>
         </tr>
         {% endfor %}
       </tbody>

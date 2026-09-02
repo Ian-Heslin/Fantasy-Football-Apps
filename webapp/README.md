@@ -29,9 +29,41 @@ promote yourself to admin:
 python3 fantasy-football-db/scripts/promote_user.py <your-username> admin
 ```
 
+The session cookie is marked `Secure`, so over plain `http://localhost`
+the browser will accept it and then never send it back -- you'd sign in
+and land straight back on `/login`. For local development, opt out:
+
+```bash
+SESSION_INSECURE_COOKIE=1 uvicorn app.main:app --reload
+```
+
+Never set that on the Pi -- see `app/main.py`.
+
 To stop starting this manually every time and instead have it run
 persistently on your home network at a friendly hostname, see
 `deploy/README.md`.
+
+## Tests
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+python3 -m pytest tests/ -q
+```
+
+They run against throwaway in-memory / `tmp_path` databases and never
+touch a real `app.db`. Coverage is deliberately narrow -- the rules a
+player would notice being wrong, not the route boilerplate:
+
+- `test_pickem.py` -- scoring, the spread-sign convention, when a game
+  locks, and the confidence permutation. A game's number and score must
+  stop moving the moment it kicks off; several of these are regression
+  tests for a bug where they didn't.
+- `test_auth.py` -- signup validation, the login throttle, and the
+  no-such-user timing path.
+- `test_db.py` -- that `PRAGMA foreign_keys` and WAL are actually on for
+  every connection, and that a failed paired open leaks nothing.
+- `test_routes.py` -- end to end through the real ASGI app, real schema
+  and real templates: the auth flow, tier boundaries, and cookie flags.
 
 ## Accounts & tiers
 
@@ -205,9 +237,10 @@ app/
                          require_tier() (the router-level dependency every protected
                          router uses)
   pickem.py            -- Pick'em scoring (winner/cover/score_pick), standings,
-                         current_season/current_week, and confidence auto-assign/
-                         reorder (compute_display_confidence/reorder_confidence) --
-                         pure functions over DB rows, no FastAPI/route code
+                         current_season/current_week, kickoff locking (is_locked,
+                         Eastern-aware), and confidence assignment/reorder
+                         (confidence_layout/reorder_confidence) -- pure functions
+                         over DB rows, no FastAPI/route code
   trivia.py             -- Award Winners/Season Leaders round sampling, scoring
                          (normalize_name), and leaderboards -- pure functions
   fantasy_draft.py        -- Fantasy Draft slot/position rules, player lookup +

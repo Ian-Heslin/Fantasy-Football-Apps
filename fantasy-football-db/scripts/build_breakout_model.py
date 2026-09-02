@@ -50,6 +50,8 @@ import pandas as pd
 import statsmodels.api as sm
 from sklearn.metrics import roc_auc_score
 
+from seasons import last_complete_season
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(ROOT, "data")
 SQLITE_PATH = os.path.join(DATA_DIR, "app.db")
@@ -59,7 +61,10 @@ MODEL_NAME = "breakout"
 MODEL_VERSION = "v11"
 
 STARTER_PPG_CUTOFF = {"QB": 15.0, "RB": 11.0, "WR": 11.0, "TE": 8.0}
-LAST_COMPLETE_SEASON = 2025
+# Derived: training on a season that is still being played skews every
+# fitted coefficient toward whoever started fast, and a pinned year
+# quietly stops advancing. See scripts/seasons.py.
+LAST_COMPLETE_SEASON = last_complete_season()
 UNDRAFTED_PICK = 300
 UNDRAFTED_ROUND = 8
 
