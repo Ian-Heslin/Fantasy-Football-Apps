@@ -125,9 +125,12 @@ CREATE TABLE IF NOT EXISTS model_predictions (
     PRIMARY KEY (player_id, model_name, model_version, season)
 );
 
--- Final season-by-season standings, one row per team per season, for
--- leagues whose platform exposes real season history (currently ESPN --
--- see scripts/load_espn.py's --history flag). final_rank is a best-effort
+-- Final season-by-season standings, one row per team per season -- see
+-- both load_espn.py's and load_sleeper.py's --history flag (ESPN keeps one
+-- league_id across years; Sleeper mints a new one each season and chains
+-- them via previous_league_id, but load_sleeper.py stores history under
+-- the CURRENT season's league_id either way, since that's the id this
+-- league is keyed by everywhere else in app.db). final_rank is a best-effort
 -- ranking by (wins desc, points_for desc) computed from the regular-season
 -- record, NOT pulled from the platform's own playoff bracket result -- a
 -- team that lost in the championship game could still rank #1 here if its

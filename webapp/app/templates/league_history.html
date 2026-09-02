@@ -15,8 +15,7 @@
 {% if not rows %}
 <div class="empty-state">
   <p>No season history loaded yet -- run
-  <code>scripts/load_{{ league['platform'] }}.py --history</code> to pull it in
-  (currently only ESPN leagues support this).</p>
+  <code>scripts/load_{{ league['platform'] }}.py --history</code> to pull it in.</p>
 </div>
 {% else %}
 <table class="data-table">
