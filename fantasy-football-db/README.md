@@ -37,10 +37,15 @@ python3 scripts/load_sleeper.py   # pulls your leagues/rosters from Sleeper's
 python3 scripts/load_espn.py      # pulls your leagues/rosters from ESPN's
                                    # public (unofficial) API -- both of Ian's
                                    # ESPN leagues are public, no login cookies
-                                   # needed; edit LEAGUE_IDS/SEASON in the
-                                   # script if they change; add --history to
-                                   # also pull every past season's final
-                                   # standings into league_season_standings
+                                   # needed for the CURRENT season; edit
+                                   # LEAGUE_IDS/SEASON in the script if they
+                                   # change; add --history to also pull every
+                                   # past season's final standings into
+                                   # league_season_standings -- older seasons
+                                   # 401 without auth even on a public league,
+                                   # so set SWID/ESPN_S2 env vars (from a
+                                   # logged-in browser's cookies) to get past
+                                   # that wall
 python3 scripts/load_nflverse.py  # loads 1999-2025 play-by-play (defaults to
                                    # the full range; pass --start/--end for a
                                    # smaller window)
