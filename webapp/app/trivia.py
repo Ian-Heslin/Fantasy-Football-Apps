@@ -9,8 +9,9 @@ version, which was a live, shared, host-run session with per-contestant
 That's a real, different feature (see the project's task notes) -- this
 module is the async individual-play version only.
 
-Reference/answer data (trivia_award_winners, trivia_season_leaders) lives
-in analytics.duckdb (see scripts/load_trivia_data.py); rounds themselves
+Reference/answer data (trivia_award_winners, trivia_season_leaders,
+nfl_top_100) lives in analytics.duckdb (see scripts/load_trivia_data.py,
+scripts/load_nfl_top100.py); rounds themselves
 (trivia_rounds/trivia_round_items) are operational data in app.db, and
 snapshot their questions/answers at creation time rather than joining
 live against the reference tables on every view -- so a round's history
@@ -38,6 +39,16 @@ ROUND_SIZE = 10
 # week is a question (not a random sample of a larger pool) -- the whole
 # premise is "guess who these were", not sampling down further.
 WEEKLY_ROUND_SIZE = 15
+
+# NFL Top 100: "guess the rank" like Season Leaders, but the category is a
+# real year (2011-2026, whatever nfl_top_100 covers) instead of a fixed
+# name -- see available_top100_years(). A round samples ROUND_SIZE of
+# that year's 100 ranked players, same as Award Winners/Season Leaders.
+
+
+def available_top100_years(duckdb_conn):
+    rows = duckdb_conn.execute("SELECT DISTINCT year FROM nfl_top_100 ORDER BY year DESC").fetchall()
+    return [r[0] for r in rows]
 
 
 def normalize_name(name):
@@ -91,6 +102,10 @@ def _weekly_prompt(rank, team, position, ppr_pt):
     return f"#{rank} this week — {team or '?'} {position or ''} — {ppr_pt:.1f} PPR pts".replace("  ", " ")
 
 
+def _top100_prompt(year, rank, team):
+    return f"#{rank} on the NFL's Top 100 Players of {year} — {team or 'free agent'}"
+
+
 def start_round(sqlite_conn, duckdb_conn, user_id, game_type, category):
     """Samples ROUND_SIZE questions (fewer if the category doesn't have
     that many), snapshots them into a new trivia_rounds/trivia_round_items
@@ -123,6 +138,12 @@ def start_round(sqlite_conn, duckdb_conn, user_id, game_type, category):
             (str(rank), _weekly_prompt(rank, team, position, ppr_pt), player)
             for rank, (player, team, position, ppr_pt) in enumerate(rows, start=1)
         ]
+    elif game_type == "nfl_top100":
+        year = int(category)
+        rows = duckdb_conn.execute(
+            "SELECT rank, player, team FROM nfl_top_100 WHERE year = ?", (year,)
+        ).fetchall()
+        pool = [(str(rank), _top100_prompt(year, rank, team), player) for rank, player, team in rows]
     else:
         raise ValueError(f"unknown game_type {game_type!r}")
 

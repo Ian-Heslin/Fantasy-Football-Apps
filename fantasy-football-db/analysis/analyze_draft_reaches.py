@@ -23,15 +23,16 @@ Method:
      the whole league (obviously round-1 picks outproduce round-7 picks
      regardless of whether either group "reached").
 
-GM/owner attribution isn't included here -- see load_team_executives.py
-(a Wikipedia scraper you run locally; this sandbox can't reach Wikipedia)
--- this script covers team- and head-coach-level attribution only, using
-the coach_table already in this project.
+Attribution: team- and head-coach-level via coach_table (PFR-sourced,
+2001-2025); GM-level via team_executives_season (Wikipedia-sourced via
+Claude/Cowork, see load_team_executives.py -- this sandbox can't reach
+Wikipedia directly, so that data was fetched outside it).
 
 Outputs (analysis/ directory):
   draft_reach_player_level.csv   -- every matched player, one row each
   draft_reach_by_team.csv         -- team-level reach tendency + outcome
   draft_reach_by_coach.csv        -- HC-level reach tendency + outcome
+  draft_reach_by_gm.csv           -- GM-level reach tendency + outcome
 """
 import os
 import re
@@ -248,38 +249,55 @@ def main():
         ["team", "n_picks", "avg_reach_score", "n_reaches", "avg_av_vs_peers_on_reaches"],
     )
 
+    # ---- attribution rows shared by HC and GM breakdowns ----
+    def attribution_rows(matched, by_team_season, key_label, min_picks=5):
+        grouped = {}
+        for r in matched:
+            person = by_team_season.get((r["year"], r["team"]))
+            if person is None:
+                continue
+            grouped.setdefault(person, []).append(r)
+
+        rows = []
+        for person, rows_for_person in grouped.items():
+            if len(rows_for_person) < min_picks:
+                continue  # too few picks under this person to say anything
+            reaches = [r for r in rows_for_person if r["reach_score"] > 0]
+            rows.append({
+                key_label: person,
+                "n_picks": len(rows_for_person),
+                "avg_reach_score": statistics.mean(r["reach_score"] for r in rows_for_person),
+                "n_reaches": len(reaches),
+                "avg_av_vs_peers_on_reaches": (
+                    statistics.mean(r["av_vs_peers"] for r in reaches if r["av_vs_peers"] is not None)
+                    if any(r["av_vs_peers"] is not None for r in reaches) else None
+                ),
+            })
+        rows.sort(key=lambda r: r["avg_reach_score"], reverse=True)
+        return rows
+
     # ---- HC-level reach tendency (via coach_table) ----
     hc_rows_raw = conn.execute(
         "SELECT season, team, coach_name FROM coach_table WHERE role = 'HC'"
     ).fetchall()
     hc_by_team_season = {(season, team): coach for season, team, coach in hc_rows_raw}
 
-    by_coach = {}
-    for r in matched:
-        coach = hc_by_team_season.get((r["year"], r["team"]))
-        if coach is None:
-            continue
-        by_coach.setdefault(coach, []).append(r)
-
-    coach_rows = []
-    for coach, rows in by_coach.items():
-        if len(rows) < 5:
-            continue  # too few picks under this HC to say anything
-        reaches = [r for r in rows if r["reach_score"] > 0]
-        coach_rows.append({
-            "coach": coach,
-            "n_picks": len(rows),
-            "avg_reach_score": statistics.mean(r["reach_score"] for r in rows),
-            "n_reaches": len(reaches),
-            "avg_av_vs_peers_on_reaches": (
-                statistics.mean(r["av_vs_peers"] for r in reaches if r["av_vs_peers"] is not None)
-                if any(r["av_vs_peers"] is not None for r in reaches) else None
-            ),
-        })
-    coach_rows.sort(key=lambda r: r["avg_reach_score"], reverse=True)
+    coach_rows = attribution_rows(matched, hc_by_team_season, "coach")
     write_csv(
         os.path.join(OUT_DIR, "draft_reach_by_coach.csv"), coach_rows,
         ["coach", "n_picks", "avg_reach_score", "n_reaches", "avg_av_vs_peers_on_reaches"],
+    )
+
+    # ---- GM-level reach tendency (via team_executives_season) ----
+    gm_rows_raw = conn.execute(
+        "SELECT season, team, general_manager FROM team_executives_season WHERE general_manager IS NOT NULL"
+    ).fetchall()
+    gm_by_team_season = {(season, team): gm for season, team, gm in gm_rows_raw}
+
+    gm_rows = attribution_rows(matched, gm_by_team_season, "gm")
+    write_csv(
+        os.path.join(OUT_DIR, "draft_reach_by_gm.csv"), gm_rows,
+        ["gm", "n_picks", "avg_reach_score", "n_reaches", "avg_av_vs_peers_on_reaches"],
     )
 
     # ---- the Shanahan/WR question specifically, if the data supports it ----
@@ -299,7 +317,7 @@ def main():
 
     conn.close()
     log(f"wrote draft_reach_player_level.csv, draft_reach_by_team.csv, "
-        f"draft_reach_by_coach.csv to {OUT_DIR}")
+        f"draft_reach_by_coach.csv, draft_reach_by_gm.csv to {OUT_DIR}")
     log("done.")
 
 

@@ -95,20 +95,31 @@ the more defensible version of the reputation is "reaches aggressively
 overall and it costs him less than it costs most equally aggressive GMs/
 coaches," not "reaches specifically at WR and it works."
 
-GM/owner attribution isn't in here yet -- `team_executives_season` (owner +
-GM per team-season) has no reachable source from this sandbox (Wikipedia is
-blocked); it needs a scraper run locally or via Claude-in-Chrome against
-each team's per-season Wikipedia page, then a follow-up to this script.
+**GM-level attribution** (via `team_executives_season`, Wikipedia-sourced
+through Claude/Cowork -- this sandbox can't reach Wikipedia directly)
+tells a consistent story with the HC finding above: John Lynch (the
+49ers' GM throughout Shanahan's tenure) is similarly aggressive (48
+picks, avg reach_score +9.6) with a near-break-even outcome on his
+reaches (-0.65 AV vs. peers) -- the same "reaches a lot, costs him less
+than most" pattern, which is a reasonable cross-check that the HC and GM
+attribution are joining correctly (same era, same franchise, same
+signal). Elsewhere: Trent Baalke (48 picks, avg reach_score +11.9) is
+both aggressive and costly on his reaches (-5.89 AV vs. peers) --
+matching his reputation as one of the more criticized GMs of that era;
+Thomas Dimitroff (44 picks) is on the other end, muted reaching
+(avg reach_score +1.6) with reaches that outperformed peers (+8.98 AV).
 
 **Known caveat**: `draft_picks`' team codes are PFR-style (`SFO`, `GNB`,
 `KAN`, ...); this script normalizes them (`TEAM_CODE_MAP`) to this
-project's standard codes before joining against `coach_table` -- without
-that, every relocated/renamed franchise (including SF/Shanahan) silently
-drops out of the HC-level results.
+project's standard codes before joining against `coach_table`/
+`team_executives_season` -- without that, every relocated/renamed
+franchise (including SF/Shanahan/Lynch) silently drops out of both the
+HC- and GM-level results.
 
 Run `python3 analysis/analyze_draft_reaches.py` to reproduce -- reads
-`draft_prospect_grades`/`draft_picks`/`coach_table` from
-`analytics.duckdb` (needs `scripts/load_draft_grades.py` and
-`scripts/load_draft_picks.py` run first), writes
-`draft_reach_player_level.csv` (every matched player, one row each),
-`draft_reach_by_team.csv`, and `draft_reach_by_coach.csv`.
+`draft_prospect_grades`/`draft_picks`/`coach_table`/`team_executives_season`
+from `analytics.duckdb` (needs `scripts/load_draft_grades.py`,
+`scripts/load_draft_picks.py`, and `scripts/load_team_executives.py` run
+first), writes `draft_reach_player_level.csv` (every matched player, one
+row each), `draft_reach_by_team.csv`, `draft_reach_by_coach.csv`, and
+`draft_reach_by_gm.csv`.

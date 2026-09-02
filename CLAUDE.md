@@ -69,11 +69,12 @@ immediately, no re-login needed.
   confidence points (auto-assigned N..1, reorders automatically when one
   pick's number changes -- see `app/pickem.py`'s `reorder_confidence`),
   team logos.
-- **Award Winners / Season Leaders / Weekly Top Scorers trivia**
-  (`/games/trivia`) -- guess-a-name-for-a-clue games, one-time spreadsheet
-  export (Award Winners/Season Leaders) plus live play-by-play-computed
-  data (Weekly Top Scorers). Loose name matching (case/punctuation/
-  suffix-insensitive), real co-winner years handled correctly.
+- **Award Winners / Season Leaders / Weekly Top Scorers / NFL Top 100
+  trivia** (`/games/trivia`) -- guess-a-name-for-a-clue games, one-time
+  spreadsheet export (Award Winners/Season Leaders), live play-by-play-
+  computed data (Weekly Top Scorers), and Wikipedia-via-Cowork data (NFL
+  Top 100). Loose name matching (case/punctuation/suffix-insensitive),
+  real co-winner years handled correctly.
 - **Fantasy Draft** (`/games/fantasy-draft`) -- draft any player from any
   season 1970-2025 at 9 roster slots, scored by real PPR points. 1999+
   comes from `player_season_fantasy_points` (computed from play_by_play,
@@ -90,11 +91,15 @@ blocker -- don't reintroduce without checking first:
   dates for the events yet, explicitly deferred.
 - "Daily Trivia" -- a placeholder card on `/games`, a different game,
   rules not specced.
-- NFL Top 100 guessing game -- no ready-made dataset exists anywhere;
-  needs Wikipedia (blocked from the dev sandbox), in progress via data
-  the user is fetching through Claude/Cowork in a browser.
-- GM/owner-per-team-season data (`team_executives_season`) -- same
-  Wikipedia-blocked situation, same in-progress path.
+
+**Resolved via Cowork** (Wikipedia-sourced data fetched in a browser,
+since this sandbox can't reach Wikipedia directly): `nfl_top_100` (the
+NFL's annual Top 100 Players list) and `team_executives_season`
+(owner/GM/HC per team-season, 1898-2026) are both loaded from committed
+CSVs (`load_nfl_top100.py`, `load_team_executives.py`). GM-level draft-
+reach attribution now exists alongside the HC-level analysis in
+`analyze_draft_reaches.py` (`draft_reach_by_gm.csv`). The NFL Top 100
+game itself is built (`/games/trivia`, game_type `nfl_top100`).
 
 ## Data source conventions (matters when adding new data)
 

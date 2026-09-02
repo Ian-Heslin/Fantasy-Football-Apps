@@ -34,6 +34,37 @@
 </div>
 {% endif %}
 
+{% if top100_years %}
+<h2>NFL Top 100</h2>
+<p class="subtle">Guess where 10 randomly-picked players ranked on the NFL's fan-voted Top 100
+  Players list for that year.</p>
+<div class="card-grid">
+  {% for year in top100_years %}
+  <div class="solaris-card">
+    <h3>{{ year }}</h3>
+    <form method="post" action="/games/trivia/start">
+      <input type="hidden" name="game_type" value="nfl_top100">
+      <input type="hidden" name="category" value="{{ year }}">
+      <button type="submit">Start a round</button>
+    </form>
+    {% set top = top100_boards[year] %}
+    {% if top %}
+    <table class="data-table">
+      <thead><tr><th>#</th><th>Player</th><th>Best score</th></tr></thead>
+      <tbody>
+        {% for row in top %}
+        <tr><td>{{ row.rank }}</td><td>{{ row.username }}</td><td>{{ row.score }} / {{ row.total }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="subtle">No rounds played yet.</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
 {% for game_type in categories %}
 {% set label = game_labels[game_type] %}
 <h2>{{ label }}</h2>

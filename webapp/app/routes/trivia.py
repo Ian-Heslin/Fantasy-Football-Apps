@@ -14,7 +14,7 @@ router = APIRouter(dependencies=[Depends(require_tier("games"))])
 
 GAME_LABELS = {
     "award_winners": "Award Winners", "season_leaders": "Season Leaders",
-    "weekly_leaders": "Weekly Top Scorers",
+    "weekly_leaders": "Weekly Top Scorers", "nfl_top100": "NFL Top 100",
 }
 CATEGORIES = {"award_winners": trivia.AWARD_CATEGORIES, "season_leaders": trivia.SEASON_CATEGORIES}
 
@@ -35,6 +35,8 @@ def trivia_index(request: Request):
         latest_season, latest_week = trivia.latest_week(duckdb_conn)
         weekly_category = trivia.weekly_category(latest_season, latest_week) if latest_season else None
         weekly_board = trivia.leaderboard(conn, "weekly_leaders", weekly_category)[:5] if weekly_category else []
+        top100_years = trivia.available_top100_years(duckdb_conn)
+        top100_boards = {year: trivia.leaderboard(conn, "nfl_top100", str(year))[:5] for year in top100_years}
     finally:
         conn.close()
         duckdb_conn.close()
@@ -45,6 +47,7 @@ def trivia_index(request: Request):
             "game_labels": GAME_LABELS, "categories": CATEGORIES, "boards": boards,
             "latest_season": latest_season, "latest_week": latest_week,
             "weekly_category": weekly_category, "weekly_board": weekly_board,
+            "top100_years": top100_years, "top100_boards": top100_boards,
         },
     )
 
@@ -52,7 +55,11 @@ def trivia_index(request: Request):
 @router.post("/games/trivia/start")
 def start_round(request: Request, game_type: str = Form(...), category: str = Form(...)):
     user = request.state.user
-    valid = (game_type in CATEGORIES and category in CATEGORIES[game_type]) or game_type == "weekly_leaders"
+    valid = (
+        (game_type in CATEGORIES and category in CATEGORIES[game_type])
+        or game_type == "weekly_leaders"
+        or (game_type == "nfl_top100" and category.isdigit())
+    )
     if not valid:
         return RedirectResponse("/games/trivia", status_code=303)
 

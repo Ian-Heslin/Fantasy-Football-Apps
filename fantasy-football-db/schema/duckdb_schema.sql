@@ -245,18 +245,21 @@ CREATE TABLE IF NOT EXISTS draft_picks (
 );
 CREATE INDEX IF NOT EXISTS idx_draft_picks_season_team ON draft_picks(season, team);
 
--- Owner + GM per team-season, scraped from Wikipedia's per-team-season
--- articles (e.g. "2023 Arizona Cardinals season") -- see
--- load_team_executives.py's docstring for why this can't be verified from
--- inside this sandbox (Wikipedia is blocked here) and needs spot-checking
--- against a few real pages after running it. HC attribution for the same
--- team-season comes from the existing coach_table -- not duplicated here.
+-- Owner + GM (+ a bonus head_coach field, back to 1898 -- further than
+-- coach_table's 2001-2025) per team-season. Committed CSV export
+-- (data/team_executives/team_executives_season.csv), Wikipedia-sourced
+-- via Claude/Cowork in a browser -- this sandbox can't reach Wikipedia
+-- directly (see load_team_executives.py). HC attribution for analysis
+-- (analyze_draft_reaches.py) still comes from coach_table, which is
+-- PFR-sourced and independently verified -- head_coach here is only a
+-- convenience/cross-check, not the authoritative HC source.
 CREATE TABLE IF NOT EXISTS team_executives_season (
     season              INTEGER NOT NULL,
     team                VARCHAR NOT NULL,
     owner               VARCHAR,
     general_manager     VARCHAR,
-    source_url          VARCHAR,
+    gm_notes            VARCHAR,   -- e.g. "No distinct GM position" for early-era teams
+    head_coach          VARCHAR,
     PRIMARY KEY (season, team)
 );
 
@@ -356,14 +359,15 @@ CREATE TABLE IF NOT EXISTS player_season_fantasy_points (
 CREATE INDEX IF NOT EXISTS idx_psfp_season_pos ON player_season_fantasy_points(season, position);
 
 -- "Guess the rank" version of the NFL Network's fan-voted annual Top 100
--- list -- a real, separate game from Award Winners (see
--- load_nfl_top100.py's docstring for why this needs a Wikipedia scraper
--- like team_executives_season, and is unverified from this sandbox).
+-- list -- a real, separate game from Award Winners. Committed CSV export
+-- (data/trivia/nfl_top100.csv), Wikipedia-sourced via Claude/Cowork in a
+-- browser (this sandbox can't reach Wikipedia directly). team is NULL for
+-- the handful of players who were between teams (free agents) when a
+-- given year's list published -- a real edge case, not missing data.
 CREATE TABLE IF NOT EXISTS nfl_top_100 (
     year        INTEGER NOT NULL,
     rank        INTEGER NOT NULL,   -- 1 = best
     player      VARCHAR NOT NULL,
     team        VARCHAR,
-    source_url  VARCHAR,
     PRIMARY KEY (year, rank)
 );

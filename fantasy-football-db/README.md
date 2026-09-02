@@ -83,6 +83,12 @@ python3 scripts/compute_fantasy_points.py  # computes standard+PPR fantasy
                                    # play_by_play, 1999-2025 -- re-run
                                    # any time play_by_play gets reloaded
                                    # to pick up new weeks during the season
+python3 scripts/load_team_executives.py  # loads owner/GM/HC per team-
+                                   # season, 1898-2026, from the committed
+                                   # CSV (Wikipedia-sourced via Cowork)
+python3 scripts/load_nfl_top100.py  # loads the NFL's annual Top 100
+                                   # Players list, 2011-2026, from the
+                                   # committed CSV (same source as above)
 ```
 
 After setting up the web app itself (see `webapp/README.md`) and signing
@@ -283,24 +289,23 @@ e.g. `load_nflverse.py` mid-season, to pick up new weeks):
   1999+, preferred over `fantasy_draft_stats` since it stays current and
   doesn't have that table's Gronkowski-shaped gaps.
 
-**Still not populated -- needs a run outside this sandbox:**
-- `team_executives_season` (DuckDB) -- owner + GM per team-season, for
-  GM-level attribution alongside the HC-level analysis above. No reachable
-  source found from this sandbox (Wikipedia is blocked); intended to be
-  scraped from each team's per-season Wikipedia page (e.g.
-  `en.wikipedia.org/wiki/2023_Arizona_Cardinals_season`) by a script run
-  locally, or via the Claude-in-Chrome extension.
+Loaded by `load_team_executives.py` and `load_nfl_top100.py`, from
+committed CSVs (`data/team_executives/`, `data/trivia/nfl_top100.csv`) --
+Wikipedia-sourced via Claude/Cowork in a browser, since this sandbox
+can't reach Wikipedia directly:
+- `team_executives_season` (DuckDB) -- owner + GM (+ a bonus `head_coach`
+  field, back to 1898) per team-season, all 32 franchises, 1898-2026
+  (2,287 rows). Powers GM-level attribution in
+  `analysis/analyze_draft_reaches.py` alongside the existing HC-level
+  analysis -- confirms the same "reaches a lot, costs him less than most"
+  pattern for John Lynch (the 49ers' GM through Shanahan's tenure) as the
+  HC-level finding for Shanahan himself, a good cross-check that both
+  joins are correct.
 - `nfl_top_100` (DuckDB) -- the NFL Network's fan-voted annual "Top 100
-  Players" list, 2011-present, for a "guess the rank" trivia game separate
-  from Award Winners. No ready-made dataset exists anywhere (checked); the
-  only real source is Wikipedia's per-year "NFL Top 100 Players of
-  &lt;year&gt;" articles, same wall as `team_executives_season` above.
-  `load_nfl_top100.py` is written but genuinely **unverified** -- unlike
-  every other loader here, its wikitext parsing couldn't be checked
-  against a real page from this sandbox, so it tries three plausible
-  formats and logs which one matched (or that none did) per year. Run it
-  for one recent year first and spot-check the output against the real
-  page before trusting the full range.
+  Players" list, 2011-2026 (1,596 rows), for a "guess the rank" trivia
+  game separate from Award Winners. `team` is NULL for the handful of
+  players who were between teams (free agents) when that year's list
+  published -- a real edge case in the source, not missing data.
 
 Worth flagging so the web page doesn't silently show stale numbers: check
 `sync_log` in `app.db` for when each table was last refreshed.
@@ -341,6 +346,10 @@ scripts/
   compute_fantasy_points.py               -- computes weekly/season PPR
                                           fantasy points from play_by_play
                                           (re-run to pick up new weeks)
+  load_team_executives.py                -- loads owner/GM/HC per team-season
+                                          from data/team_executives/
+  load_nfl_top100.py                      -- loads the NFL's annual Top 100
+                                          Players list from data/trivia/
   promote_user.py                      -- sets a web app user's tier (bootstrap
                                           the first admin; ongoing changes go
                                           through /admin/users instead)
@@ -361,8 +370,13 @@ data/
                             research -- source data for
                             load_coaching_and_offense.py
   trivia/                 -- committed: CSVs behind the web app's trivia
-                            games, exported from a personal spreadsheet --
-                            source data for load_trivia_data.py
+                            games -- award_winners/season_leaders/
+                            fantasy_draft_stats from a personal spreadsheet
+                            (load_trivia_data.py), nfl_top100 from
+                            Wikipedia via Cowork (load_nfl_top100.py)
+  team_executives/         -- committed: owner/GM/HC per team-season,
+                            1898-2026, from Wikipedia via Cowork --
+                            source data for load_team_executives.py
   _dynastyprocess_data/  -- gitignored, a working clone build_db.py manages
   _nflverse_data/        -- gitignored: cached play-by-play CSV.gz downloads
                             (~450MB for the full 1999-2025 range) so
