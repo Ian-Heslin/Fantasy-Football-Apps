@@ -166,9 +166,19 @@ league's current one, so a league that's fully public today can still require lo
 its own older seasons. `load_espn.py` now reads optional `SWID`/`ESPN_S2` env vars (from a
 logged-in browser: DevTools → Application/Storage → Cookies → `fantasy.espn.com`) and sends them
 as cookies on every request when set — never hardcoded, same treatment as the FantasyPros API key
-below. Still unconfirmed: whether supplying them actually unlocks 2018-2019 and further back for
-these two specific leagues, or whether they turn out to predate Ian's own membership/ESPN's data
-entirely — next session with Pi access should set the env vars and re-run to find out.
+below.
+
+**Confirmed working, 2026-09-02**: with `SWID`/`ESPN_S2` set, `--history` pulled all the way back
+to **2018** for both leagues (Sophomores had 10 teams that year vs. 8 now — real historical data,
+not a fluke). 2017 and earlier then hit a *different* wall: a 403 on `https://www.espn.com/fantasy/`
+— not even the URL we requested, meaning `requests`' plain GET to the legacy `leagueHistory`
+endpoint (used for pre-2018 seasons, see `HISTORY_BASE`/`LEAGUE_HISTORY_CUTOFF` above) was getting
+redirected and blocked, almost certainly by ESPN's edge/bot-protection rejecting the default
+`python-requests` User-Agent — `lm-api-reads` (BASE, used for 2018+) hasn't shown this problem.
+Added a plain desktop-browser `User-Agent`/`Accept` header (`HEADERS` in `load_espn.py`) to try to
+get past it. **Not yet verified** whether that actually unblocks 2017 and earlier, or whether 2018
+is simply where these two leagues' real ESPN history ends — next Pi run with the env vars set will
+tell us which.
 
 ## ESPN (public leagues — working, no auth needed)
 Both of Ian's ESPN leagues are public, so no `SWID`/`espn_s2` cookies are needed at all. Unlike
