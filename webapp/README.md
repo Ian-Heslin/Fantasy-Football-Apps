@@ -110,7 +110,12 @@ necessarily matching a layout the spec never drew.
 - **`/`** -- data freshness dashboard (reads `sync_log`) and quick counts.
   Fantasy-tier+ only; a `games`-tier user hitting `/` is redirected
   straight to `/games` instead, since this dashboard has nothing for them.
-- **`/games`**, **`/games/pickem`**, **`/games/pickem/picks`**,
+
+Games live under 4 tabs (`_macros.html`'s `game_tabs(active)` renders the
+shared nav; each page passes which tab is active):
+
+- **Leagues** (`/games`, `games_index.html`) -- admin-created,
+  shared-standings games. **`/games/pickem`**, **`/games/pickem/picks`**,
   **`/games/pickem/standings`** -- NFL Pick'em: pick every game's winner
   (or who covers the spread -- a league-wide, admin-only setting) each
   week, with optional confidence points. When confidence is on, every
@@ -124,17 +129,25 @@ necessarily matching a layout the spec never drew.
   (season and week-by-week) are computed live from picks + settings every
   time they're viewed, not stored, so toggling straight-up/spread or
   confidence on/off recomputes everything immediately.
-- **`/games/trivia`** -- Award Winners (9 categories: MVP, Super Bowl MVP,
-  Coach of the Year, etc.) and Season Leaders (all-time Sacks/Points)
-  guessing games, one-time exported from a personal spreadsheet (see
-  `scripts/load_trivia_data.py`). Played async/individually, like
-  Pick'em -- anyone starts a round anytime (a random sample of that
+- **Solo** (`/games/solo`) -- individual play, shared leaderboard.
+  **`/games/trivia`** -- Award Winners (9 categories: MVP, Super Bowl
+  MVP, Coach of the Year, etc.), Season Leaders (all-time Sacks/Points),
+  and NFL Top 100 guessing games. Award Winners/Season Leaders are
+  one-time exported from a personal spreadsheet (see
+  `scripts/load_trivia_data.py`); NFL Top 100 (guess where 10
+  randomly-picked players ranked on the NFL's fan-voted annual Top 100
+  Players list, one category per year, 2011-2026) is Wikipedia-sourced
+  via Claude/Cowork in a browser (`scripts/load_nfl_top100.py` --
+  this sandbox can't reach Wikipedia directly). Played async/individually,
+  like Pick'em -- anyone starts a round anytime (a random sample of that
   category's years/ranks), submits guesses, gets scored immediately
   (loose name matching -- case/punctuation/suffix-insensitive), and each
-  category has a "best score" leaderboard. **Not** the original
-  spreadsheet's live, shared, host-run "strikes" format -- that's a real,
-  different feature, not built yet (see "Not yet built" below).
-- **`/games/fantasy-draft`** -- draft any player from any NFL season,
+  category has a "best score" leaderboard. `trivia.build_pool()` builds
+  the sampled question pool and is shared with Group's reveal engine
+  below, so the two never present different questions for the same
+  category. **Not** the original spreadsheet's live, shared, host-run
+  "strikes" format -- that's Group mode's reveal engine now (see below).
+  **`/games/fantasy-draft`** -- draft any player from any NFL season,
   1970-2025, at 9 roster slots (QB/WR/WR/RB/RB/TE/FLEX/FLEX/SUPERFLEX);
   your score is that player's real PPR fantasy total from that exact
   season. 1999 onward comes from `player_season_fantasy_points` --
@@ -143,24 +156,35 @@ necessarily matching a layout the spec never drew.
   have the personal spreadsheet's gaps (Rob Gronkowski's 2011 season, e.g.,
   missing from that year's spreadsheet tab entirely, is present here).
   1970-1998 (before nflverse's play-by-play coverage starts) still comes
-  from the spreadsheet's `fantasy_draft_stats`. Async/individual like
-  everything else here -- not a shared draft board, so two users can pick
-  the same year+player with no conflict. A typed name that doesn't match
-  gets a handful of close-spelling suggestions rather than just failing.
-- Also under **`/games/trivia`**: **Weekly Top Scorers** -- guess the 15
+  from the spreadsheet's `fantasy_draft_stats`. Async/individual -- not a
+  shared draft board, so two users can pick the same year+player with no
+  conflict. A typed name that doesn't match gets a handful of
+  close-spelling suggestions rather than just failing.
+- **Daily** (`/games/daily`, `app/daily_challenge.py`) -- two games that
+  reset/rotate daily or weekly. **Weekly Top Scorers** -- guess the 15
   highest real PPR scorers from the most recently loaded week (same
-  `player_week_fantasy_points` data), rather than a fixed all-time
-  category. Re-running `load_nflverse.py` + `compute_fantasy_points.py`
-  during the season moves "most recent week" forward automatically.
-- Also under **`/games/trivia`**: **NFL Top 100** -- guess where 10
-  randomly-picked players ranked on the NFL's fan-voted annual Top 100
-  Players list, one category per year (2011-2026). Reference data
-  (`nfl_top_100`) is Wikipedia-sourced via Claude/Cowork in a browser
-  (`scripts/load_nfl_top100.py`) -- this sandbox can't reach Wikipedia
-  directly.
-- A "Daily Trivia" card sits alongside these on `/games` as a
-  placeholder -- a different, not-yet-specced game, not related to the
-  Award Winners/Season Leaders trivia above.
+  `player_week_fantasy_points` data as Fantasy Draft). Re-running
+  `load_nflverse.py` + `compute_fantasy_points.py` during the season moves
+  "most recent week" forward automatically. **Daily Stat Pad** (inspired
+  by statpadgame.com) -- pick 5 (year, player) pairs to maximize the
+  day's stat category (passing yards, rushing TDs, receptions, etc., from
+  `player_season_fantasy_points`); the category is auto-picked each day
+  via `random.Random(date.isoformat()).choice(...)`, so it's the same
+  category for everyone with nothing to persist about "today's pick."
+  Shared daily leaderboard, ranked by total across the 5 picks.
+- **Group** (`/games/group`, `app/group_games.py` + `app/group_draft.py`)
+  -- shared-screen, host-run live sessions: one device (the host's) drives
+  the whole thing, everyone else just needs to be in the room. Participants
+  are free-text names typed in at session start, not site accounts -- no
+  per-device real-time sync in this version (see "Not yet built"). Two
+  engines: a **reveal engine** for Award Winners/Season Leaders/NFL Top
+  100 (host reads each clue aloud, checks off who got it right, reveals
+  the answer, moves to the next item; standings and session-complete are
+  computed live), and a **live snake draft** for Fantasy Draft (host
+  enters each pick on the current participant's behalf in standard snake
+  turn order -- `group_draft.whose_turn()` -- same real PPR scoring and
+  slot/position rules as Solo's Fantasy Draft, with duplicate
+  year+player picks rejected).
 - **`/rosters`** -- your Sleeper and ESPN leagues; click through to any
   team's roster (a picker lets you view league-mates' rosters too, not just
   yours) valued against current dynasty trade values (1QB or superflex,
@@ -208,10 +232,20 @@ app/
                          current_season/current_week, and confidence auto-assign/
                          reorder (compute_display_confidence/reorder_confidence) --
                          pure functions over DB rows, no FastAPI/route code
-  trivia.py             -- Award Winners/Season Leaders round sampling, scoring
-                         (normalize_name), and leaderboards -- pure functions
+  trivia.py             -- Award Winners/Season Leaders/NFL Top 100 round sampling
+                         (build_pool(), shared with Group's reveal engine),
+                         scoring (normalize_name), and leaderboards -- pure functions
   fantasy_draft.py        -- Fantasy Draft slot/position rules, player lookup +
                          close-spelling suggestions, leaderboard -- pure functions
+  daily_challenge.py      -- Daily Stat Pad: today's category (deterministic by
+                         date), player/season lookup, pick validation + scoring,
+                         daily leaderboard -- pure functions
+  group_games.py          -- Group mode's reveal engine (Award Winners/Season
+                         Leaders/NFL Top 100): session/item/participant state,
+                         mark_and_reveal(), standings -- pure functions
+  group_draft.py          -- Group mode's live Fantasy Draft: snake turn order
+                         (whose_turn()), pick validation, standings -- pure
+                         functions, reuses fantasy_draft.py's slot/position rules
   team_colors.py         -- Team Colors: the 32-team color/logo table + resolve()
                          (ported from docs/solaris-design-spec.md's JS) --
                          also pure functions, no FastAPI/route code
@@ -226,9 +260,14 @@ app/
                            pages you need to reach without being logged in yet)
     admin.py             -- /admin/users, tier changes (admin-only)
     profile.py           -- link your account to your Sleeper/ESPN team (games-tier+)
-    pickem.py            -- /games/pickem routes (games-tier+)
-    trivia.py             -- /games/trivia routes (games-tier+)
-    fantasy_draft.py        -- /games/fantasy-draft routes (games-tier+)
+    pickem.py            -- /games/pickem routes (games-tier+) -- also serves
+                           bare /games (games_index, the Leagues tab)
+    trivia.py             -- /games/trivia routes (games-tier+, the Solo tab's
+                           trivia games)
+    fantasy_draft.py        -- /games/fantasy-draft routes (games-tier+, the Solo
+                           tab's Fantasy Draft)
+    games_hub.py           -- /games/solo, /games/daily routes (games-tier+)
+    group.py             -- /games/group routes (games-tier+)
     home.py, rosters.py, predictions.py, arbitrage.py, teams.py, coaches.py
                            (fantasy-tier+, except home.py which is games-tier+ but
                            redirects games-tier users to /games)
@@ -240,14 +279,10 @@ requirements.txt
 
 ## Not yet built
 
-- The Daily Trivia game -- a placeholder card on `/games`, rules still
-  being specced out (a different game from the Award Winners/Season
-  Leaders trivia, which is built).
-- A live, shared, host-run version of the Award Winners/Season Leaders
-  trivia (the original spreadsheet's format -- one person runs a round,
-  everyone answers within a window, "strikes" tracked per contestant as
-  the group plays together). What's built instead is async/individual
-  play, chosen deliberately as the simpler first version.
+- Real-time, per-device sync for Group mode -- each participant on their
+  own phone instead of everyone gathered around the host's one screen.
+  Deliberately deferred as a separate, bigger future project; this
+  version's Group mode is shared-screen/host-run only.
 - `fantasy_draft_stats` (the source spreadsheet's per-year tables) has at
   least one confirmed gap -- Rob Gronkowski's 2011 season is missing from
   that year's tab entirely -- a real hole in the source data itself, not a

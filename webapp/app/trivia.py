@@ -106,10 +106,13 @@ def _top100_prompt(year, rank, team):
     return f"#{rank} on the NFL's Top 100 Players of {year} — {team or 'free agent'}"
 
 
-def start_round(sqlite_conn, duckdb_conn, user_id, game_type, category):
-    """Samples ROUND_SIZE questions (fewer if the category doesn't have
-    that many), snapshots them into a new trivia_rounds/trivia_round_items
-    pair, and returns the new round_id."""
+def build_pool(duckdb_conn, game_type, category):
+    """The full set of (item_key, prompt_label, correct_answer) questions
+    for a category, for the reveal-style games (award_winners/
+    season_leaders/weekly_leaders/nfl_top100) -- shared by both the async
+    Solo round engine below and Group's live host-run sessions
+    (app/group_games.py), so the two never drift apart on what a category's
+    questions actually are."""
     if game_type == "award_winners":
         rows = duckdb_conn.execute(
             """SELECT year, any_value(position) AS position, string_agg(player, '|') AS players
@@ -146,7 +149,14 @@ def start_round(sqlite_conn, duckdb_conn, user_id, game_type, category):
         pool = [(str(rank), _top100_prompt(year, rank, team), player) for rank, player, team in rows]
     else:
         raise ValueError(f"unknown game_type {game_type!r}")
+    return pool
 
+
+def start_round(sqlite_conn, duckdb_conn, user_id, game_type, category):
+    """Samples ROUND_SIZE questions (fewer if the category doesn't have
+    that many) from build_pool(), snapshots them into a new
+    trivia_rounds/trivia_round_items pair, and returns the new round_id."""
+    pool = build_pool(duckdb_conn, game_type, category)
     if not pool:
         return None
 

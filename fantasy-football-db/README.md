@@ -297,7 +297,11 @@ e.g. `load_nflverse.py` mid-season, to pick up new weeks):
 - `player_season_fantasy_points` (DuckDB) -- the same, aggregated to
   season totals (15,955 rows) -- what Fantasy Draft reads for any season
   1999+, preferred over `fantasy_draft_stats` since it stays current and
-  doesn't have that table's Gronkowski-shaped gaps.
+  doesn't have that table's Gronkowski-shaped gaps. Also carries raw
+  per-category season totals (passing/rushing/receiving yards and TDs,
+  receptions), added for the web app's Daily Stat Pad game, which picks a
+  category per day and has players pick 5 (year, player) pairs to
+  maximize it.
 
 Loaded by `load_team_executives.py` and `load_nfl_top100.py`, from
 committed CSVs (`data/team_executives/`, `data/trivia/nfl_top100.csv`) --

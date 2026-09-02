@@ -325,6 +325,7 @@ CREATE TABLE IF NOT EXISTS group_participants (
 CREATE TABLE IF NOT EXISTS group_items (
     session_id      INTEGER NOT NULL REFERENCES group_sessions(session_id),
     item_key        TEXT NOT NULL,
+    sort_order      INTEGER NOT NULL,   -- explicit presentation order, not relying on insertion order
     prompt_label    TEXT NOT NULL,
     correct_answer  TEXT NOT NULL,
     revealed        INTEGER NOT NULL DEFAULT 0,

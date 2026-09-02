@@ -63,34 +63,53 @@ that, `/admin/users` in the UI. Session cookie only stores `user_id` --
 tier is read fresh from the DB every request, so a promotion takes effect
 immediately, no re-login needed.
 
-## Games built so far (all async/individual play, not live/shared sessions)
+## Games hub: 4 tabs under `/games`
 
-- **Pick'em** (`/games/pickem`) -- real schedule/spreads/scores, optional
-  confidence points (auto-assigned N..1, reorders automatically when one
-  pick's number changes -- see `app/pickem.py`'s `reorder_confidence`),
-  team logos.
-- **Award Winners / Season Leaders / Weekly Top Scorers / NFL Top 100
-  trivia** (`/games/trivia`) -- guess-a-name-for-a-clue games, one-time
-  spreadsheet export (Award Winners/Season Leaders), live play-by-play-
-  computed data (Weekly Top Scorers), and Wikipedia-via-Cowork data (NFL
-  Top 100). Loose name matching (case/punctuation/suffix-insensitive),
-  real co-winner years handled correctly.
-- **Fantasy Draft** (`/games/fantasy-draft`) -- draft any player from any
-  season 1970-2025 at 9 roster slots, scored by real PPR points. 1999+
-  comes from `player_season_fantasy_points` (computed from play_by_play,
-  live-updating -- re-run `load_nflverse.py` then
-  `scripts/compute_fantasy_points.py` to pick up new weeks during the
-  season); 1970-1998 still comes from the one-time spreadsheet export.
+`_macros.html`'s `game_tabs(active)` macro renders the shared nav across
+all four. `games_index.html` (Leagues) is the only tab that still lives
+at the bare `/games` path; the other three are their own routes.
+
+- **Leagues** (`/games`, served by `pickem.py`'s `games_index` route,
+  `games_index.html`) -- admin-created, shared-standings games.
+  Currently just **Pick'em** (`/games/pickem`): real
+  schedule/spreads/scores, optional confidence points (auto-assigned
+  N..1, reorders automatically when one pick's number changes -- see
+  `app/pickem.py`'s `reorder_confidence`), team logos.
+- **Solo** (`/games/solo`) -- individual play, shared leaderboard. Award
+  Winners / Season Leaders / NFL Top 100 trivia (`/games/trivia`,
+  guess-a-name-for-a-clue, loose name matching, real co-winner years
+  handled correctly) and Fantasy Draft (`/games/fantasy-draft`, draft any
+  player from any season 1970-2025 at 9 roster slots, scored by real PPR
+  points -- 1999+ from `player_season_fantasy_points`, computed from
+  play_by_play and live-updating during the season; 1970-1998 from the
+  one-time spreadsheet export).
+- **Daily** (`/games/daily`, `app/daily_challenge.py`) -- two games: last
+  week's **Weekly Top Scorers** trivia (unchanged, just moved here from
+  the old `/games/trivia` page), and **Daily Stat Pad** (inspired by
+  statpadgame.com) -- pick 5 (year, player) pairs to maximize one
+  stat category, category auto-picked per day via
+  `random.Random(date.isoformat()).choice(...)` (deterministic, same for
+  everyone, no state to persist), shared daily leaderboard.
+- **Group** (`/games/group`, `app/group_games.py` + `app/group_draft.py`)
+  -- shared-screen, host-run live sessions (one device, the host's,
+  drives the whole thing; participants are free-text names, not
+  accounts -- no per-device real-time sync in this version, that's a
+  separate future project if wanted). Two engines: a reveal-style
+  engine for Award Winners/Season Leaders/NFL Top 100 (host reads each
+  clue, marks who got it right, next item revealed), and a live snake
+  draft for Fantasy Draft (host enters each pick on the current
+  participant's behalf, standard snake turn order, same real
+  PPR-scoring as Solo). `trivia.build_pool()` is shared between Solo's
+  async engine and Group's reveal engine so the two never present
+  different questions for the same category.
 
 **Explicitly not built yet**, by the user's own choice or a real
 blocker -- don't reintroduce without checking first:
-- A live, shared, host-run "strikes" version of the trivia games (the
-  original spreadsheet's format) -- async/individual was the deliberate
-  simpler-first choice.
+- Real-time, per-device sync for Group mode (each participant on their
+  own phone instead of one shared host screen) -- deliberately deferred
+  as a separate, bigger future project.
 - Timeline (order personal in-joke events chronologically) -- no real
   dates for the events yet, explicitly deferred.
-- "Daily Trivia" -- a placeholder card on `/games`, a different game,
-  rules not specced.
 
 **Resolved via Cowork** (Wikipedia-sourced data fetched in a browser,
 since this sandbox can't reach Wikipedia directly): `nfl_top_100` (the
