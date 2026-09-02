@@ -2,7 +2,7 @@
 {% block title %}{{ game_label }} round{% endblock %}
 {% block content %}
 <h1>{{ game_label }}: {{ round['category'] }}</h1>
-<p class="subtle"><a href="/games/trivia">&larr; Trivia</a></p>
+<p class="subtle"><a href="{{ '/games/daily' if round['game_type'] == 'weekly_leaders' else '/games/trivia' }}">&larr; {{ 'Daily' if round['game_type'] == 'weekly_leaders' else 'Trivia' }}</a></p>
 
 {% if completed %}
 <div class="notice">

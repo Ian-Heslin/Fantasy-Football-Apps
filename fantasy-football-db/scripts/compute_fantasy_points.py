@@ -147,6 +147,10 @@ WHERE combined.player_id IS NOT NULL
 SEASON_QUERY = """
 SELECT season, player_id, any_value(player) AS player, any_value(position) AS position,
        mode(team) AS team, count(*) AS games,
+       sum(passing_yards) AS passing_yards, sum(passing_tds) AS passing_tds,
+       sum(rushing_yards) AS rushing_yards, sum(rushing_tds) AS rushing_tds,
+       sum(receptions) AS receptions, sum(receiving_yards) AS receiving_yards,
+       sum(receiving_tds) AS receiving_tds,
        sum(fant_pt) AS fant_pt, sum(ppr_pt) AS ppr_pt
 FROM player_week_fantasy_points
 WHERE season BETWEEN ? AND ?
@@ -186,7 +190,9 @@ def main():
     conn.execute("DELETE FROM player_season_fantasy_points WHERE season BETWEEN ? AND ?", (args.start, args.end))
     conn.execute(
         f"INSERT INTO player_season_fantasy_points "
-        f"(season, player_id, player, position, team, games, fant_pt, ppr_pt) {SEASON_QUERY}",
+        f"(season, player_id, player, position, team, games, passing_yards, passing_tds, "
+        f"rushing_yards, rushing_tds, receptions, receiving_yards, receiving_tds, fant_pt, ppr_pt) "
+        f"{SEASON_QUERY}",
         (args.start, args.end),
     )
     season_count = conn.execute(

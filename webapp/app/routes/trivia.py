@@ -32,9 +32,6 @@ def trivia_index(request: Request):
             game_type: {cat: trivia.leaderboard(conn, game_type, cat)[:5] for cat in cats}
             for game_type, cats in CATEGORIES.items()
         }
-        latest_season, latest_week = trivia.latest_week(duckdb_conn)
-        weekly_category = trivia.weekly_category(latest_season, latest_week) if latest_season else None
-        weekly_board = trivia.leaderboard(conn, "weekly_leaders", weekly_category)[:5] if weekly_category else []
         top100_years = trivia.available_top100_years(duckdb_conn)
         top100_boards = {year: trivia.leaderboard(conn, "nfl_top100", str(year))[:5] for year in top100_years}
     finally:
@@ -45,8 +42,6 @@ def trivia_index(request: Request):
         request, "trivia_index.html",
         {
             "game_labels": GAME_LABELS, "categories": CATEGORIES, "boards": boards,
-            "latest_season": latest_season, "latest_week": latest_week,
-            "weekly_category": weekly_category, "weekly_board": weekly_board,
             "top100_years": top100_years, "top100_boards": top100_boards,
         },
     )

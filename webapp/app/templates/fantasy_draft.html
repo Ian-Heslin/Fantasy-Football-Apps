@@ -1,8 +1,10 @@
 {% extends "base.html" %}
+{% import "_macros.html" as macros %}
 {% block title %}Fantasy Draft{% endblock %}
 {% block content %}
 <h1>Fantasy Draft</h1>
-<p class="subtle"><a href="/games">&larr; Games</a></p>
+{{ macros.game_tabs('solo') }}
+<p class="subtle"><a href="/games/solo">&larr; Solo</a></p>
 <p class="subtle">Draft any player from any NFL season, {{ year_min }}-{{ year_max }}, at each
   slot below. Your score is that player&rsquo;s real PPR fantasy points from that exact season.</p>
 
