@@ -145,6 +145,19 @@ with no extra join work needed.
 resulting roster data through the same crosswalk + `build_comparison_model.py` /
 `trade_signals.py` pipeline already built for Sleeper.
 
+## Season history for the League History page (`league_season_standings`)
+Both loaders now support a `--history` flag that backfills every past season's final standings
+(best-effort rank by regular-season wins/points_for, not real playoff results — see the caveat on
+`league_season_standings` in `schema/sqlite_schema.sql`) into `app.db`, which `/rosters/{league_id}
+/history` reads. ESPN walks season numbers directly (same `league_id` persists year over year, back
+to `FLOOR_SEASON = 2005` or until 2 consecutive seasons come back empty). Sleeper instead walks its
+`previous_league_id` chain (Sleeper mints a brand-new `league_id` every season) but stores every
+season's row under the *current* season's `league_id`, since that's the id the rest of `app.db` and
+the web app key on. Neither loader can run from this cloud sandbox (both `api.sleeper.app` and
+`lm-api-reads.fantasy.espn.com` are network-blocked here, confirmed again 2026-09-02) — run
+`python3 scripts/load_sleeper.py --history` and `python3 scripts/load_espn.py --history` on the Pi
+(or Ian's own machine) to actually pull the data in.
+
 ## ESPN (public leagues — working, no auth needed)
 Both of Ian's ESPN leagues are public, so no `SWID`/`espn_s2` cookies are needed at all. Unlike
 `fantasy.espn.com` itself (blocked for WebFetch by robots.txt) and unlike the Bash-blocked domains

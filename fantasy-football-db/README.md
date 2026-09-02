@@ -30,12 +30,17 @@ python3 scripts/build_db.py       # creates both DBs, loads the player
                                    # from dynastyprocess/data (public, no auth)
 python3 scripts/load_sleeper.py   # pulls your leagues/rosters from Sleeper's
                                    # public API (edit LEAGUE_IDS in the script
-                                   # if your leagues change)
+                                   # if your leagues change); add --history to
+                                   # also walk previous_league_id back through
+                                   # every past season into
+                                   # league_season_standings
 python3 scripts/load_espn.py      # pulls your leagues/rosters from ESPN's
                                    # public (unofficial) API -- both of Ian's
                                    # ESPN leagues are public, no login cookies
                                    # needed; edit LEAGUE_IDS/SEASON in the
-                                   # script if they change
+                                   # script if they change; add --history to
+                                   # also pull every past season's final
+                                   # standings into league_season_standings
 python3 scripts/load_nflverse.py  # loads 1999-2025 play-by-play (defaults to
                                    # the full range; pass --start/--end for a
                                    # smaller window)

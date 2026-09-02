@@ -12,8 +12,12 @@ this script uses `requests` rather than anything sandbox-specific). Run this
 on your own machine, or from wherever the web app actually runs.
 
 Usage:
-    python3 scripts/load_sleeper.py
+    python3 scripts/load_sleeper.py            # current season only
+    python3 scripts/load_sleeper.py --history  # also walk back through every
+                                                # past season's final standings
+                                                # into league_season_standings
 """
+import argparse
 import os
 import sqlite3
 import sys
@@ -109,6 +113,82 @@ def load_league(conn, league_id):
           f"{len(rosters)} rosters")
 
 
+def _points(settings, key):
+    """Sleeper splits points into a whole part and a separate '_decimal'
+    part (e.g. fpts=1234, fpts_decimal=56 means 1234.56) -- None if the
+    whole part is missing rather than coercing to 0, so a season with no
+    points data shows as '--' in the UI instead of a misleading 0.0."""
+    whole = settings.get(key)
+    if whole is None:
+        return None
+    return whole + (settings.get(f"{key}_decimal") or 0) / 100
+
+
+def load_season_history(conn, anchor_league_id, current_league_id):
+    """Walks backward through Sleeper's previous_league_id chain -- unlike
+    ESPN, where one league_id persists across seasons, Sleeper mints a new
+    league_id every year and links them via previous_league_id on the
+    league object. Each past season's standings are stored under
+    anchor_league_id (the CURRENT season's league_id -- the one this league
+    is keyed by everywhere else in app.db, e.g. in LEAGUE_IDS above) so
+    /rosters/{league_id}/history keeps resolving correctly even after next
+    year's Sleeper rollover changes the live league_id again. Returns how
+    many past seasons were found."""
+    seasons_loaded = 0
+    league_id = current_league_id
+
+    while True:
+        try:
+            info = get(f"/league/{league_id}")
+        except requests.RequestException:
+            break
+        previous_league_id = (info or {}).get("previous_league_id")
+        if not previous_league_id or previous_league_id == "0":
+            break
+
+        try:
+            prev_info = get(f"/league/{previous_league_id}")
+            rosters = get(f"/league/{previous_league_id}/rosters")
+            users = {u["user_id"]: u for u in get(f"/league/{previous_league_id}/users")}
+        except requests.RequestException:
+            break
+        if not rosters:
+            break
+        season = int(prev_info["season"]) if prev_info.get("season") else None
+
+        def _sort_key(r):
+            s = r.get("settings") or {}
+            return (-(s.get("wins") or 0), -(_points(s, "fpts") or 0))
+
+        for rank, roster in enumerate(sorted(rosters, key=_sort_key), start=1):
+            roster_id = str(roster["roster_id"])
+            settings = roster.get("settings") or {}
+            owner_name = (users.get(roster.get("owner_id")) or {}).get("display_name")
+
+            conn.execute(
+                """INSERT INTO league_season_standings
+                       (league_id, season, roster_id, owner_name, wins, losses, ties,
+                        points_for, points_against, final_rank)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                   ON CONFLICT(league_id, season, roster_id) DO UPDATE SET
+                       owner_name=excluded.owner_name, wins=excluded.wins, losses=excluded.losses,
+                       ties=excluded.ties, points_for=excluded.points_for,
+                       points_against=excluded.points_against, final_rank=excluded.final_rank""",
+                (
+                    anchor_league_id, season, roster_id, owner_name,
+                    settings.get("wins"), settings.get("losses"), settings.get("ties"),
+                    _points(settings, "fpts"), _points(settings, "fpts_against"), rank,
+                ),
+            )
+        conn.commit()
+        print(f"[load_sleeper] history: loaded {season} standings for league "
+              f"{anchor_league_id} (Sleeper league {previous_league_id}, {len(rosters)} teams)")
+        seasons_loaded += 1
+        league_id = previous_league_id
+
+    return seasons_loaded
+
+
 def resolve_sleeper_player_ids(conn):
     """roster_players stores raw sleeper ids as 'sleeper:<id>' -- if a player
     also has a fantasypros_id in the players table (loaded by build_db.py),
@@ -134,6 +214,13 @@ def resolve_sleeper_player_ids(conn):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--history", action="store_true",
+        help="also walk back through every past season's final standings",
+    )
+    args = parser.parse_args()
+
     if not os.path.exists(SQLITE_PATH):
         print("app.db not found -- run scripts/build_db.py first.")
         sys.exit(1)
@@ -144,6 +231,13 @@ def main():
             load_league(conn, league_id)
         except requests.RequestException as e:
             print(f"[load_sleeper] WARNING: failed to load league {league_id}: {e}")
+
+        if args.history:
+            try:
+                n = load_season_history(conn, league_id, league_id)
+                print(f"[load_sleeper] history: {n} past season(s) found for league {league_id}")
+            except requests.RequestException as e:
+                print(f"[load_sleeper] WARNING: failed to load history for league {league_id}: {e}")
 
     resolve_sleeper_player_ids(conn)
 
