@@ -52,6 +52,18 @@ TODAY = date.today().isoformat()
 ESPN_COOKIES = None
 if os.environ.get("SWID") and os.environ.get("ESPN_S2"):
     ESPN_COOKIES = {"swid": os.environ["SWID"], "espn_s2": os.environ["ESPN_S2"]}
+# The legacy fantasy.espn.com host HISTORY_BASE hits below appears to bot-block
+# requests' default User-Agent for old seasons (2017 and earlier observed
+# 2026-09) -- it 302s to https://www.espn.com/fantasy/, which then 403s,
+# rather than ever reaching the actual JSON endpoint. lm-api-reads (BASE)
+# hasn't shown this problem. A plain desktop-browser UA is enough to look
+# like ordinary traffic; not sent as anything deceptive, just matching what
+# a real browser hitting this same URL would send.
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Accept": "application/json",
+}
 BASE = "https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons"
 # BASE's /seasons/{year}/... pattern (same one get_league() uses for the
 # current season) actually works fine for any season back through 2018 --
@@ -90,6 +102,7 @@ def get_league(league_id):
         f"{BASE}/{SEASON}/segments/0/leagues/{league_id}",
         params=[("view", "mTeam"), ("view", "mRoster"), ("view", "mSettings"), ("view", "mDraftDetail")],
         cookies=ESPN_COOKIES,
+        headers=HEADERS,
         timeout=15,
     )
     resp.raise_for_status()
@@ -196,7 +209,7 @@ def get_season_teams(league_id, season):
         params = [("seasonId", season), ("view", "mTeam")]
 
     try:
-        resp = requests.get(url, params=params, cookies=ESPN_COOKIES, timeout=15)
+        resp = requests.get(url, params=params, cookies=ESPN_COOKIES, headers=HEADERS, timeout=15)
         resp.raise_for_status()
     except requests.RequestException as e:
         print(f"[load_espn] history: {season} request failed for league {league_id}: {e}")
