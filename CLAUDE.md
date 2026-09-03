@@ -44,15 +44,22 @@ reference data. Routes pick whichever connection they need
 ## Deployment
 
 Raspberry Pi (Debian 13 trixie, aarch64, already running Homebridge),
-system user `fantasyapp` owns `/opt/fantasy-football-apps` (repo +
-venv), systemd units for the app and the Cloudflare named tunnel (real
-domain, not a rate-limited quick tunnel), plus the hourly backup timer.
-SSH to the Pi as `hestia` (sudo), git operations against the repo need
-`sudo -u fantasyapp` (it owns the files) with its own SSH key (not
-`hestia`'s -- sudo doesn't inherit another user's agent/keys). Full
-walkthrough, including the DNS/tunnel setup and known gotchas (sudo +
-shell redirects don't inherit privileges; write to `/tmp` then `sudo
-mv`), in `webapp/deploy/README.md`.
+system user `fantasyapp` owns `/opt/fantasy-football-apps` as its home
+directory -- the git repo is the **`repo/` subdirectory**
+(`/opt/fantasy-football-apps/repo`), with `venv/` as a sibling
+(`/opt/fantasy-football-apps/venv`), NOT `/opt/fantasy-football-apps`
+itself (a real, already-hit mistake: `git -C /opt/fantasy-football-apps
+pull` fails with "not a git repository"). systemd units for the app
+(`fantasyfootball.service`, `WorkingDirectory=/opt/fantasy-football-apps/repo/webapp`,
+runs `/opt/fantasy-football-apps/venv/bin/uvicorn`) and the Cloudflare
+named tunnel (real domain, not a rate-limited quick tunnel), plus the
+hourly backup timer. SSH to the Pi as `hestia` (sudo), git/script
+operations against the repo need `sudo -u fantasyapp` (it owns the
+files) with its own SSH key (not `hestia`'s -- sudo doesn't inherit
+another user's agent/keys). Full walkthrough, including the DNS/tunnel
+setup and known gotchas (sudo + shell redirects don't inherit
+privileges; write to `/tmp` then `sudo mv`), in
+`webapp/deploy/README.md`.
 
 ## Accounts & tiers
 
