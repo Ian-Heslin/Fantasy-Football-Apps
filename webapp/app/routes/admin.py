@@ -31,7 +31,11 @@ def list_users(request: Request):
         conn.close()
 
     return templates.TemplateResponse(
-        request, "admin_users.html", {"users": users, "tiers": TIERS},
+        request, "admin_users.html",
+        {
+            "users": users, "tiers": TIERS,
+            "last_admin_error": request.query_params.get("error") == "last_admin",
+        },
     )
 
 
@@ -46,6 +50,20 @@ def update_tier(request: Request, user_id: int, tier: str = Form(...)):
         return db_missing_response(request, e)
 
     try:
+        # Don't let the last admin demote themselves. This page is the
+        # only way to grant admin, so emptying the tier locks everyone
+        # out of it -- recovering means SSH to the Pi and
+        # scripts/promote_user.py. Same bootstrap problem as the module
+        # docstring describes, just from the other end.
+        if tier != "admin":
+            remaining = conn.execute(
+                "SELECT count(*) FROM users WHERE tier = 'admin' AND user_id != ?",
+                (user_id,),
+            ).fetchone()[0]
+            if remaining == 0:
+                return RedirectResponse(
+                    "/admin/users?error=last_admin", status_code=303)
+
         conn.execute("UPDATE users SET tier = ? WHERE user_id = ?", (tier, user_id))
         conn.commit()
     finally:

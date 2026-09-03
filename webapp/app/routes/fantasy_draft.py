@@ -5,7 +5,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from app import fantasy_draft
 from app.auth import require_tier
 from app.common import db_missing_response
-from app.db import get_connection, get_duckdb_connection
+from app.db import close_all, open_both
 from app.templating import templates
 
 router = APIRouter(dependencies=[Depends(require_tier("games"))])
@@ -15,8 +15,7 @@ router = APIRouter(dependencies=[Depends(require_tier("games"))])
 def draft_home(request: Request):
     user = request.state.user
     try:
-        conn = get_connection()
-        duckdb_conn = get_duckdb_connection()
+        conn, duckdb_conn = open_both()
     except FileNotFoundError as e:
         return db_missing_response(request, e)
 
@@ -26,8 +25,7 @@ def draft_home(request: Request):
         board = fantasy_draft.leaderboard(conn)
         year_min, year_max = fantasy_draft.year_range(duckdb_conn)
     finally:
-        conn.close()
-        duckdb_conn.close()
+        close_all(conn, duckdb_conn)
 
     return templates.TemplateResponse(
         request, "fantasy_draft.html",
@@ -45,8 +43,7 @@ async def save_draft(request: Request):
     user = request.state.user
     form = await request.form()
     try:
-        conn = get_connection()
-        duckdb_conn = get_duckdb_connection()
+        conn, duckdb_conn = open_both()
     except FileNotFoundError as e:
         return db_missing_response(request, e)
 
@@ -66,7 +63,6 @@ async def save_draft(request: Request):
                 },
             )
     finally:
-        conn.close()
-        duckdb_conn.close()
+        close_all(conn, duckdb_conn)
 
     return RedirectResponse("/games/fantasy-draft?saved=1", status_code=303)

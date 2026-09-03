@@ -46,18 +46,44 @@ def main():
     os.makedirs(BACKUP_DIR, exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     dest_path = os.path.join(BACKUP_DIR, f"app_{stamp}.db")
+    # Write to a .tmp name and rename into place only once the copy has
+    # been checked. Writing straight to the final name meant a run that
+    # died partway (disk full, SD card hiccup) left a truncated file
+    # sitting there under a perfectly normal-looking app_<stamp>.db name
+    # -- indistinguishable from a good backup until the day you needed
+    # to restore it, and counted as a keeper by the pruning below while
+    # real backups aged out around it.
+    temp_path = dest_path + ".tmp"
 
     src = sqlite3.connect(SQLITE_PATH)
-    dest = sqlite3.connect(dest_path)
-    with dest:
-        src.backup(dest)
+    dest = sqlite3.connect(temp_path)
+    try:
+        with dest:
+            src.backup(dest)
+        # integrity_check reads every page of the copy; on a database
+        # this size it's a few milliseconds, and it's the difference
+        # between "a file exists" and "a file restores".
+        result = dest.execute("PRAGMA integrity_check").fetchone()[0]
+        if result != "ok":
+            raise RuntimeError(f"integrity check failed on the copy: {result}")
+    except BaseException:
+        dest.close()
+        src.close()
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        log("backup FAILED -- partial copy removed, previous backups untouched.")
+        raise
     dest.close()
     src.close()
-    log(f"backed up app.db -> {dest_path} ({os.path.getsize(dest_path)} bytes)")
+
+    os.replace(temp_path, dest_path)
+    log(f"backed up app.db -> {dest_path} ({os.path.getsize(dest_path)} bytes, integrity ok)")
 
     cutoff = datetime.now() - timedelta(days=args.keep_days)
     removed = 0
     for name in os.listdir(BACKUP_DIR):
+        # .tmp files are never candidates -- a leftover one is debris
+        # from a crashed run, not a backup whose age means anything.
         if not (name.startswith("app_") and name.endswith(".db")):
             continue
         path = os.path.join(BACKUP_DIR, name)

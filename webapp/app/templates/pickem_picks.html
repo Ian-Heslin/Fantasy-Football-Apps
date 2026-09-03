@@ -25,6 +25,9 @@
     confident. Every game already has a number; change one and the rest reorder automatically
     to keep them unique, and the list below re-sorts to match. (A game needs a team picked
     before its number can be changed.)</p>
+  <p>Once a game kicks off its number is locked, even if you never picked it -- an unpicked
+    game scores nothing but keeps its number, so the games still to come reorder among the
+    {{ free_values|length }} number{{ '' if free_values|length == 1 else 's' }} left.</p>
 </div>
 {% endif %}
 
@@ -89,16 +92,24 @@
         {% if settings.confidence_enabled %}
         <td>
           {% if locked %}
-            {{ pick['confidence'] if pick else '—' }}
+            {# Kicked off: the number is frozen whether or not a team was
+               ever picked. An unpicked one still holds its value (and
+               scores nothing) so the open games can't inherit it -- see
+               pickem.confidence_layout. #}
+            {{ confidences.get(g['game_id'], '—') }}
+            {% if not pick %}<span class="subtle" title="No pick was made before kickoff"> &middot; no pick</span>{% endif %}
           {% elif not pick %}
             <span class="subtle" title="Pick a team first">{{ confidences.get(g['game_id'], '—') }}</span>
           {% else %}
           <input type="hidden" form="conf-{{ g['game_id'] }}" name="season" value="{{ season }}">
           <input type="hidden" form="conf-{{ g['game_id'] }}" name="week" value="{{ week }}">
           <input type="hidden" form="conf-{{ g['game_id'] }}" name="game_id" value="{{ g['game_id'] }}">
+          {# Only the numbers still in play -- a value held by a game
+             that's already kicked off is never offered, and would be
+             rejected by reorder_confidence anyway. #}
           <select form="conf-{{ g['game_id'] }}" name="confidence" class="confidence-select"
                   onchange="this.form.requestSubmit()">
-            {% for n in range(n_games, 0, -1) %}
+            {% for n in free_values|reverse %}
             <option value="{{ n }}" {{ 'selected' if confidences.get(g['game_id']) == n else '' }}>{{ n }}</option>
             {% endfor %}
           </select>

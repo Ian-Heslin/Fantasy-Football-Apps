@@ -27,6 +27,26 @@ from app.templating import templates
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
+# 30 days: long enough that nobody on the Pi's little friends-and-family
+# site gets logged out mid-season, short enough that an old cookie dies.
+SESSION_MAX_AGE = 30 * 24 * 60 * 60
+
+# The session cookie is Secure by default, so a browser will only send it
+# back over HTTPS -- which is all the deployed site ever serves. Plain
+# `uvicorn app.main:app --reload` on http://127.0.0.1:8000 is the one
+# case where that would silently break login (the browser accepts the
+# Set-Cookie and then never sends it), so local dev can opt out:
+#
+#     SESSION_INSECURE_COOKIE=1 uvicorn app.main:app --reload
+#
+# Never set this on the Pi.
+SESSION_HTTPS_ONLY = os.environ.get("SESSION_INSECURE_COOKIE", "").lower() not in (
+    "1", "true", "yes")
+if not SESSION_HTTPS_ONLY:
+    print("[main] WARNING: SESSION_INSECURE_COOKIE is set -- the session cookie is NOT "
+          "marked Secure. For local http:// development only; never set this in "
+          "the systemd service file.")
+
 SESSION_SECRET_KEY = os.environ.get("SESSION_SECRET_KEY")
 if not SESSION_SECRET_KEY:
     SESSION_SECRET_KEY = secrets.token_hex(32)
@@ -41,7 +61,25 @@ app.mount("/static", StaticFiles(directory=os.path.join(HERE, "static")), name="
 # plain dependency, not middleware, so only SessionMiddleware needs adding;
 # it must wrap every route so request.session exists before
 # load_current_user (an app-level dependency) reads it.
-app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET_KEY)
+#
+# Cookie flags are set explicitly rather than inherited from Starlette's
+# defaults, because two of them are load-bearing here:
+#   https_only -- the deployed site is only ever served over HTTPS
+#     (Cloudflare named tunnel), and this cookie is the whole of the auth
+#     story, so there's no reason to let a browser put it on the wire in
+#     clear. Starlette's default for this is False.
+#   same_site="lax" -- the app has no CSRF tokens; this is what stops a
+#     cross-site form post from arriving with the session attached. It
+#     still allows ordinary top-level GET navigation (a link from a text
+#     message to /games/pickem keeps you logged in).
+# SESSION_MAX_AGE bounds how long a stolen cookie stays useful.
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SESSION_SECRET_KEY,
+    https_only=SESSION_HTTPS_ONLY,
+    same_site="lax",
+    max_age=SESSION_MAX_AGE,
+)
 
 
 @app.exception_handler(NotAuthenticated)

@@ -231,9 +231,28 @@ Check it's running:
 sudo systemctl status fantasyfootball.service
 ```
 
-From any device on your home WiFi: `http://homebridge.local:8000` should
-now show the site. Confirm that works before moving to the tunnel step --
-easier to debug the app itself before adding Cloudflare into the mix.
+Confirm the app answers, from **on the Pi itself**:
+
+```bash
+curl -sS -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8000/login   # expect 200
+```
+
+Do this before moving to the tunnel step -- easier to debug the app
+itself before adding Cloudflare into the mix.
+
+> **The app binds loopback only.** `fantasyfootball.service` starts
+> uvicorn on `127.0.0.1:8000`, not `0.0.0.0:8000`, so
+> `http://homebridge.local:8000` from a laptop on the same WiFi will
+> **not** answer -- that's intended. cloudflared runs on the Pi and
+> reaches the app over localhost (see `cloudflared-config.yml`), so
+> nothing needs the port exposed to the LAN, and the tunnel hostname is
+> the one way in.
+>
+> If you set this Pi up before this change, re-run the `sed` above and
+> `sudo systemctl daemon-reload && sudo systemctl restart
+> fantasyfootball.service` to pick up the new unit -- including the
+> `--proxy-headers` flags, which are what make real client IPs visible
+> instead of every request looking like it came from 127.0.0.1.
 
 ### 6. Install cloudflared and run a quick tunnel
 

@@ -1,0 +1,5 @@
+# Test-only dependencies -- not needed to run the app on the Pi.
+#   pip install -r requirements.txt -r requirements-dev.txt
+#   python3 -m pytest tests/ -q
+pytest
+httpx2          # starlette's TestClient transport (tests/test_routes.py)

@@ -43,6 +43,8 @@ from datetime import date
 
 import requests
 
+from seasons import current_season
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SQLITE_PATH = os.path.join(ROOT, "data", "app.db")
 TODAY = date.today().isoformat()
@@ -85,7 +87,7 @@ HISTORY_VIEWS = [
 # --history on older seasons). Ian is always teamId=1 in both. Edit as
 # leagues (or the season) change; the names below are just a fallback if
 # settings.name doesn't come back for some reason.
-SEASON = 2026
+SEASON = current_season()
 MY_TEAM_ID = "1"
 LEAGUE_IDS = {
     "1532978": "The Deep's Dolphins",

@@ -7,7 +7,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from app import trivia
 from app.auth import require_tier
 from app.common import db_missing_response
-from app.db import get_connection, get_duckdb_connection
+from app.db import close_all, get_connection, open_both
 from app.templating import templates
 
 router = APIRouter(dependencies=[Depends(require_tier("games"))])
@@ -22,8 +22,7 @@ CATEGORIES = {"award_winners": trivia.AWARD_CATEGORIES, "season_leaders": trivia
 @router.get("/games/trivia", response_class=HTMLResponse)
 def trivia_index(request: Request):
     try:
-        conn = get_connection()
-        duckdb_conn = get_duckdb_connection()
+        conn, duckdb_conn = open_both()
     except FileNotFoundError as e:
         return db_missing_response(request, e)
 
@@ -35,8 +34,7 @@ def trivia_index(request: Request):
         top100_years = trivia.available_top100_years(duckdb_conn)
         top100_boards = {year: trivia.leaderboard(conn, "nfl_top100", str(year))[:5] for year in top100_years}
     finally:
-        conn.close()
-        duckdb_conn.close()
+        close_all(conn, duckdb_conn)
 
     return templates.TemplateResponse(
         request, "trivia_index.html",
@@ -65,15 +63,13 @@ async def start_round(request: Request, game_type: str = Form(...), category: st
         hints = set(form.getlist("hint")) & set(trivia.TOP100_HINT_LABELS)
 
     try:
-        sqlite_conn = get_connection()
-        duckdb_conn = get_duckdb_connection()
+        sqlite_conn, duckdb_conn = open_both()
     except FileNotFoundError as e:
         return db_missing_response(request, e)
     try:
         round_id = trivia.start_round(sqlite_conn, duckdb_conn, user["user_id"], game_type, category, hints)
     finally:
-        sqlite_conn.close()
-        duckdb_conn.close()
+        close_all(sqlite_conn, duckdb_conn)
 
     if round_id is None:
         return RedirectResponse("/games/trivia", status_code=303)

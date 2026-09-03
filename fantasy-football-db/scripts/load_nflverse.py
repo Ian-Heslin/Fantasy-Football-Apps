@@ -38,6 +38,8 @@ import sys
 import duckdb
 import requests
 
+from seasons import EARLIEST_PBP_SEASON, current_season
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(ROOT, "data")
 SQLITE_PATH = os.path.join(DATA_DIR, "app.db")
@@ -45,8 +47,12 @@ DUCKDB_PATH = os.path.join(DATA_DIR, "analytics.duckdb")
 PBP_CACHE_DIR = os.path.join(DATA_DIR, "_nflverse_data", "pbp_cache")
 
 PBP_RELEASE_URL = "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_{season}.csv.gz"
-EARLIEST_SEASON = 1999
-LATEST_SEASON = 2025
+EARLIEST_SEASON = EARLIEST_PBP_SEASON
+# Derived, not pinned: a hardcoded LATEST_SEASON silently stops pulling
+# new play-by-play the moment the calendar rolls past it, and everything
+# downstream (fantasy points, the Weekly Top Scorers trivia game) just
+# stops moving forward with no error. --season-max overrides it.
+LATEST_SEASON = current_season()
 
 
 def log(msg):

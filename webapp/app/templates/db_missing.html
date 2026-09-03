@@ -1,12 +1,19 @@
 {% extends "base.html" %}
-{% block title %}Database not found{% endblock %}
+{% block title %}Temporarily unavailable{% endblock %}
 {% block content %}
 <div class="empty-state">
-  <h1>Database not found</h1>
-  <p>{{ error }}</p>
-  <p>Run this from the repo root first:</p>
+  <h1>Temporarily unavailable</h1>
+  <p>The site&rsquo;s data isn&rsquo;t loading right now. Nothing you did caused
+    this, and nothing you&rsquo;ve saved is lost -- try again in a few minutes.</p>
+  {% if error %}
+  {# Admins only (see app/common.py). The message carries the absolute
+     path of the missing database file, which is not something to show a
+     logged-out visitor on /login. #}
+  <p class="subtle">Admin detail: {{ error }}</p>
+  <p>Run this from the repo root:</p>
   <pre>cd fantasy-football-db
 pip install -r scripts/requirements.txt
 python3 scripts/build_db.py</pre>
+  {% endif %}
 </div>
 {% endblock %}

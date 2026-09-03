@@ -12,9 +12,23 @@ Type=simple
 User=__SERVICE_USER__
 WorkingDirectory=__REPO_PATH__/webapp
 Environment=SESSION_SECRET_KEY=__SESSION_SECRET_KEY__
-ExecStart=__VENV_PATH__/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+# Bind loopback only: cloudflared reaches the app at http://localhost:8000
+# (see cloudflared-config.yml), so nothing needs this port on the LAN.
+# --proxy-headers with an explicit --forwarded-allow-ips means the real
+# client IP survives the tunnel instead of every request looking like it
+# came from 127.0.0.1 -- and the explicit list is what stops a client
+# from spoofing X-Forwarded-For, since only the local tunnel is trusted
+# to set it.
+ExecStart=__VENV_PATH__/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 \
+    --proxy-headers --forwarded-allow-ips 127.0.0.1
 Restart=on-failure
 RestartSec=5
+# The app only ever needs to read the repo and write app.db + backups.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=__REPO_PATH__/fantasy-football-db/data __REPO_PATH__/webapp/deploy
 StandardOutput=append:__REPO_PATH__/webapp/deploy/webapp.log
 StandardError=append:__REPO_PATH__/webapp/deploy/webapp.error.log
 

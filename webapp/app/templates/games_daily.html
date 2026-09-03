@@ -83,10 +83,10 @@
     </form>
     {% if weekly_board %}
     <table class="data-table">
-      <thead><tr><th>#</th><th>Player</th><th>Best score</th></tr></thead>
+      <thead><tr><th>#</th><th>Player</th><th>Best score</th><th>Rounds</th></tr></thead>
       <tbody>
         {% for row in weekly_board %}
-        <tr><td>{{ row.rank }}</td><td>{{ row.username }}</td><td>{{ row.score }} / {{ row.total }}</td></tr>
+        <tr><td>{{ row.rank }}</td><td>{{ row.username }}</td><td>{{ row.score }} / {{ row.total }}</td><td class="subtle">{{ row.rounds_played }}</td></tr>
         {% endfor %}
       </tbody>
     </table>

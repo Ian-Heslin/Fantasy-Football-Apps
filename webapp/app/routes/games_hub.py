@@ -10,7 +10,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from app import daily_challenge, trivia
 from app.auth import require_tier
 from app.common import db_missing_response
-from app.db import get_connection, get_duckdb_connection
+from app.db import close_all, open_both
 from app.templating import templates
 
 router = APIRouter(dependencies=[Depends(require_tier("games"))])
@@ -25,8 +25,7 @@ def solo_hub(request: Request):
 def daily_hub(request: Request):
     user = request.state.user
     try:
-        conn = get_connection()
-        duckdb_conn = get_duckdb_connection()
+        conn, duckdb_conn = open_both()
     except FileNotFoundError as e:
         return db_missing_response(request, e)
 
@@ -44,8 +43,7 @@ def daily_hub(request: Request):
         next_pick = daily_challenge.next_pick_num(conn, user["user_id"], today.isoformat())
         board = daily_challenge.leaderboard(conn, today.isoformat())
     finally:
-        conn.close()
-        duckdb_conn.close()
+        close_all(conn, duckdb_conn)
 
     return templates.TemplateResponse(
         request, "games_daily.html",
@@ -64,8 +62,7 @@ async def submit_stat_pad(request: Request):
     form = await request.form()
     today = datetime.date.today()
     try:
-        conn = get_connection()
-        duckdb_conn = get_duckdb_connection()
+        conn, duckdb_conn = open_both()
     except FileNotFoundError as e:
         return db_missing_response(request, e)
 
@@ -88,8 +85,7 @@ async def submit_stat_pad(request: Request):
         picks = daily_challenge.get_picks(conn, user["user_id"], today.isoformat())
         board = daily_challenge.leaderboard(conn, today.isoformat())
     finally:
-        conn.close()
-        duckdb_conn.close()
+        close_all(conn, duckdb_conn)
 
     return templates.TemplateResponse(
         request, "games_daily.html",

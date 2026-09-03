@@ -12,6 +12,11 @@
 -- join across both without duplicating anything (see scripts/build_db.py).
 -- ============================================================================
 
+-- NOTE: foreign_keys is a PER-CONNECTION setting that defaults to OFF and
+-- is NOT stored in the database file. This line therefore applies only to
+-- the connection that runs this schema (build_db.py's). Every other
+-- connection has to turn it on for itself or the REFERENCES clauses below
+-- are decorative -- see app/db.py's get_connection(), which does.
 PRAGMA foreign_keys = ON;
 
 -- Canonical player crosswalk (sleeper_id / espn_id / yahoo_id / mfl_id / fantasypros_id

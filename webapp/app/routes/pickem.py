@@ -89,18 +89,16 @@ def picks_form(request: Request, week: Optional[int] = None):
             return templates.TemplateResponse(request, "pickem_picks.html", {"season": None})
 
         week = week or pickem.current_week(conn, season)
-        games = conn.execute(
-            "SELECT * FROM pickem_games WHERE season = ? AND week = ? ORDER BY kickoff_at",
-            (season, week),
-        ).fetchall()
-        existing_rows = conn.execute(
-            """SELECT * FROM pickem_picks WHERE user_id = ? AND game_id IN
-               (SELECT game_id FROM pickem_games WHERE season = ? AND week = ?)""",
-            (user["user_id"], season, week),
-        ).fetchall()
-        existing = {r["game_id"]: r for r in existing_rows}
+        games = pickem.week_games(conn, season, week)
+        existing = pickem.week_picks(conn, user["user_id"], season, week)
         settings = pickem.get_settings(conn)
-        confidences = pickem.compute_display_confidence(games, existing) if settings["confidence_enabled"] else {}
+        # free_values is what the confidence <select> offers: only the
+        # numbers still in play, so the form can't even present a number
+        # that a kicked-off game is holding.
+        confidences, _frozen, free_values = (
+            pickem.confidence_layout(games, existing) if settings["confidence_enabled"]
+            else ({}, set(), [])
+        )
         if settings["confidence_enabled"]:
             # Highest confidence on top -- every confidence change reloads
             # this page (the select's onchange auto-submits), so re-sorting
@@ -116,17 +114,20 @@ def picks_form(request: Request, week: Optional[int] = None):
             "settings": settings, "team_names": pickem.TEAM_NAMES,
             "n_games": len(games), "is_locked": pickem.is_locked,
             "favorite_team": pickem.favorite_team, "confidences": confidences,
+            "free_values": free_values,
             "saved": request.query_params.get("saved") == "1",
         },
     )
 
 
 @router.post("/games/pickem/picks")
-async def submit_picks(request: Request):
+async def submit_picks(request: Request, season: int = Form(...), week: int = Form(...)):
+    # season/week are declared as real Form fields (so a missing or
+    # non-numeric value gets FastAPI's 422 instead of an int() TypeError
+    # surfacing as a 500), but the body is still read raw below for the
+    # dynamic pick_<game_id> keys, which can't be declared ahead of time.
     user = request.state.user
     form = await request.form()
-    season = int(form.get("season"))
-    week = int(form.get("week"))
 
     try:
         conn = get_connection()
@@ -134,22 +135,18 @@ async def submit_picks(request: Request):
         return db_missing_response(request, e)
 
     try:
-        games = conn.execute(
-            "SELECT * FROM pickem_games WHERE season = ? AND week = ?", (season, week)
-        ).fetchall()
+        games = pickem.week_games(conn, season, week)
         settings = pickem.get_settings(conn)
-        existing_rows = conn.execute(
-            """SELECT * FROM pickem_picks WHERE user_id = ? AND game_id IN
-               (SELECT game_id FROM pickem_games WHERE season = ? AND week = ?)""",
-            (user["user_id"], season, week),
-        ).fetchall()
-        existing = {r["game_id"]: r for r in existing_rows}
+        existing = pickem.week_picks(conn, user["user_id"], season, week)
         # Confidence isn't a form field here -- it's set/reordered via its
         # own small form (see pickem_picks.html + /games/pickem/confidence)
         # so a team-pick-only submit must not clobber it. Preserve whatever
-        # a game already has; a first-time pick gets the same default it
-        # was already showing read-only (see compute_display_confidence).
-        defaults = pickem.compute_display_confidence(games, existing) if settings["confidence_enabled"] else {}
+        # a game already has; a first-time pick gets the same number it was
+        # already showing read-only (see confidence_layout).
+        defaults, _frozen, _free = (
+            pickem.confidence_layout(games, existing) if settings["confidence_enabled"]
+            else ({}, set(), [])
+        )
 
         for g in games:
             if pickem.is_locked(g):
@@ -181,7 +178,11 @@ def update_confidence(request: Request, season: int = Form(...), week: int = For
     # Separate endpoint from submit_picks so changing one confidence value
     # auto-submits immediately (see the picks template's <select
     # onchange>) without needing to also resend every team-pick radio on
-    # the page -- see pickem.reorder_confidence for the shift algorithm.
+    # the page -- see pickem.reorder_confidence for the shift algorithm
+    # and for the kickoff guard it enforces. The template only renders a
+    # <select> for games that are still open, but this endpoint is
+    # reachable directly, so the guard lives in reorder_confidence rather
+    # than in the markup.
     user = request.state.user
     try:
         conn = get_connection()

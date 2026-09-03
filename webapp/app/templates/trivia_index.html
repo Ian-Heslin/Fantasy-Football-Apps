@@ -6,7 +6,9 @@
 {{ macros.game_tabs('solo') }}
 <p class="subtle"><a href="/games/solo">&larr; Solo</a></p>
 <p class="subtle">Play anytime, on your own -- each round scores immediately and your best
-  round per category counts toward that category&rsquo;s leaderboard.</p>
+  round per category counts toward that category&rsquo;s leaderboard. The rounds column
+  shows how many it took -- a best score off twenty attempts isn&rsquo;t the same as one
+  off two.</p>
 
 {% if top100_years %}
 <h2>NFL Top 100</h2>
@@ -31,10 +33,10 @@
     {% set top = top100_boards[year] %}
     {% if top %}
     <table class="data-table">
-      <thead><tr><th>#</th><th>Player</th><th>Best score</th></tr></thead>
+      <thead><tr><th>#</th><th>Player</th><th>Best score</th><th>Rounds</th></tr></thead>
       <tbody>
         {% for row in top %}
-        <tr><td>{{ row.rank }}</td><td>{{ row.username }}</td><td>{{ row.score }} / {{ row.total }}</td></tr>
+        <tr><td>{{ row.rank }}</td><td>{{ row.username }}</td><td>{{ row.score }} / {{ row.total }}</td><td class="subtle">{{ row.rounds_played }}</td></tr>
         {% endfor %}
       </tbody>
     </table>
@@ -61,13 +63,14 @@
     {% set top = boards[game_type][cat] %}
     {% if top %}
     <table class="data-table">
-      <thead><tr><th>#</th><th>Player</th><th>Best score</th></tr></thead>
+      <thead><tr><th>#</th><th>Player</th><th>Best score</th><th>Rounds</th></tr></thead>
       <tbody>
         {% for row in top %}
         <tr>
           <td>{{ row.rank }}</td>
           <td>{{ row.username }}</td>
           <td>{{ row.score }} / {{ row.total }}</td>
+          <td class="subtle">{{ row.rounds_played }}</td>
         </tr>
         {% endfor %}
       </tbody>

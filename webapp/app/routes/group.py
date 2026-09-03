@@ -7,7 +7,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from app import fantasy_draft, group_draft, group_games, trivia
 from app.auth import require_tier
 from app.common import db_missing_response
-from app.db import get_connection, get_duckdb_connection
+from app.db import close_all, get_connection, open_both
 from app.templating import templates
 
 router = APIRouter(dependencies=[Depends(require_tier("games"))])
@@ -27,8 +27,7 @@ def _draft_context(session, turn, picks, standings, year_min, year_max, error):
 def group_hub(request: Request):
     user = request.state.user
     try:
-        conn = get_connection()
-        duckdb_conn = get_duckdb_connection()
+        conn, duckdb_conn = open_both()
     except FileNotFoundError as e:
         return db_missing_response(request, e)
 
@@ -37,8 +36,7 @@ def group_hub(request: Request):
         draft_sessions = group_draft.active_sessions(conn, user["user_id"])
         top100_years = trivia.available_top100_years(duckdb_conn)
     finally:
-        conn.close()
-        duckdb_conn.close()
+        close_all(conn, duckdb_conn)
 
     return templates.TemplateResponse(
         request, "games_group.html",
@@ -61,8 +59,7 @@ async def new_session(request: Request):
         return RedirectResponse("/games/group", status_code=303)
 
     try:
-        conn = get_connection()
-        duckdb_conn = get_duckdb_connection()
+        conn, duckdb_conn = open_both()
     except FileNotFoundError as e:
         return db_missing_response(request, e)
 
@@ -88,8 +85,7 @@ async def new_session(request: Request):
         else:
             return RedirectResponse("/games/group", status_code=303)
     finally:
-        conn.close()
-        duckdb_conn.close()
+        close_all(conn, duckdb_conn)
 
     return RedirectResponse(dest, status_code=303)
 
@@ -145,8 +141,7 @@ async def reveal_item(request: Request, session_id: int):
 def draft_session_page(request: Request, session_id: int):
     user = request.state.user
     try:
-        conn = get_connection()
-        duckdb_conn = get_duckdb_connection()
+        conn, duckdb_conn = open_both()
     except FileNotFoundError as e:
         return db_missing_response(request, e)
     try:
@@ -158,8 +153,7 @@ def draft_session_page(request: Request, session_id: int):
         standings = group_draft.standings(conn, session_id)
         year_min, year_max = fantasy_draft.year_range(duckdb_conn)
     finally:
-        conn.close()
-        duckdb_conn.close()
+        close_all(conn, duckdb_conn)
 
     return templates.TemplateResponse(
         request, "group_draft.html", _draft_context(session, turn, picks, standings, year_min, year_max, None),
@@ -171,8 +165,7 @@ async def make_draft_pick(request: Request, session_id: int, slot: str = Form(..
                            year: str = Form(...), player: str = Form(...)):
     user = request.state.user
     try:
-        conn = get_connection()
-        duckdb_conn = get_duckdb_connection()
+        conn, duckdb_conn = open_both()
     except FileNotFoundError as e:
         return db_missing_response(request, e)
 
@@ -191,7 +184,6 @@ async def make_draft_pick(request: Request, session_id: int, slot: str = Form(..
                 _draft_context(session, turn, picks, standings, year_min, year_max, error),
             )
     finally:
-        conn.close()
-        duckdb_conn.close()
+        close_all(conn, duckdb_conn)
 
     return RedirectResponse(f"/games/group/draft/{session_id}", status_code=303)

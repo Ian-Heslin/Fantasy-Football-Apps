@@ -2,6 +2,12 @@
 {% block title %}Admin: Users{% endblock %}
 {% block content %}
 <h1>Users</h1>
+{% if last_admin_error %}
+<div class="notice notice-error">
+  <p>That change would leave the site with no admins, so it wasn&rsquo;t applied.
+    Promote someone else to admin first.</p>
+</div>
+{% endif %}
 <table class="data-table">
   <thead>
     <tr><th>Username</th><th>Tier</th><th>Sleeper linked</th><th>ESPN linked</th><th>Joined</th></tr>
