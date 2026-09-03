@@ -46,6 +46,14 @@ python3 scripts/load_espn.py      # pulls your leagues/rosters from ESPN's
                                    # so set SWID/ESPN_S2 env vars (from a
                                    # logged-in browser's cookies) to get past
                                    # that wall
+python3 scripts/load_yahoo.py     # pulls Ian's Yahoo league/roster via a
+                                   # reverse-engineered cookie-authenticated
+                                   # endpoint (no official OAuth app needed --
+                                   # see docs/sleeper-and-trade-value-pipeline.md's
+                                   # Yahoo section); requires YAHOO_COOKIE env
+                                   # var (private league, no no-auth fallback);
+                                   # add --history for past seasons via Yahoo's
+                                   # renew/renewed season chain
 python3 scripts/load_nflverse.py  # loads 1999-2025 play-by-play (defaults to
                                    # the full range; pass --start/--end for a
                                    # smaller window)

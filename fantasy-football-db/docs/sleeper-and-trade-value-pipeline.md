@@ -106,7 +106,55 @@ is a much better long-term source for this than the scraped `db_fpecr_latest.csv
 worth migrating this script to pull from `consensus-rankings` + `player-points` directly once the
 API is wired into a local runner.
 
-## Yahoo Fantasy Sports API — access requested, awaiting approval
+## Yahoo Fantasy Sports data — working via reverse-engineered cookie auth (2026-09-03)
+**Solved without the official OAuth app** (see "still pending" section below, kept for reference
+in case this route ever breaks): captured the actual requests `football.fantasysports.yahoo.com`'s
+own frontend makes (DevTools → Network → Fetch/XHR, same technique that cracked ESPN's history
+endpoint), and found `pub-api-rw.fantasysports.yahoo.com` mirrors the exact same `/fantasy/v2/...`
+JSON shape as Yahoo's real documented API, but authenticates with **plain browser login cookies**
+instead of an OAuth bearer token — confirmed live pulling real league standings, team info, and a
+full 18-player roster (Trevor Lawrence, Zay Flowers, Rashee Rice, etc. all came back correctly).
+
+- **Auth**: the whole `Cookie` request header value from a logged-in browser hitting
+  `pub-api-rw.fantasysports.yahoo.com` (just `F`, `Y`, `PH`, `tbla_id` — no `Authorization` header
+  at all, confirmed by inspecting the actual request headers). `load_yahoo.py` reads this from a
+  `YAHOO_COOKIE` env var, sent verbatim as the `Cookie` header — never hardcoded, same treatment as
+  `SWID`/`ESPN_S2` and the FantasyPros key. Unlike ESPN's public leagues, Ian's Yahoo league
+  (`WHMFFL`) is private, so there's no no-auth fallback here at all.
+- **URL shape**: `/fantasy/v2/league/{game_key}.l.{league_id}/teams;out=standings` for league +
+  team + standings info (Yahoo puts resource modifiers like `;out=standings` in the URL PATH, not
+  the query string — a `?out=standings` query param would NOT work); `/fantasy/v2/team/{team_key}/
+  roster` for one team's actual roster. `{game_key}` is Yahoo's numeric per-season/per-sport id
+  (`470` = 2026 NFL, confirmed) and changes every year same as `{league_id}` (`3157` for 2026,
+  `121909` for 2025) — both live as manually-maintained constants in `load_yahoo.py`, same
+  maintenance model as ESPN's `SEASON` constant.
+- **Season history**: Yahoo has no persistent league_id like ESPN, but chains seasons via a
+  `renew`/`renewed` pair on the league object instead of Sleeper's `previous_league_id` — same idea,
+  different field name. 2026's league object had `"renew": "461_121909"`, exactly matching 2025's
+  `game_key`/`league_id` (confirmed by capturing both). `load_yahoo.py --history` walks this chain
+  backward until a league object has no `renew` field — Yahoo's own explicit "no earlier season"
+  signal, cleaner than ESPN's ambiguous 401/403/empty-body saga.
+- **Identifying Ian's own team**: `team_id` and `league_id` both change every season, but each
+  team's `managers[0].manager.guid` is stable across years (confirmed: same guid on Ian's team in
+  both 2026 and 2025) — `MY_MANAGER_GUID` in `load_yahoo.py` anchors on this, the same role
+  ESPN/Sleeper's `owner_id` plays.
+- **Yahoo's JSON quirk**: most `team`/`player` fields arrive as a list of single-key dicts (plus
+  bare `[]` fillers for absent optional fields) instead of one flat dict, and collections
+  (`teams`, `players`) sometimes arrive as `{'0': {...}, 'count': N}` and sometimes as `{'0': {...}}`
+  with a separate sibling `'teams:attributes': {'count': N}` — both confirmed live. `load_yahoo.py`'s
+  `_merge_fields`/`_collection_items` helpers normalize all of this; verified against Ian's actual
+  captured payloads (not just live) via an offline fixture test before ever asking him to run it.
+- **Not yet derived**: real league settings (whether WHMFFL is 1QB or superflex) — no captured
+  example of that resource yet, so `YAHOO_FORMAT` in the script is a placeholder ('1QB') pending
+  confirmation.
+- **Unverified/fragile by nature**: this is reverse-engineered, not documented by Yahoo. If
+  `load_yahoo.py` starts failing across the board (not just one bad season), the first thing to
+  suspect is Yahoo changing how its frontend authenticates — re-capture a fresh request from the
+  browser Network tab the same way this was found.
+
+### Yahoo's official OAuth API — access requested, still awaiting approval (superseded above)
+The cookie-based route above works today and needs no approval, so this is no longer blocking —
+kept here in case Yahoo ever locks down the cookie route and the official path becomes necessary.
 Ian wants to pull his Yahoo league(s) the same way, using the `yfpy` Python wrapper. Confirmed
 this session that **Yahoo's OAuth/API domains (`fantasysports.yahooapis.com`,
 `api.login.yahoo.com`) are blocked from this sandbox's Bash/curl the same way api.sleeper.app is
