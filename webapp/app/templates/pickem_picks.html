@@ -23,7 +23,8 @@
 <div class="notice">
   <p>Confidence points are on -- {{ n_games }} for your most confident pick, 1 for your least
     confident. Every game already has a number; change one and the rest reorder automatically
-    to keep them unique. (A game needs a team picked before its number can be changed.)</p>
+    to keep them unique, and the list below re-sorts to match. (A game needs a team picked
+    before its number can be changed.)</p>
 </div>
 {% endif %}
 
@@ -44,8 +45,6 @@
     <thead>
       <tr>
         <th>Matchup</th>
-        <th>{{ 'Spread' if settings.pick_mode == 'spread' else 'Line (ref.)' }}</th>
-        <th>Your pick</th>
         {% if settings.confidence_enabled %}<th>Confidence</th>{% endif %}
       </tr>
     </thead>
@@ -54,26 +53,38 @@
       {% set pick = existing.get(g['game_id']) %}
       {% set locked = is_locked(g) %}
       {% set fav = favorite_team(g) %}
+      {% set line_text = (fav ~ ' -' ~ (g['spread_line']|abs|string)) if fav else "Pick'em" %}
       <tr>
-        <td>{{ macros.matchup(g, team_names) }}
-          <div class="subtle">{{ g['kickoff_at'] or 'TBD' }}{% if locked %} &middot; locked{% endif %}</div>
-        </td>
-        <td>{{ (fav ~ ' -' ~ (g['spread_line']|abs|string)) if fav else "Pick'em" }}</td>
         <td>
-          {% if locked %}
-            {{ macros.team_label(pick['picked_team'], team_names) if pick else '—' }}
-          {% else %}
-          <label class="pick-option">
-            <input type="radio" name="pick_{{ g['game_id'] }}" value="{{ g['away_team'] }}"
-                   {{ 'checked' if pick and pick['picked_team'] == g['away_team'] else '' }}>
-            {{ macros.team_label(g['away_team'], team_names) }}
-          </label>
-          <label class="pick-option">
-            <input type="radio" name="pick_{{ g['game_id'] }}" value="{{ g['home_team'] }}"
-                   {{ 'checked' if pick and pick['picked_team'] == g['home_team'] else '' }}>
-            {{ macros.team_label(g['home_team'], team_names) }}
-          </label>
-          {% endif %}
+          <div class="pickem-matchup">
+            <div class="pickem-line">{{ line_text }}</div>
+            <div class="pickem-vs">
+              {% if locked %}
+              <span class="pickem-team-pick locked {{ 'picked' if pick and pick['picked_team'] == g['away_team'] else '' }}">
+                {{ macros.team_label(g['away_team'], team_names) }}
+              </span>
+              {% else %}
+              <label class="pickem-team-pick">
+                <input type="radio" name="pick_{{ g['game_id'] }}" value="{{ g['away_team'] }}"
+                       {{ 'checked' if pick and pick['picked_team'] == g['away_team'] else '' }}>
+                {{ macros.team_label(g['away_team'], team_names) }}
+              </label>
+              {% endif %}
+              <span class="pickem-at">@</span>
+              {% if locked %}
+              <span class="pickem-team-pick locked {{ 'picked' if pick and pick['picked_team'] == g['home_team'] else '' }}">
+                {{ macros.team_label(g['home_team'], team_names) }}
+              </span>
+              {% else %}
+              <label class="pickem-team-pick">
+                <input type="radio" name="pick_{{ g['game_id'] }}" value="{{ g['home_team'] }}"
+                       {{ 'checked' if pick and pick['picked_team'] == g['home_team'] else '' }}>
+                {{ macros.team_label(g['home_team'], team_names) }}
+              </label>
+              {% endif %}
+            </div>
+            <div class="pickem-kickoff subtle">{{ g['kickoff_at'] or 'TBD' }}{% if locked %} &middot; locked{% endif %}</div>
+          </div>
         </td>
         {% if settings.confidence_enabled %}
         <td>

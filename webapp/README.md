@@ -118,12 +118,18 @@ shared nav; each page passes which tab is active):
   shared-standings games. **`/games/pickem`**, **`/games/pickem/picks`**,
   **`/games/pickem/standings`** -- NFL Pick'em: pick every game's winner
   (or who covers the spread -- a league-wide, admin-only setting) each
-  week, with optional confidence points. When confidence is on, every
-  pick gets a 1..N number automatically (N = that week's game count, most
-  confident pick highest); changing one number reorders the rest to keep
-  them unique (see `pickem.reorder_confidence`) instead of leaving that to
-  manual free-entry. Team logos (nflverse's github-hosted `squared_logos`)
-  render next to every team name. Real schedule/spreads/scores come from
+  week, with optional confidence points. Each matchup shows as away team
+  @ home team -- clicking a team name picks it (an underlying radio input,
+  styled so the whole name/logo is the click target); the Vegas line sits
+  above the @ sign, kickoff date/time below it. When confidence is on,
+  every pick gets a 1..N number automatically (N = that week's game
+  count, most confident pick highest); changing one number reorders the
+  rest to keep them unique (see `pickem.reorder_confidence`) instead of
+  leaving that to manual free-entry, and the whole list re-sorts to match
+  (highest confidence on top) since the confidence `<select>` already
+  auto-submits and reloads the page on change. Team logos (nflverse's
+  github-hosted `squared_logos`) render next to every team name. Real
+  schedule/spreads/scores come from
   `scripts/load_pickem_schedule.py` (nflverse/nfldata's `games.csv`,
   re-run periodically during the season); picks lock at kickoff. Standings
   (season and week-by-week) are computed live from picks + settings every

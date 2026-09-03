@@ -356,11 +356,22 @@ button:hover { opacity: 0.85; }
 }
 .game-card-disabled { opacity: 0.45; border-top-color: var(--ink-faint); }
 
-.pick-option {
-  display: inline-flex; align-items: center; gap: 4px; margin-right: 16px;
-  font-size: 0.9rem;
+.pickem-matchup { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 6px 0; }
+.pickem-line { font-size: 0.78rem; color: var(--ink-soft); }
+.pickem-vs { display: flex; align-items: center; gap: 14px; }
+.pickem-at { font-weight: 700; color: var(--ink-soft); }
+.pickem-kickoff { font-size: 0.78rem; }
+
+.pickem-team-pick {
+  position: relative; display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border: 1.5px solid var(--ink); cursor: pointer; background: var(--paper);
 }
-.pick-option input { accent-color: var(--ink); }
+.pickem-team-pick input {
+  position: absolute; opacity: 0; width: 1px; height: 1px; overflow: hidden;
+}
+.pickem-team-pick:has(input:checked) { background: var(--yellow); }
+.pickem-team-pick.locked { cursor: default; border-color: var(--ink-faint); }
+.pickem-team-pick.locked.picked { border-color: var(--ink); background: var(--yellow); }
 
 .confidence-select {
   width: 60px; background: var(--paper); color: var(--ink); border: 1.5px solid var(--ink);

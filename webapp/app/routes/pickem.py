@@ -101,6 +101,11 @@ def picks_form(request: Request, week: Optional[int] = None):
         existing = {r["game_id"]: r for r in existing_rows}
         settings = pickem.get_settings(conn)
         confidences = pickem.compute_display_confidence(games, existing) if settings["confidence_enabled"] else {}
+        if settings["confidence_enabled"]:
+            # Highest confidence on top -- every confidence change reloads
+            # this page (the select's onchange auto-submits), so re-sorting
+            # here is all "the list reorders when you change a number" needs.
+            games = sorted(games, key=lambda g: confidences[g["game_id"]], reverse=True)
     finally:
         conn.close()
 
