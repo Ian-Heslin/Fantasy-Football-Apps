@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Fantasy Draft (Group){% endblock %}
+{% block content %}
+<h1>Fantasy Draft (Group)</h1>
+<p class="subtle"><a href="/games/group">&larr; Group</a></p>
+<p class="subtle">Draft any player from any NFL season, {{ year_min }}-{{ year_max }} -- the host
+  enters each pick on behalf of whoever's turn it is.</p>
+
+{% if error %}<div class="notice notice-error"><p>{{ error }}</p></div>{% endif %}
+
+{% if turn %}
+<div class="notice">
+  <p><strong>{{ turn_participant['name'] }}'s pick</strong> -- open slots: {{ open_slots|join(', ') }}</p>
+</div>
+<form method="post" action="/games/group/draft/{{ session['session_id'] }}/pick">
+  <label>Slot
+    <select name="slot">
+      {% for s in open_slots %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Year
+    <input type="number" name="year" min="{{ year_min }}" max="{{ year_max }}" required>
+  </label>
+  <label>Player
+    <input type="text" name="player" autocomplete="off" required>
+  </label>
+  <button type="submit">Draft</button>
+</form>
+{% else %}
+<div class="notice"><p>Draft complete!</p></div>
+{% endif %}
+
+<h2>Draft board</h2>
+<table class="data-table">
+  <thead><tr><th>#</th><th>Participant</th><th>Slot</th><th>Year</th><th>Player</th><th>Points</th></tr></thead>
+  <tbody>
+    {% for pick in picks %}
+    <tr>
+      <td>{{ pick['pick_order'] }}</td>
+      <td>{{ standings|selectattr('participant_id', 'equalto', pick['participant_id'])|map(attribute='name')|first }}</td>
+      <td>{{ pick['slot'] }}</td>
+      <td>{{ pick['year'] }}</td>
+      <td>{{ pick['player'] }}</td>
+      <td>{{ '%.1f'|format(pick['points']) if pick['points'] is not none else '—' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2>{{ 'Standings so far' if turn else 'Final standings' }}</h2>
+<table class="data-table">
+  <thead><tr><th>#</th><th>Participant</th><th>Total points</th><th>Picks made</th></tr></thead>
+  <tbody>
+    {% for row in standings %}
+    <tr>
+      <td>{{ row.rank }}</td>
+      <td>{{ row.name }}</td>
+      <td>{{ '%.1f'|format(row.total_points) }}</td>
+      <td>{{ row.picks_made }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

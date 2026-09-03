@@ -285,6 +285,80 @@ CREATE TABLE IF NOT EXISTS fantasy_draft_entries (
     PRIMARY KEY (user_id, slot)
 );
 
+-- Daily Stat Pad (see app/daily_challenge.py): pick 5 distinct players +
+-- seasons to maximize one stat category, a new category each day
+-- (deterministic from the date -- not stored here, recomputed from
+-- challenge_date so there's one less thing that could drift out of sync).
+-- Leaderboard is naturally per-day since challenge_date is part of the key.
+CREATE TABLE IF NOT EXISTS daily_challenge_entries (
+    user_id         INTEGER NOT NULL REFERENCES users(user_id),
+    challenge_date  TEXT NOT NULL,   -- 'YYYY-MM-DD'
+    pick_num        INTEGER NOT NULL,   -- 1..5
+    year            INTEGER,
+    player          TEXT,
+    stat_value      REAL,
+    PRIMARY KEY (user_id, challenge_date, pick_num)
+);
+
+-- Group games: shared-screen, host-run live sessions (see app/group_games.py
+-- and app/group_draft.py) -- one browser (the host's) drives the whole
+-- session; participants are free-text names, not site accounts, since
+-- everyone's in the same room and only the host needs to be logged in.
+-- Two shapes: reveal-style trivia (group_items/group_answers) and a live
+-- Fantasy Draft (group_draft_picks) -- a session is one or the other,
+-- never both, selected by game_type.
+CREATE TABLE IF NOT EXISTS group_sessions (
+    session_id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    host_user_id    INTEGER NOT NULL REFERENCES users(user_id),
+    game_type       TEXT NOT NULL,   -- 'award_winners' | 'season_leaders' | 'nfl_top100' | 'fantasy_draft'
+    category        TEXT,             -- the trivia category; NULL for fantasy_draft
+    status          TEXT NOT NULL DEFAULT 'active',   -- 'active' | 'completed'
+    turn_index      INTEGER NOT NULL DEFAULT 0,   -- fantasy_draft only: whose overall pick # is next
+    created_at      TEXT DEFAULT (datetime('now')),
+    completed_at    TEXT
+);
+
+CREATE TABLE IF NOT EXISTS group_participants (
+    session_id      INTEGER NOT NULL REFERENCES group_sessions(session_id),
+    participant_id  INTEGER NOT NULL,   -- 1..N within this session, not a user_id
+    name            TEXT NOT NULL,
+    PRIMARY KEY (session_id, participant_id)
+);
+
+-- reveal-style trivia sessions only -- snapshotted at session-creation
+-- time, same reasoning as trivia_round_items.
+CREATE TABLE IF NOT EXISTS group_items (
+    session_id      INTEGER NOT NULL REFERENCES group_sessions(session_id),
+    item_key        TEXT NOT NULL,
+    sort_order      INTEGER NOT NULL,   -- explicit presentation order, not relying on insertion order
+    prompt_label    TEXT NOT NULL,
+    correct_answer  TEXT NOT NULL,
+    revealed        INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (session_id, item_key)
+);
+
+CREATE TABLE IF NOT EXISTS group_answers (
+    session_id      INTEGER NOT NULL,
+    item_key        TEXT NOT NULL,
+    participant_id  INTEGER NOT NULL,
+    is_correct      INTEGER,   -- NULL until the host marks it
+    PRIMARY KEY (session_id, item_key, participant_id)
+);
+
+-- live Fantasy Draft sessions only -- same 9 slots as the solo version,
+-- but with real draft-conflict enforcement across participants within
+-- one session (see app/group_draft.py), unlike the solo game.
+CREATE TABLE IF NOT EXISTS group_draft_picks (
+    session_id      INTEGER NOT NULL REFERENCES group_sessions(session_id),
+    participant_id  INTEGER NOT NULL,
+    slot            TEXT NOT NULL,
+    year            INTEGER,
+    player          TEXT,
+    points          REAL,
+    pick_order      INTEGER,   -- overall pick number (1-based), for the draft-board display
+    PRIMARY KEY (session_id, participant_id, slot)
+);
+
 -- Freshness tracking, so the web page can show "last updated" per source
 -- instead of silently serving stale data.
 CREATE TABLE IF NOT EXISTS sync_log (

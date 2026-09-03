@@ -63,6 +63,13 @@ CREATE INDEX IF NOT EXISTS idx_adp_name_season ON adp_history(player_name_norm, 
 -- by about a season -- scripts/build_breakout_model.py falls back to
 -- deriving the same counting stats from play_by_play for whichever season(s)
 -- aren't in this table yet.
+--
+-- player_stats_def_season -- the same release's defense-specific file:
+-- tackles, sacks, passes defended, forced fumbles/interceptions, defensive
+-- TDs, one row per player per season. Same inferred-schema pattern, loaded
+-- by the same script. Powers the NFL Top 100 game's optional "season
+-- stats" hint for defensive players (app/trivia.py's _top100_enrichment) --
+-- player_stats_season above only has offensive counting stats.
 
 -- nflverse player biographical/draft data (birth_date for age, draft_year/
 -- round/pick, rookie_season) -- keyed on gsis_id, the same id play_by_play/
@@ -345,15 +352,27 @@ CREATE INDEX IF NOT EXISTS idx_pwfp_season_week ON player_week_fantasy_points(se
 -- Season totals, aggregated from player_week_fantasy_points by the same
 -- script -- what app/fantasy_draft.py actually queries (same shape as
 -- fantasy_draft_stats, so the two are interchangeable at read time).
+-- Raw category totals (passing_yards etc.) are here too, not just the two
+-- fantasy-point totals, so the Daily Stat Pad challenge (pick 5 players +
+-- seasons to maximize one stat category, see app/daily_challenge.py) can
+-- read a single season row per pick instead of re-aggregating
+-- player_week_fantasy_points on every request.
 CREATE TABLE IF NOT EXISTS player_season_fantasy_points (
-    season      INTEGER NOT NULL,
-    player_id   VARCHAR NOT NULL,
-    player      VARCHAR NOT NULL,
-    position    VARCHAR,
-    team        VARCHAR,     -- most common team that season (mode across weeks)
-    games       INTEGER,
-    fant_pt     DOUBLE,
-    ppr_pt      DOUBLE,
+    season          INTEGER NOT NULL,
+    player_id       VARCHAR NOT NULL,
+    player          VARCHAR NOT NULL,
+    position        VARCHAR,
+    team            VARCHAR,     -- most common team that season (mode across weeks)
+    games           INTEGER,
+    passing_yards   DOUBLE,
+    passing_tds     DOUBLE,
+    rushing_yards   DOUBLE,
+    rushing_tds     DOUBLE,
+    receptions      DOUBLE,
+    receiving_yards DOUBLE,
+    receiving_tds   DOUBLE,
+    fant_pt         DOUBLE,
+    ppr_pt          DOUBLE,
     PRIMARY KEY (season, player_id)
 );
 CREATE INDEX IF NOT EXISTS idx_psfp_season_pos ON player_season_fantasy_points(season, position);

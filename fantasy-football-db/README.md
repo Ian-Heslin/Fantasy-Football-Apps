@@ -207,6 +207,12 @@ Loaded by `load_player_stats.py`:
 - `player_bio` (DuckDB) -- birth date, draft year/round/pick, rookie season,
   keyed on `gsis_id` (nflverse's player id -- the same id `play_by_play`,
   `player_stats_season`, and `player_offense_rank` all use).
+- `player_stats_def_season` (DuckDB) -- the same release's defense-specific
+  file: tackles, sacks, passes defended, forced fumbles/interceptions,
+  defensive TDs, one row per player per season, 1999-2024. Added to power
+  the web app's NFL Top 100 game's optional "season stats" hint for
+  defensive players (`player_stats_season` above only has offensive
+  counting stats).
 
 Loaded by `build_bounceback_model.py` and `build_breakout_model.py` (a
 rebuild of the two models in `docs/breakout-falloff-methodology.md`, using
@@ -297,7 +303,11 @@ e.g. `load_nflverse.py` mid-season, to pick up new weeks):
 - `player_season_fantasy_points` (DuckDB) -- the same, aggregated to
   season totals (15,955 rows) -- what Fantasy Draft reads for any season
   1999+, preferred over `fantasy_draft_stats` since it stays current and
-  doesn't have that table's Gronkowski-shaped gaps.
+  doesn't have that table's Gronkowski-shaped gaps. Also carries raw
+  per-category season totals (passing/rushing/receiving yards and TDs,
+  receptions), added for the web app's Daily Stat Pad game, which picks a
+  category per day and has players pick 5 (year, player) pairs to
+  maximize it.
 
 Loaded by `load_team_executives.py` and `load_nfl_top100.py`, from
 committed CSVs (`data/team_executives/`, `data/trivia/nfl_top100.csv`) --
@@ -342,7 +352,8 @@ scripts/
                                        for yet, from nflverse/nfldata
   build_arbitrage_signals.py         -- computes the buy-low/sell-high signal
                                        into app.db's arbitrage_signals table
-  load_player_stats.py                -- loads player_stats_season + player_bio
+  load_player_stats.py                -- loads player_stats_season +
+                                       player_stats_def_season + player_bio
   build_bounceback_model.py            -- rebuilds the v7 bounce-back model
   build_breakout_model.py              -- rebuilds the v11 breakout model
   load_pickem_schedule.py              -- loads the real schedule/spreads/scores

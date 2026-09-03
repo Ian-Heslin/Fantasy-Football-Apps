@@ -13,3 +13,14 @@
 {% macro matchup(g, team_names) -%}
 {{ team_label(g['away_team'], team_names) }} @ {{ team_label(g['home_team'], team_names) }}
 {%- endmacro %}
+
+{# The 4-tab nav shown atop every /games/* hub page. `active` is one of
+   'leagues' | 'daily' | 'solo' | 'group'. #}
+{% macro game_tabs(active) -%}
+<div class="tabs">
+  <a class="tab {{ 'active' if active == 'leagues' else '' }}" href="/games">Leagues</a>
+  <a class="tab {{ 'active' if active == 'daily' else '' }}" href="/games/daily">Daily</a>
+  <a class="tab {{ 'active' if active == 'solo' else '' }}" href="/games/solo">Solo</a>
+  <a class="tab {{ 'active' if active == 'group' else '' }}" href="/games/group">Group</a>
+</div>
+{%- endmacro %}

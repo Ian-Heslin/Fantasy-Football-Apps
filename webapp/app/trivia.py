@@ -44,6 +44,130 @@ WEEKLY_ROUND_SIZE = 15
 # real year (2011-2026, whatever nfl_top_100 covers) instead of a fixed
 # name -- see available_top100_years(). A round samples ROUND_SIZE of
 # that year's 100 ranked players, same as Award Winners/Season Leaders.
+#
+# Optional hints a player can toggle on when starting a round/session --
+# each just adds another clue to the prompt text, baked in at build_pool()
+# time (see _top100_prompt/_top100_enrichment below). "team" was always
+# shown before these toggles existed; it's included here so it can be
+# turned off too, for a harder round.
+TOP100_HINT_LABELS = {
+    "team": "Team", "position": "Position", "side": "Side of the ball",
+    "years": "Years in the league", "stats": "Season stats",
+}
+
+# Position -> side of ball, for the "side" hint and to pick which stat line
+# (offensive vs. defensive) the "stats" hint shows. Covers every raw
+# position value seen in player_bio/player_stats_season/
+# player_stats_def_season -- special teams positions get a side but no stat
+# line (nflverse's player_stats releases don't carry kicking/punting stats
+# here).
+OFFENSE_POSITIONS = {"QB", "RB", "FB", "HB", "WR", "TE", "OL", "T", "OT", "G", "OG", "C"}
+DEFENSE_POSITIONS = {"DL", "DE", "DT", "NT", "LB", "ILB", "OLB", "MLB", "CB", "DB", "S", "FS", "SS", "SAF"}
+SPECIAL_TEAMS_POSITIONS = {"K", "P", "LS"}
+
+
+def _side_of_ball(position):
+    if not position:
+        return None
+    position = position.upper()
+    if position in OFFENSE_POSITIONS:
+        return "Offense"
+    if position in DEFENSE_POSITIONS:
+        return "Defense"
+    if position in SPECIAL_TEAMS_POSITIONS:
+        return "Special Teams"
+    return None
+
+
+def _top100_enrichment(duckdb_conn, year):
+    """normalize_name(player) -> {position, side, years_in_league, stat_line}
+    for hints on that year's Top 100 list. nfl_top_100 only has free-text
+    player names (no player_id), so this loosely matches them against
+    nflverse's player_stats_season/player_stats_def_season (that season's
+    offense/defense counting stats) and player_bio (career position and
+    rookie_season, for years-in-league and as a position fallback for
+    anyone who didn't record offensive or defensive stats that year --
+    e.g. a returner or a player who missed the season hurt).
+
+    Two real players can share a normalized name across NFL history (e.g.
+    a 1988-1996 DE and a 2017-active RB both named Aaron Jones) -- a plain
+    name join would silently pick whichever bio row came back first,
+    which for an active star can mean showing a decades-dead defensive
+    lineman's position as the "hint" for the real player. Bio candidates
+    are grouped by name and, per year, resolved to whichever one's
+    rookie_season..last_season window actually contains this year."""
+    bio_candidates = {}
+    for display_name, position, rookie_season, last_season in duckdb_conn.execute(
+        "SELECT display_name, position, rookie_season, last_season FROM player_bio"
+    ).fetchall():
+        bio_candidates.setdefault(normalize_name(display_name), []).append(
+            (position, rookie_season, last_season)
+        )
+
+    enrichment = {}
+    for name, candidates in bio_candidates.items():
+        active = [c for c in candidates if c[1] and c[1] <= year <= (c[2] or year)]
+        position, rookie_season, _ = (active or candidates)[0]
+        e = enrichment.setdefault(name, {})
+        if position:
+            e["position"] = position
+        if rookie_season:
+            e["rookie_season"] = rookie_season
+
+    # player_bio's career position (set above) decides which stat line
+    # applies below -- an offensive player who happens to have a stray
+    # tackle logged (e.g. chasing down a return after their own turnover)
+    # shows up in player_stats_def_season too, and shouldn't have that
+    # incidental defensive credit clobber their real offensive stat line
+    # (or vice versa). Only a player missing from player_bio entirely
+    # falls back to "whichever table matched" for both position and side.
+    off_rows = duckdb_conn.execute(
+        """SELECT player_display_name, any_value(position) AS position,
+                  sum(coalesce(passing_yards, 0) + coalesce(rushing_yards, 0) + coalesce(receiving_yards, 0)) AS yards,
+                  sum(coalesce(passing_tds, 0) + coalesce(rushing_tds, 0) + coalesce(receiving_tds, 0)) AS tds,
+                  sum(coalesce(interceptions, 0) + coalesce(sack_fumbles_lost, 0)
+                      + coalesce(rushing_fumbles_lost, 0) + coalesce(receiving_fumbles_lost, 0)) AS turnovers
+           FROM player_stats_season WHERE season = ? AND player_display_name IS NOT NULL
+           GROUP BY player_display_name""",
+        (year,),
+    ).fetchall()
+    for display_name, position, yards, tds, turnovers in off_rows:
+        e = enrichment.setdefault(normalize_name(display_name), {})
+        side = _side_of_ball(e.get("position"))
+        if side not in (None, "Offense"):
+            continue
+        if not e.get("position"):
+            e["position"] = position
+        e["stat_line"] = f"{int(yards)} yds, {int(tds)} TD, {int(turnovers)} TO"
+
+    def_rows = duckdb_conn.execute(
+        """SELECT player_display_name, any_value(position) AS position,
+                  sum(coalesce(def_tackles, 0)) AS tackles, sum(coalesce(def_sacks, 0)) AS sacks,
+                  sum(coalesce(def_pass_defended, 0)) AS pbu,
+                  sum(coalesce(def_interceptions, 0) + coalesce(def_fumbles_forced, 0)) AS turnovers_forced,
+                  sum(coalesce(def_tds, 0)) AS tds
+           FROM player_stats_def_season WHERE season = ? AND player_display_name IS NOT NULL
+           GROUP BY player_display_name""",
+        (year,),
+    ).fetchall()
+    for display_name, position, tackles, sacks, pbu, turnovers_forced, tds in def_rows:
+        e = enrichment.setdefault(normalize_name(display_name), {})
+        side = _side_of_ball(e.get("position"))
+        if side not in (None, "Defense"):
+            continue
+        if not e.get("position"):
+            e["position"] = position
+        e["stat_line"] = (
+            f"{int(tackles)} tkl, {sacks:g} sacks, {int(pbu)} PBU, "
+            f"{int(turnovers_forced)} TO forced, {int(tds)} TD"
+        )
+
+    for e in enrichment.values():
+        e["side"] = _side_of_ball(e.get("position"))
+        rookie_season = e.get("rookie_season")
+        e["years_in_league"] = (year - rookie_season + 1) if rookie_season else None
+
+    return enrichment
 
 
 def available_top100_years(duckdb_conn):
@@ -102,14 +226,30 @@ def _weekly_prompt(rank, team, position, ppr_pt):
     return f"#{rank} this week — {team or '?'} {position or ''} — {ppr_pt:.1f} PPR pts".replace("  ", " ")
 
 
-def _top100_prompt(year, rank, team):
-    return f"#{rank} on the NFL's Top 100 Players of {year} — {team or 'free agent'}"
+def _top100_prompt(year, rank, team, enrich, hints):
+    bits = [f"#{rank} on the NFL's Top 100 Players of {year}"]
+    if "team" in hints:
+        bits.append(team or "free agent")
+    if "position" in hints and enrich.get("position"):
+        bits.append(enrich["position"])
+    if "side" in hints and enrich.get("side"):
+        bits.append(enrich["side"])
+    if "years" in hints and enrich.get("years_in_league"):
+        years = enrich["years_in_league"]
+        bits.append("Rookie season" if years == 1 else f"Year {years} in the league")
+    if "stats" in hints and enrich.get("stat_line"):
+        bits.append(enrich["stat_line"])
+    return " — ".join(bits)
 
 
-def start_round(sqlite_conn, duckdb_conn, user_id, game_type, category):
-    """Samples ROUND_SIZE questions (fewer if the category doesn't have
-    that many), snapshots them into a new trivia_rounds/trivia_round_items
-    pair, and returns the new round_id."""
+def build_pool(duckdb_conn, game_type, category, hints=None):
+    """The full set of (item_key, prompt_label, correct_answer) questions
+    for a category, for the reveal-style games (award_winners/
+    season_leaders/weekly_leaders/nfl_top100) -- shared by both the async
+    Solo round engine below and Group's live host-run sessions
+    (app/group_games.py), so the two never drift apart on what a category's
+    questions actually are. hints only applies to nfl_top100 -- see
+    TOP100_HINT_LABELS/_top100_prompt."""
     if game_type == "award_winners":
         rows = duckdb_conn.execute(
             """SELECT year, any_value(position) AS position, string_agg(player, '|') AS players
@@ -140,13 +280,25 @@ def start_round(sqlite_conn, duckdb_conn, user_id, game_type, category):
         ]
     elif game_type == "nfl_top100":
         year = int(category)
+        hints = set(hints or ())
         rows = duckdb_conn.execute(
             "SELECT rank, player, team FROM nfl_top_100 WHERE year = ?", (year,)
         ).fetchall()
-        pool = [(str(rank), _top100_prompt(year, rank, team), player) for rank, player, team in rows]
+        enrichment = _top100_enrichment(duckdb_conn, year) if hints else {}
+        pool = [
+            (str(rank), _top100_prompt(year, rank, team, enrichment.get(normalize_name(player), {}), hints), player)
+            for rank, player, team in rows
+        ]
     else:
         raise ValueError(f"unknown game_type {game_type!r}")
+    return pool
 
+
+def start_round(sqlite_conn, duckdb_conn, user_id, game_type, category, hints=None):
+    """Samples ROUND_SIZE questions (fewer if the category doesn't have
+    that many) from build_pool(), snapshots them into a new
+    trivia_rounds/trivia_round_items pair, and returns the new round_id."""
+    pool = build_pool(duckdb_conn, game_type, category, hints)
     if not pool:
         return None
 

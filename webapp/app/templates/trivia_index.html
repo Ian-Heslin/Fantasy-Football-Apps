@@ -1,45 +1,20 @@
 {% extends "base.html" %}
+{% import "_macros.html" as macros %}
 {% block title %}Trivia{% endblock %}
 {% block content %}
 <h1>Trivia</h1>
-<p class="subtle"><a href="/games">&larr; Games</a></p>
+{{ macros.game_tabs('solo') }}
+<p class="subtle"><a href="/games/solo">&larr; Solo</a></p>
 <p class="subtle">Play anytime, on your own -- each round scores immediately and your best
   round per category counts toward that category&rsquo;s leaderboard. The rounds column
   shows how many it took -- a best score off twenty attempts isn&rsquo;t the same as one
   off two.</p>
 
-{% if weekly_category %}
-<h2>Weekly Top Scorers</h2>
-<div class="card-grid">
-  <div class="solaris-card">
-    <h3>{{ weekly_category }}</h3>
-    <p class="subtle">Guess the 15 highest PPR scorers from the most recently played week --
-      computed live from actual play-by-play, not a fixed list.</p>
-    <form method="post" action="/games/trivia/start">
-      <input type="hidden" name="game_type" value="weekly_leaders">
-      <input type="hidden" name="category" value="{{ weekly_category }}">
-      <button type="submit">Start a round</button>
-    </form>
-    {% if weekly_board %}
-    <table class="data-table">
-      <thead><tr><th>#</th><th>Player</th><th>Best score</th><th>Rounds</th></tr></thead>
-      <tbody>
-        {% for row in weekly_board %}
-        <tr><td>{{ row.rank }}</td><td>{{ row.username }}</td><td>{{ row.score }} / {{ row.total }}</td><td class="subtle">{{ row.rounds_played }}</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% else %}
-    <p class="subtle">No rounds played yet.</p>
-    {% endif %}
-  </div>
-</div>
-{% endif %}
-
 {% if top100_years %}
 <h2>NFL Top 100</h2>
 <p class="subtle">Guess where 10 randomly-picked players ranked on the NFL's fan-voted Top 100
-  Players list for that year.</p>
+  Players list for that year. Optional hints below make it easier -- leave them all off for
+  the hardest version.</p>
 <div class="card-grid">
   {% for year in top100_years %}
   <div class="solaris-card">
@@ -47,6 +22,12 @@
     <form method="post" action="/games/trivia/start">
       <input type="hidden" name="game_type" value="nfl_top100">
       <input type="hidden" name="category" value="{{ year }}">
+      <fieldset class="hint-toggles">
+        <legend class="subtle">Hints</legend>
+        {% for key, label in top100_hint_labels.items() %}
+        <label><input type="checkbox" name="hint" value="{{ key }}"> {{ label }}</label>
+        {% endfor %}
+      </fieldset>
       <button type="submit">Start a round</button>
     </form>
     {% set top = top100_boards[year] %}

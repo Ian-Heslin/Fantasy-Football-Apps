@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ game_label }} (Group){% endblock %}
+{% block content %}
+<h1>{{ game_label }}: {{ session['category'] }}</h1>
+<p class="subtle"><a href="/games/group">&larr; Group</a></p>
+
+{% if item %}
+<div class="notice">
+  <p><strong>{{ item['prompt_label'] }}</strong></p>
+</div>
+<form method="post" action="/games/group/session/{{ session['session_id'] }}/reveal">
+  <input type="hidden" name="item_key" value="{{ item['item_key'] }}">
+  <table class="data-table">
+    <thead><tr><th>Participant</th><th>Got it right?</th></tr></thead>
+    <tbody>
+      {% for p in participants %}
+      <tr>
+        <td>{{ p['name'] }}</td>
+        <td><input type="checkbox" name="correct_{{ p['participant_id'] }}" value="{{ p['participant_id'] }}"></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p><button type="submit">Reveal answer &amp; next</button></p>
+  <p class="subtle">Answer: {{ item['correct_answer'].replace('|', ' / ') }}</p>
+</form>
+{% else %}
+<div class="notice"><p>Session complete!</p></div>
+{% endif %}
+
+<h2>{{ 'Standings so far' if item else 'Final standings' }}</h2>
+<table class="data-table">
+  <thead><tr><th>#</th><th>Participant</th><th>Correct</th></tr></thead>
+  <tbody>
+    {% for row in standings %}
+    <tr><td>{{ row.rank }}</td><td>{{ row.name }}</td><td>{{ row.correct }} / {{ row.total }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

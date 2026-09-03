@@ -31,9 +31,6 @@ def trivia_index(request: Request):
             game_type: {cat: trivia.leaderboard(conn, game_type, cat)[:5] for cat in cats}
             for game_type, cats in CATEGORIES.items()
         }
-        latest_season, latest_week = trivia.latest_week(duckdb_conn)
-        weekly_category = trivia.weekly_category(latest_season, latest_week) if latest_season else None
-        weekly_board = trivia.leaderboard(conn, "weekly_leaders", weekly_category)[:5] if weekly_category else []
         top100_years = trivia.available_top100_years(duckdb_conn)
         top100_boards = {year: trivia.leaderboard(conn, "nfl_top100", str(year))[:5] for year in top100_years}
     finally:
@@ -43,15 +40,14 @@ def trivia_index(request: Request):
         request, "trivia_index.html",
         {
             "game_labels": GAME_LABELS, "categories": CATEGORIES, "boards": boards,
-            "latest_season": latest_season, "latest_week": latest_week,
-            "weekly_category": weekly_category, "weekly_board": weekly_board,
             "top100_years": top100_years, "top100_boards": top100_boards,
+            "top100_hint_labels": trivia.TOP100_HINT_LABELS,
         },
     )
 
 
 @router.post("/games/trivia/start")
-def start_round(request: Request, game_type: str = Form(...), category: str = Form(...)):
+async def start_round(request: Request, game_type: str = Form(...), category: str = Form(...)):
     user = request.state.user
     valid = (
         (game_type in CATEGORIES and category in CATEGORIES[game_type])
@@ -61,12 +57,17 @@ def start_round(request: Request, game_type: str = Form(...), category: str = Fo
     if not valid:
         return RedirectResponse("/games/trivia", status_code=303)
 
+    hints = None
+    if game_type == "nfl_top100":
+        form = await request.form()
+        hints = set(form.getlist("hint")) & set(trivia.TOP100_HINT_LABELS)
+
     try:
         sqlite_conn, duckdb_conn = open_both()
     except FileNotFoundError as e:
         return db_missing_response(request, e)
     try:
-        round_id = trivia.start_round(sqlite_conn, duckdb_conn, user["user_id"], game_type, category)
+        round_id = trivia.start_round(sqlite_conn, duckdb_conn, user["user_id"], game_type, category, hints)
     finally:
         close_all(sqlite_conn, duckdb_conn)
 

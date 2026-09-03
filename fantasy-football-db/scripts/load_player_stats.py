@@ -13,11 +13,17 @@ not touches/dropbacks/EPA-per-touch/draft pedigree/birth date).
                         (for epa_per_touch). Source: nflverse-data's
                         player_stats release (same file the methodology
                         doc validated its hand-computed PPG against).
+  player_stats_def_season  one row per player per season: tackles, sacks,
+                        passes defended, forced fumbles/interceptions,
+                        defensive TDs. Source: the same player_stats
+                        release's defense-specific file -- powers the NFL
+                        Top 100 game's optional "season stats" hint for
+                        defensive players (see app/trivia.py).
   player_bio            one row per player: birth_date (for age), draft_
                         year/round/pick, rookie_season. Source: nflverse-
                         data's players release.
 
-Both are reachable from this sandbox the same way play_by_play is --
+All three are reachable from this sandbox the same way play_by_play is --
 github.com release assets, not a platform API.
 
 Usage:
@@ -37,6 +43,7 @@ DUCKDB_PATH = os.path.join(DATA_DIR, "analytics.duckdb")
 CACHE_DIR = os.path.join(DATA_DIR, "_nflverse_data", "player_stats_cache")
 
 PLAYER_STATS_URL = "https://github.com/nflverse/nflverse-data/releases/download/player_stats/player_stats_season.csv.gz"
+PLAYER_STATS_DEF_URL = "https://github.com/nflverse/nflverse-data/releases/download/player_stats/player_stats_def_season.csv.gz"
 PLAYERS_URL = "https://github.com/nflverse/nflverse-data/releases/download/players/players.csv"
 
 
@@ -66,6 +73,7 @@ def main():
 
     os.makedirs(CACHE_DIR, exist_ok=True)
     stats_path = download(PLAYER_STATS_URL, os.path.join(CACHE_DIR, "player_stats_season.csv.gz"))
+    def_stats_path = download(PLAYER_STATS_DEF_URL, os.path.join(CACHE_DIR, "player_stats_def_season.csv.gz"))
     players_path = download(PLAYERS_URL, os.path.join(CACHE_DIR, "players.csv"))
 
     conn = duckdb.connect(DUCKDB_PATH)
@@ -77,6 +85,14 @@ def main():
     """)
     n_stats = conn.execute("SELECT count(*) FROM player_stats_season").fetchone()[0]
     log(f"player_stats_season: {n_stats} rows (regular season only)")
+
+    conn.execute(f"""
+        CREATE OR REPLACE TABLE player_stats_def_season AS
+        SELECT * FROM read_csv_auto('{def_stats_path}')
+        WHERE season_type = 'REG'
+    """)
+    n_def_stats = conn.execute("SELECT count(*) FROM player_stats_def_season").fetchone()[0]
+    log(f"player_stats_def_season: {n_def_stats} rows (regular season only)")
 
     conn.execute(f"""
         CREATE OR REPLACE TABLE player_bio AS

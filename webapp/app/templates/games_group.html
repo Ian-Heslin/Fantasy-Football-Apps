@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% import "_macros.html" as macros %}
+{% block title %}Group Games{% endblock %}
+{% block content %}
+<h1>Games</h1>
+{{ macros.game_tabs('group') }}
+<p class="subtle">Played together in person, on one shared screen -- you (the host) read each
+  clue aloud and mark who got it right. Everyone else just needs to be in the room, no account
+  or phone needed.</p>
+
+{% if reveal_sessions or draft_sessions %}
+<h2>Resume a session</h2>
+<div class="card-grid">
+  {% for s in reveal_sessions %}
+  <a class="game-card" href="/games/group/session/{{ s['session_id'] }}">
+    <h2 class="game-card-title">{{ game_labels.get(s['game_type']) }}: {{ s['category'] }}</h2>
+    <span class="game-card-cta">Continue &rarr;</span>
+  </a>
+  {% endfor %}
+  {% for s in draft_sessions %}
+  <a class="game-card" href="/games/group/draft/{{ s['session_id'] }}">
+    <h2 class="game-card-title">Fantasy Draft session</h2>
+    <span class="game-card-cta">Continue &rarr;</span>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<h2>Start a new session</h2>
+<p class="subtle">Participant names, comma-separated (e.g. "Sean, Ian, Dick, Karris").</p>
+
+<h3>Fantasy Draft</h3>
+<div class="card-grid">
+  <div class="solaris-card">
+    <form method="post" action="/games/group/new">
+      <input type="hidden" name="game_type" value="fantasy_draft">
+      <p><input type="text" name="participants" placeholder="Sean, Ian, Dick, Karris" required></p>
+      <button type="submit">Start draft</button>
+    </form>
+  </div>
+</div>
+
+{% for game_type, cats in reveal_categories.items() %}
+<h3>{{ game_labels.get(game_type) }}</h3>
+<div class="card-grid">
+  {% for cat in cats %}
+  <div class="solaris-card">
+    <h4>{{ cat }}</h4>
+    <form method="post" action="/games/group/new">
+      <input type="hidden" name="game_type" value="{{ game_type }}">
+      <input type="hidden" name="category" value="{{ cat }}">
+      <p><input type="text" name="participants" placeholder="Sean, Ian, Dick, Karris" required></p>
+      <button type="submit">Start session</button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+{% endfor %}
+
+<h3>NFL Top 100</h3>
+<p class="subtle">Optional hints make it easier -- leave them all off for the hardest version.</p>
+<div class="card-grid">
+  {% for year in top100_years %}
+  <div class="solaris-card">
+    <h4>{{ year }}</h4>
+    <form method="post" action="/games/group/new">
+      <input type="hidden" name="game_type" value="nfl_top100">
+      <input type="hidden" name="category" value="{{ year }}">
+      <fieldset class="hint-toggles">
+        <legend class="subtle">Hints</legend>
+        {% for key, label in top100_hint_labels.items() %}
+        <label><input type="checkbox" name="hint" value="{{ key }}"> {{ label }}</label>
+        {% endfor %}
+      </fieldset>
+      <p><input type="text" name="participants" placeholder="Sean, Ian, Dick, Karris" required></p>
+      <button type="submit">Start session</button>
+    </form>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
