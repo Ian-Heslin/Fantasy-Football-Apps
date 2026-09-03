@@ -21,6 +21,30 @@ GAME_LABELS = {
     "award_winners": "Award Winners", "season_leaders": "Season Leaders", "nfl_top100": "NFL Top 100",
 }
 
+# Bounds on the participant list. This is a shared-screen party game --
+# two people minimum, and a couple of dozen is already more than fits on
+# one screen -- but the endpoint takes a comma-separated field, so
+# without a cap a single scripted POST inserts a row per name. That's
+# disk on the Pi's SD card (and in every hourly backup after it), and
+# CPU too: whose_turn()/standings() run a query per participant on every
+# render of the session. Names are truncated rather than rejected -- a
+# 200-character name is a paste accident, not something to fail on.
+MIN_PARTICIPANTS = 2
+MAX_PARTICIPANTS = 24
+MAX_PARTICIPANT_NAME = 40
+
+
+def clean_participant_names(raw):
+    """Parse the comma-separated participants field into a bounded list.
+
+    Returns (names, error) -- error is None when the list is usable."""
+    names = [n.strip()[:MAX_PARTICIPANT_NAME] for n in (raw or "").split(",") if n.strip()]
+    if len(names) < MIN_PARTICIPANTS:
+        return [], f"A group game needs at least {MIN_PARTICIPANTS} participants."
+    if len(names) > MAX_PARTICIPANTS:
+        return [], f"A group game can have at most {MAX_PARTICIPANTS} participants."
+    return names, None
+
 
 def start_session(conn, duckdb_conn, host_user_id, game_type, category, participant_names, hints=None):
     pool = trivia.build_pool(duckdb_conn, game_type, category, hints)

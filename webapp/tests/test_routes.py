@@ -3,54 +3,14 @@ templates. Cheap, and it catches the class of mistake unit tests miss --
 a route passing the wrong name into a template, a redirect that loses the
 session, an auth guard that isn't wired to a router.
 
-Everything runs against a throwaway app.db in tmp_path; nothing here can
-touch the real one.
+Fixtures live in conftest.py; everything runs against throwaway databases
+in tmp_path and never touches a real app.db.
 """
-import os
-import sqlite3
-
-import pytest
-from fastapi.testclient import TestClient
-
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SCHEMA = os.path.join(REPO_ROOT, "fantasy-football-db", "schema", "sqlite_schema.sql")
-
-GOOD_PASSWORD = "correct horse battery staple"
-
-
-@pytest.fixture
-def client(tmp_path, monkeypatch):
-    monkeypatch.setenv("SESSION_SECRET_KEY", "test-key-not-a-real-secret")
-
-    from app import db
-    path = tmp_path / "app.db"
-    conn = sqlite3.connect(path)
-    with open(SCHEMA) as f:
-        conn.executescript(f.read())
-    conn.commit()
-    conn.close()
-    monkeypatch.setattr(db, "SQLITE_PATH", str(path))
-
-    from app.main import app
-    # https:// because the session cookie is now Secure -- over plain
-    # http the browser (and TestClient) would drop it, which is the
-    # point of the flag.
-    with TestClient(app, base_url="https://testserver") as c:
-        yield c
-
-
-def signup(client, username="ian", password=GOOD_PASSWORD):
-    return client.post("/signup", data={
-        "username": username, "password": password, "confirm_password": password,
-    }, follow_redirects=False)
+from conftest import GOOD_PASSWORD, set_tier, signup
 
 
 def promote(client, username, tier):
-    from app import db
-    conn = db.get_connection()
-    conn.execute("UPDATE users SET tier = ? WHERE username = ?", (tier, username))
-    conn.commit()
-    conn.close()
+    set_tier(username, tier)
 
 
 # ---------------------------------------------------------------- auth flow

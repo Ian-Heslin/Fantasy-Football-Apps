@@ -4,6 +4,7 @@
 {% block content %}
 <h1>Games</h1>
 {{ macros.game_tabs('group') }}
+{% if error %}<div class="notice notice-error"><p>{{ error }}</p></div>{% endif %}
 <p class="subtle">Played together in person, on one shared screen -- you (the host) read each
   clue aloud and mark who got it right. Everyone else just needs to be in the room, no account
   or phone needed.</p>
