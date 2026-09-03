@@ -140,7 +140,13 @@ def get_league_teams(game_key, league_id):
     """Returns (flat_league_fields, [flat_team_fields, ...]) for one
     league-season, teams merged with their team_standings."""
     data = yahoo_get(f"/league/{game_key}.l.{league_id}/teams;out=standings")
-    league = (data.get("fantasy_content") or {}).get("league") or {}
+    league_node = (data.get("fantasy_content") or {}).get("league")
+    # 'league' turns out to use the same list-of-single-key-dicts shape as
+    # 'team'/'player' (confirmed live 2026-09 -- a plain .get("teams") on it
+    # raised AttributeError: 'list' object has no attribute 'get'), just
+    # without team/player's extra wrapping level, since 'teams' is simply
+    # one more field in that same list rather than a separate sub-resource.
+    league = _merge_fields(league_node) if isinstance(league_node, list) else (league_node or {})
     teams = []
     for team_wrapper in _collection_items(league.get("teams") or {}):
         fields, extra = parse_team(team_wrapper["team"])
