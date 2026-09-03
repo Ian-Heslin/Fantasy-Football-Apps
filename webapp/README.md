@@ -172,6 +172,45 @@ shared nav; each page passes which tab is active):
   shared draft board, so two users can pick the same year+player with no
   conflict. A typed name that doesn't match gets a handful of
   close-spelling suggestions rather than just failing.
+  **`/games/501`** (`app/five_oh_one.py`) -- inspired by the darts game
+  of the same name: pick one of 15 stat categories (see
+  `app/stat_categories.py`), get a category-specific starting number
+  (e.g. 1000 for PPR fantasy points, 100 for interceptions thrown), then
+  guess 5 *distinct* (player, year) pairs one at a time -- each guess's
+  real stat value comes off what's left, trying to land as close to 0 as
+  possible by the 5th pick. "Distinct" is by player name regardless of
+  year (the point is breadth of player knowledge, not reusing one
+  career). No bust rule -- every guessable stat is non-negative, so
+  there's no way to come back up after overshooting; the final
+  `abs(remaining)` is the score, lower is better, on a per-category
+  leaderboard. **`/games/imposter`** (`app/imposter.py`) -- a random
+  year + one of those same 15 categories shows 10 names: 9 real players
+  from that season's actual top 10 in the stat (one real top-10 name is
+  deliberately left out, to keep the shown count at 10) and 1 "imposter"
+  from that season's rank 11-20. Click names one at a time; click all 9
+  real ones and you win, click the imposter and it's over, with your
+  score being how many you'd correctly clicked first. A "Surprise me"
+  button picks both the category and year at random; per-category cards
+  fix the category and randomize just the year. Both games share
+  `stat_categories.py`'s `top_n()`/`find_player_value()` helpers (a
+  `MIN_GAMES` floor keeps a single-game outlier from out-ranking a real
+  season) so "top 10" and a category's real stat value mean the same
+  thing in both places, and in the NFL Top 100 hints above.
+- **`/games/settings`** (`app/game_settings.py`, linked from the tab row
+  itself rather than a 5th tab) -- a per-user difficulty filter: a
+  year-range slider and per-category checkboxes narrow which years and
+  stat categories Imposter's random picker can choose, and which
+  category cards 501/Imposter show at all. Doesn't restrict 501's own
+  (player, year) guesses, which are always typed in by hand -- there's
+  nothing to "randomize easier" about a guess the player chooses
+  themselves.
+
+All of Solo's guessing games (Award Winners/Season Leaders/Weekly Top
+Scorers/NFL Top 100, Daily Stat Pad, 501) are answered **row by row**:
+one guess or pick is submitted and scored immediately, and only the next
+one is shown, rather than filling in a whole form (all 10 trivia guesses,
+or all 5 Daily Stat Pad/501 picks) and submitting it all at once.
+
 - **Daily** (`/games/daily`, `app/daily_challenge.py`) -- two games that
   reset/rotate daily or weekly. **Weekly Top Scorers** -- guess the 15
   highest real PPR scorers from the most recently loaded week (same
@@ -260,6 +299,20 @@ app/
   group_draft.py          -- Group mode's live Fantasy Draft: snake turn order
                          (whose_turn()), pick validation, standings -- pure
                          functions, reuses fantasy_draft.py's slot/position rules
+  stat_categories.py       -- shared registry of 15 offense/defense stat
+                         categories (source table/column, start_501, a
+                         MIN_GAMES floor) + top_n()/find_player_value()/
+                         suggestions(), used by both five_oh_one.py and
+                         imposter.py -- pure functions
+  five_oh_one.py          -- 501: category starting value, pick validation
+                         (distinct by player name), running remaining,
+                         leaderboard -- pure functions
+  imposter.py             -- Imposter: round setup (top-10 minus one +
+                         one rank-11-20 imposter, shuffled), click
+                         scoring, leaderboard -- pure functions
+  game_settings.py         -- per-user year-range/category filter read by
+                         Imposter's random picker and both games' category
+                         lists -- pure functions
   team_colors.py         -- Team Colors: the 32-team color/logo table + resolve()
                          (ported from docs/solaris-design-spec.md's JS) --
                          also pure functions, no FastAPI/route code
@@ -282,6 +335,9 @@ app/
                            tab's Fantasy Draft)
     games_hub.py           -- /games/solo, /games/daily routes (games-tier+)
     group.py             -- /games/group routes (games-tier+)
+    five_oh_one.py         -- /games/501 routes (games-tier+)
+    imposter.py           -- /games/imposter routes (games-tier+)
+    game_settings.py        -- /games/settings routes (games-tier+)
     home.py, rosters.py, predictions.py, arbitrage.py, teams.py, coaches.py
                            (fantasy-tier+, except home.py which is games-tier+ but
                            redirects games-tier users to /games)

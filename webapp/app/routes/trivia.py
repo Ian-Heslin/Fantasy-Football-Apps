@@ -98,25 +98,22 @@ def round_page(request: Request, round_id: int):
     return templates.TemplateResponse(
         request, "trivia_round.html",
         {
-            "round": round_row, "items": items, "game_label": GAME_LABELS.get(round_row["game_type"]),
+            "round": round_row, "answered": [i for i in items if i["guess"] is not None],
+            "current_item": trivia.current_item(items), "game_label": GAME_LABELS.get(round_row["game_type"]),
             "completed": round_row["completed_at"] is not None,
         },
     )
 
 
-@router.post("/games/trivia/round/{round_id}")
-async def submit_round(request: Request, round_id: int):
+@router.post("/games/trivia/round/{round_id}/guess")
+async def submit_guess(request: Request, round_id: int, item_key: str = Form(...), guess: str = Form("")):
     user = request.state.user
-    form = await request.form()
-    guesses = {
-        key[len("guess_"):]: value for key, value in form.items() if key.startswith("guess_")
-    }
     try:
         conn = get_connection()
     except FileNotFoundError as e:
         return db_missing_response(request, e)
     try:
-        trivia.submit_round(conn, round_id, user["user_id"], guesses)
+        trivia.submit_guess(conn, round_id, user["user_id"], item_key, guess)
     finally:
         conn.close()
     return RedirectResponse(f"/games/trivia/round/{round_id}", status_code=303)

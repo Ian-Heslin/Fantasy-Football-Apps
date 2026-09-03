@@ -5,7 +5,7 @@ live in their own modules; this one's just small enough to share.
 import datetime
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 
 from app import daily_challenge, trivia
 from app.auth import require_tier
@@ -41,6 +41,7 @@ def daily_hub(request: Request):
             "SELECT max(season) FROM player_season_fantasy_points"
         ).fetchone()[0]
         picks = daily_challenge.get_picks(conn, user["user_id"], today.isoformat())
+        next_pick = daily_challenge.next_pick_num(conn, user["user_id"], today.isoformat())
         board = daily_challenge.leaderboard(conn, today.isoformat())
     finally:
         conn.close()
@@ -52,7 +53,7 @@ def daily_hub(request: Request):
             "weekly_category": weekly_category, "weekly_board": weekly_board,
             "today": today.isoformat(), "category": category,
             "pick_count": daily_challenge.PICK_COUNT, "year_min": year_min, "year_max": year_max,
-            "picks": picks, "board": board, "errors": {},
+            "picks": picks, "next_pick": next_pick, "board": board, "error": None,
         },
     )
 
@@ -70,7 +71,13 @@ async def submit_stat_pad(request: Request):
 
     try:
         category = daily_challenge.todays_category(today)
-        errors = daily_challenge.save_picks(conn, duckdb_conn, user["user_id"], today.isoformat(), category, form)
+        pick_num = int(form.get("pick_num"))
+        error = daily_challenge.save_one_pick(
+            conn, duckdb_conn, user["user_id"], today.isoformat(), category,
+            pick_num, form.get("year"), form.get("player"),
+        )
+        if error is None:
+            return RedirectResponse("/games/daily", status_code=303)
 
         latest_season, latest_week = trivia.latest_week(duckdb_conn)
         weekly_category = trivia.weekly_category(latest_season, latest_week) if latest_season else None
@@ -90,6 +97,6 @@ async def submit_stat_pad(request: Request):
             "weekly_category": weekly_category, "weekly_board": weekly_board,
             "today": today.isoformat(), "category": category,
             "pick_count": daily_challenge.PICK_COUNT, "year_min": year_min, "year_max": year_max,
-            "picks": picks, "board": board, "errors": errors,
+            "picks": picks, "next_pick": pick_num, "board": board, "error": error,
         },
     )

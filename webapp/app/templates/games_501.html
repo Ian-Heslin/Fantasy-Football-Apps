@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% import "_macros.html" as macros %}
+{% block title %}501{% endblock %}
+{% block content %}
+<h1>501</h1>
+{{ macros.game_tabs('solo') }}
+<p class="subtle"><a href="/games/solo">&larr; Solo</a></p>
+<p class="subtle">Inspired by the darts game of the same name. Pick a stat category, then guess
+  5 different (player, year) pairs one at a time -- each one's stat value comes off a starting
+  number, and the goal is to land as close to 0 as possible by the 5th pick.</p>
+
+{% if active_games %}
+<h2>Resume a game</h2>
+<div class="card-grid">
+  {% for g in active_games %}
+  <a class="game-card" href="/games/501/game/{{ g['game_id'] }}">
+    <h2 class="game-card-title">{{ all_categories[g['category']]['label'] }} -- {{ g['picks_made'] }} / 5 picks</h2>
+    <span class="game-card-cta">Continue &rarr;</span>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<h2>Start a game</h2>
+{% for side in ['offense', 'defense'] %}
+<h3>{{ 'Offense' if side == 'offense' else 'Defense' }}</h3>
+<div class="card-grid">
+  {% for key, cat in categories.items() if cat.side == side %}
+  <div class="solaris-card">
+    <h4>{{ cat.label }}</h4>
+    <p class="subtle">Starting number: {{ cat.start_501 }}</p>
+    <form method="post" action="/games/501/start">
+      <input type="hidden" name="category" value="{{ key }}">
+      <button type="submit">Start game</button>
+    </form>
+    {% set top = boards[key] %}
+    {% if top %}
+    <table class="data-table">
+      <thead><tr><th>#</th><th>Player</th><th>Remaining</th></tr></thead>
+      <tbody>
+        {% for row in top %}
+        <tr><td>{{ row.rank }}</td><td>{{ row.username }}</td><td>{{ '%.1f'|format(row.remaining) }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="subtle">No games played yet.</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endfor %}
+{% endblock %}

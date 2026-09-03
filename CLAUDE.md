@@ -97,7 +97,22 @@ at the bare `/games` path; the other three are their own routes.
   player from any season 1970-2025 at 9 roster slots, scored by real PPR
   points -- 1999+ from `player_season_fantasy_points`, computed from
   play_by_play and live-updating during the season; 1970-1998 from the
-  one-time spreadsheet export).
+  one-time spreadsheet export). **501** (`/games/501`, `app/five_oh_one.py`,
+  darts-inspired) -- pick a stat category, then guess 5 distinct
+  (player, year) pairs one at a time, each one's stat value subtracted from
+  a category-specific starting number, trying to land as close to 0 as
+  possible; "distinct" is by player name regardless of year. **Imposter**
+  (`/games/imposter`, `app/imposter.py`) -- a random year+category shows 10
+  names (9 real top-10 finishers that season, 1 from rank 11-20); click
+  names one at a time, win at 9 correct, lose (with that partial score) on
+  clicking the imposter. Both share `app/stat_categories.py`'s registry of
+  15 offense/defense stat categories (passing/rushing/receiving
+  yards/TDs, INTs thrown, PPR points; tackles, sacks, PBUs, INTs
+  caught/forced fumbles, defensive TDs) with per-category source
+  table/column and a `MIN_GAMES` floor against single-game-sample noise.
+  All of Solo's guessing games (this trivia family, Daily Stat Pad, 501)
+  are answered **row by row** -- one guess/pick submitted and scored at a
+  time, not a big form submitted all at once.
 - **Daily** (`/games/daily`, `app/daily_challenge.py`) -- two games: last
   week's **Weekly Top Scorers** trivia (unchanged, just moved here from
   the old `/games/trivia` page), and **Daily Stat Pad** (inspired by
@@ -117,6 +132,12 @@ at the bare `/games` path; the other three are their own routes.
   PPR-scoring as Solo). `trivia.build_pool()` is shared between Solo's
   async engine and Group's reveal engine so the two never present
   different questions for the same category.
+- **Game Settings** (`/games/settings`, linked from the tab row, not a
+  5th tab) -- a per-user difficulty filter: a year-range slider and
+  stat-category checkboxes (`app/game_settings.py`, `game_settings`
+  table). Narrows Imposter's random category+year picker and which
+  category cards 501/Imposter show; doesn't touch 501's own typed-in
+  (player, year) guesses.
 
 **Explicitly not built yet**, by the user's own choice or a real
 blocker -- don't reintroduce without checking first:

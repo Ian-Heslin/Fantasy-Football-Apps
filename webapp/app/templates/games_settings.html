@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% import "_macros.html" as macros %}
+{% block title %}Game Settings{% endblock %}
+{% block content %}
+<h1>Game Settings</h1>
+{{ macros.game_tabs('solo') }}
+<p class="subtle"><a href="/games/solo">&larr; Solo</a></p>
+<p class="subtle">Narrows which years and stat categories can come up in Imposter's random picks
+  (and which category cards show up for 501/Imposter) -- an easy way to focus on recent seasons
+  or the stats you know best. Doesn't affect 501's own (player, year) guesses, which you always
+  type in yourself.</p>
+
+<form method="post" action="/games/settings">
+  <h2>Year range</h2>
+  <p>
+    <label>From <span id="min-year-label">{{ settings.min_year or year_min }}</span>
+      <input type="range" name="min_year" min="{{ year_min }}" max="{{ year_max }}"
+             value="{{ settings.min_year or year_min }}"
+             oninput="document.getElementById('min-year-label').textContent = this.value">
+    </label>
+  </p>
+  <p>
+    <label>To <span id="max-year-label">{{ settings.max_year or year_max }}</span>
+      <input type="range" name="max_year" min="{{ year_min }}" max="{{ year_max }}"
+             value="{{ settings.max_year or year_max }}"
+             oninput="document.getElementById('max-year-label').textContent = this.value">
+    </label>
+  </p>
+
+  <h2>Stat categories</h2>
+  {% for side in ['offense', 'defense'] %}
+  <h3>{{ 'Offense' if side == 'offense' else 'Defense' }}</h3>
+  <fieldset class="hint-toggles">
+    {% for key, cat in categories.items() if cat.side == side %}
+    <label><input type="checkbox" name="category" value="{{ key }}" {{ 'checked' if key in enabled else '' }}> {{ cat.label }}</label>
+    {% endfor %}
+  </fieldset>
+  {% endfor %}
+
+  <p><button type="submit">Save settings</button></p>
+</form>
+{% endblock %}

@@ -354,6 +354,70 @@ CREATE TABLE IF NOT EXISTS group_draft_picks (
     PRIMARY KEY (session_id, participant_id, slot)
 );
 
+-- 501 (see app/five_oh_one.py): pick a stat category, get a starting
+-- value, then guess 5 distinct (player, year) pairs one at a time trying
+-- to land the running total as close to 0 as possible. Rounds/picks
+-- snapshotted the same way trivia_rounds/trivia_round_items are.
+CREATE TABLE IF NOT EXISTS five_oh_one_games (
+    game_id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id         INTEGER NOT NULL REFERENCES users(user_id),
+    category        TEXT NOT NULL,
+    start_value     REAL NOT NULL,
+    remaining       REAL NOT NULL,
+    picks_made      INTEGER NOT NULL DEFAULT 0,
+    created_at      TEXT DEFAULT (datetime('now')),
+    completed_at    TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_501_games_user_cat ON five_oh_one_games(user_id, category);
+
+CREATE TABLE IF NOT EXISTS five_oh_one_picks (
+    game_id         INTEGER NOT NULL REFERENCES five_oh_one_games(game_id),
+    pick_num        INTEGER NOT NULL,   -- 1..5
+    player          TEXT NOT NULL,
+    year            INTEGER NOT NULL,
+    stat_value      REAL NOT NULL,
+    remaining_after REAL NOT NULL,
+    PRIMARY KEY (game_id, pick_num)
+);
+
+-- Imposter (see app/imposter.py): a random year+stat shows 10 names -- 9
+-- from that season's real top 10, 1 from rank 11-20 -- and the player
+-- clicks names one at a time trying to avoid the imposter. Names are
+-- snapshotted at round-creation time (same reasoning as everywhere else
+-- here): if the underlying nflverse data is later corrected, a round
+-- already in progress or finished keeps showing exactly what it asked.
+CREATE TABLE IF NOT EXISTS imposter_rounds (
+    round_id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id         INTEGER NOT NULL REFERENCES users(user_id),
+    year            INTEGER NOT NULL,
+    category        TEXT NOT NULL,
+    imposter_name   TEXT NOT NULL,
+    status          TEXT NOT NULL DEFAULT 'active',   -- 'active' | 'won' | 'lost'
+    correct_count   INTEGER NOT NULL DEFAULT 0,
+    created_at      TEXT DEFAULT (datetime('now')),
+    completed_at    TEXT
+);
+
+CREATE TABLE IF NOT EXISTS imposter_round_names (
+    round_id        INTEGER NOT NULL REFERENCES imposter_rounds(round_id),
+    name            TEXT NOT NULL,
+    is_top10        INTEGER NOT NULL,
+    clicked         INTEGER NOT NULL DEFAULT 0,
+    display_order   INTEGER NOT NULL,
+    PRIMARY KEY (round_id, name)
+);
+
+-- Per-user difficulty filter (see app/routes/game_settings.py): narrows
+-- the year range and which stat categories can come up for Imposter's
+-- random picker and the 501/Imposter category menus. NULL/empty means
+-- "no restriction" -- everything's in play, the default for a new user.
+CREATE TABLE IF NOT EXISTS game_settings (
+    user_id             INTEGER PRIMARY KEY REFERENCES users(user_id),
+    min_year            INTEGER,
+    max_year            INTEGER,
+    enabled_categories  TEXT   -- comma-separated stat_categories.py keys, NULL = all enabled
+);
+
 -- Freshness tracking, so the web page can show "last updated" per source
 -- instead of silently serving stale data.
 CREATE TABLE IF NOT EXISTS sync_log (

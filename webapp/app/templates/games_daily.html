@@ -16,28 +16,39 @@
   <p>Today&rsquo;s category: <strong>{{ category }}</strong></p>
 </div>
 
+{% if picks %}
+<table class="data-table">
+  <thead><tr><th>Pick</th><th>Year</th><th>Player</th><th>Value</th></tr></thead>
+  <tbody>
+    {% for i, pick in picks.items() %}
+    <tr>
+      <td>#{{ i }}</td>
+      <td>{{ pick['year'] }}</td>
+      <td>{{ pick['player'] }}</td>
+      <td>{{ '%.1f'|format(pick['stat_value']) if pick['stat_value'] is not none else '—' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if next_pick %}
+{% if error %}<div class="notice notice-error"><p>{{ error }}</p></div>{% endif %}
 <form method="post" action="/games/daily/stat-pad">
-  <table class="data-table">
-    <thead><tr><th>Pick</th><th>Year</th><th>Player</th><th>Value</th></tr></thead>
-    <tbody>
-      {% for i in range(1, pick_count + 1) %}
-      {% set pick = picks.get(i) %}
-      <tr>
-        <td>#{{ i }}</td>
-        <td><input type="number" name="year_{{ i }}" min="{{ year_min }}" max="{{ year_max }}"
-                   value="{{ pick['year'] if pick else '' }}" placeholder="{{ year_min }}-{{ year_max }}"></td>
-        <td>
-          <input type="text" name="player_{{ i }}" autocomplete="off"
-                 value="{{ pick['player'] if pick else '' }}" placeholder="Player name">
-          {% if errors.get(i) %}<div class="notice notice-error"><p>{{ errors[i] }}</p></div>{% endif %}
-        </td>
-        <td>{{ '%.1f'|format(pick['stat_value']) if pick and pick['stat_value'] is not none else '—' }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  <p><button type="submit">Save picks</button></p>
+  <input type="hidden" name="pick_num" value="{{ next_pick }}">
+  <p>Pick #{{ next_pick }} of {{ pick_count }}</p>
+  <label>Year
+    <input type="number" name="year" min="{{ year_min }}" max="{{ year_max }}"
+           placeholder="{{ year_min }}-{{ year_max }}" required>
+  </label>
+  <label>Player
+    <input type="text" name="player" autocomplete="off" placeholder="Player name" required>
+  </label>
+  <button type="submit">Submit pick</button>
 </form>
+{% else %}
+<div class="notice"><p>All {{ pick_count }} picks are in for today.</p></div>
+{% endif %}
 
 <h3>Today&rsquo;s leaderboard</h3>
 {% if board %}

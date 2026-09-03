@@ -74,57 +74,52 @@ def category_value(duckdb_conn, year, player_id, category):
     return row[0] if row else None
 
 
-def save_picks(conn, duckdb_conn, user_id, challenge_date, category, form):
-    """form: {f'year_{i}': ..., f'player_{i}': ...} for i in 1..PICK_COUNT.
-    Only fully-filled-in, valid, non-duplicate picks are saved; a bad pick
-    reports an error for that slot without touching the others. Returns
-    {pick_num: error_message}."""
-    errors = {}
-    seen_players = {}
-    picks = {}
-
+def next_pick_num(conn, user_id, challenge_date):
+    """The first pick slot (1..PICK_COUNT) not yet saved today, or None
+    once all PICK_COUNT are in -- what row-by-row submission shows next."""
+    done = set(get_picks(conn, user_id, challenge_date).keys())
     for i in range(1, PICK_COUNT + 1):
-        year_raw = form.get(f"year_{i}")
-        player_raw = form.get(f"player_{i}")
-        if not year_raw or not player_raw:
-            continue
-        try:
-            year = int(year_raw)
-        except ValueError:
-            errors[i] = f"'{year_raw}' isn't a year."
-            continue
-        if year < MIN_YEAR:
-            errors[i] = f"Daily Stat Pad only covers {MIN_YEAR}-present."
-            continue
+        if i not in done:
+            return i
+    return None
 
-        match = find_player(duckdb_conn, year, player_raw)
-        if match is None:
-            hint = suggestions(duckdb_conn, year, player_raw)
-            errors[i] = (
-                f"No player named '{player_raw}' found in {year}."
-                + (f" Did you mean: {', '.join(hint)}?" if hint else "")
-            )
-            continue
 
-        player_id, player, team, position = match
-        if player in seen_players:
-            errors[i] = f"{player} is already pick #{seen_players[player]} -- pick 5 different players."
-            continue
+def save_one_pick(conn, duckdb_conn, user_id, challenge_date, category, pick_num, year_raw, player_raw):
+    """Validates and saves a single pick slot (submitted row by row rather
+    than all PICK_COUNT at once) -- returns an error message, or None on
+    success."""
+    if not year_raw or not player_raw:
+        return "Enter both a year and a player."
+    try:
+        year = int(year_raw)
+    except ValueError:
+        return f"'{year_raw}' isn't a year."
+    if year < MIN_YEAR:
+        return f"Daily Stat Pad only covers {MIN_YEAR}-present."
 
-        value = category_value(duckdb_conn, year, player_id, category)
-        seen_players[player] = i
-        picks[i] = {"year": year, "player": player, "value": value}
-
-    for i, pick in picks.items():
-        conn.execute(
-            """INSERT INTO daily_challenge_entries (user_id, challenge_date, pick_num, year, player, stat_value)
-               VALUES (?, ?, ?, ?, ?, ?)
-               ON CONFLICT(user_id, challenge_date, pick_num) DO UPDATE SET
-                   year=excluded.year, player=excluded.player, stat_value=excluded.stat_value""",
-            (user_id, challenge_date, i, pick["year"], pick["player"], pick["value"]),
+    match = find_player(duckdb_conn, year, player_raw)
+    if match is None:
+        hint = suggestions(duckdb_conn, year, player_raw)
+        return (
+            f"No player named '{player_raw}' found in {year}."
+            + (f" Did you mean: {', '.join(hint)}?" if hint else "")
         )
+
+    player_id, player, team, position = match
+    already_picked = {r["player"] for r in get_picks(conn, user_id, challenge_date).values()}
+    if player in already_picked:
+        return f"{player} is already one of today's picks -- pick 5 different players."
+
+    value = category_value(duckdb_conn, year, player_id, category)
+    conn.execute(
+        """INSERT INTO daily_challenge_entries (user_id, challenge_date, pick_num, year, player, stat_value)
+           VALUES (?, ?, ?, ?, ?, ?)
+           ON CONFLICT(user_id, challenge_date, pick_num) DO UPDATE SET
+               year=excluded.year, player=excluded.player, stat_value=excluded.stat_value""",
+        (user_id, challenge_date, pick_num, year, player, value),
+    )
     conn.commit()
-    return errors
+    return None
 
 
 def get_picks(conn, user_id, challenge_date):

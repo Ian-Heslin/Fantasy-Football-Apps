@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}501: {{ category_label }}{% endblock %}
+{% block content %}
+<h1>501: {{ category_label }}</h1>
+<p class="subtle"><a href="/games/501">&larr; 501</a></p>
+
+<div class="notice">
+  <p>Started at {{ '%.1f'|format(game['start_value']) }} -- remaining:
+    <strong>{{ '%.1f'|format(game['remaining']) }}</strong></p>
+</div>
+
+{% if picks %}
+<table class="data-table">
+  <thead><tr><th>Pick</th><th>Player</th><th>Year</th><th>Value</th><th>Remaining after</th></tr></thead>
+  <tbody>
+    {% for p in picks %}
+    <tr>
+      <td>#{{ p['pick_num'] }}</td>
+      <td>{{ p['player'] }}</td>
+      <td>{{ p['year'] }}</td>
+      <td>{{ '%.1f'|format(p['stat_value']) }}</td>
+      <td>{{ '%.1f'|format(p['remaining_after']) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if completed %}
+<div class="notice">
+  <p>Final result: {{ '%.1f'|format(game['remaining']) }} from zero.</p>
+</div>
+<form method="post" action="/games/501/start">
+  <input type="hidden" name="category" value="{{ game['category'] }}">
+  <button type="submit">Play again</button>
+</form>
+{% else %}
+{% if error %}<div class="notice notice-error"><p>{{ error }}</p></div>{% endif %}
+<form method="post" action="/games/501/game/{{ game['game_id'] }}/pick">
+  <p>Pick {{ game['picks_made'] + 1 }} of 5 -- {{ remaining_slots }} left</p>
+  <label>Year
+    <input type="number" name="year" autocomplete="off" required>
+  </label>
+  <label>Player
+    <input type="text" name="player" autocomplete="off" required>
+  </label>
+  <button type="submit">Submit pick</button>
+</form>
+{% endif %}
+{% endblock %}

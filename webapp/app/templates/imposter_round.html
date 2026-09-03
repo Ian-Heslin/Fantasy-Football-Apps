@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Imposter: {{ category_label }}{% endblock %}
+{% block content %}
+<h1>Imposter: {{ category_label }} {{ round['year'] }}</h1>
+<p class="subtle"><a href="/games/imposter">&larr; Imposter</a></p>
+
+{% if round['status'] == 'active' %}
+<p class="subtle">Correct so far: {{ round['correct_count'] }} / 9</p>
+{% endif %}
+
+<div class="card-grid">
+  {% for n in names %}
+  <div class="solaris-card">
+    {% if n['clicked'] %}
+      <p>{{ n['name'] }} -- {{ '✓ real top 10' if n['is_top10'] else '✗ imposter' }}</p>
+    {% elif round['status'] != 'active' %}
+      <p>{{ n['name'] }}{{ ' (the imposter)' if n['name'] == round['imposter_name'] else '' }}</p>
+    {% else %}
+      <form method="post" action="/games/imposter/round/{{ round['round_id'] }}/click">
+        <input type="hidden" name="name" value="{{ n['name'] }}">
+        <button type="submit">{{ n['name'] }}</button>
+      </form>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+{% if round['status'] != 'active' %}
+<div class="notice{{ ' notice-error' if round['status'] == 'lost' else '' }}">
+  {% if round['status'] == 'won' %}
+  <p>You got all 9! The imposter was {{ round['imposter_name'] }}.</p>
+  {% else %}
+  <p>Caught the imposter ({{ round['imposter_name'] }}) -- final score: {{ round['correct_count'] }} / 9.</p>
+  {% endif %}
+</div>
+<form method="post" action="/games/imposter/start">
+  <input type="hidden" name="category" value="{{ round['category'] }}">
+  <button type="submit">Play again</button>
+</form>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% import "_macros.html" as macros %}
+{% block title %}Imposter{% endblock %}
+{% block content %}
+<h1>Imposter</h1>
+{{ macros.game_tabs('solo') }}
+<p class="subtle"><a href="/games/solo">&larr; Solo</a></p>
+<p class="subtle">10 names for a random year and stat category -- 9 were really in that
+  season's top 10, 1 is an imposter from rank 11-20. Click who you think belongs; click all
+  9 real ones to win, click the imposter and it's over (your score is how many you got right
+  first).</p>
+
+{% if active_rounds %}
+<h2>Resume a round</h2>
+<div class="card-grid">
+  {% for r in active_rounds %}
+  <a class="game-card" href="/games/imposter/round/{{ r['round_id'] }}">
+    <h2 class="game-card-title">{{ all_categories[r['category']]['label'] }} {{ r['year'] }} --
+      {{ r['correct_count'] }} / 9 so far</h2>
+    <span class="game-card-cta">Continue &rarr;</span>
+  </a>
+  {% endfor %}
+</div>
+{% endif %}
+
+<h2>Start a round</h2>
+<form method="post" action="/games/imposter/start">
+  <button type="submit">Surprise me (random category + year)</button>
+</form>
+
+{% for side in ['offense', 'defense'] %}
+<h3>{{ 'Offense' if side == 'offense' else 'Defense' }}</h3>
+<div class="card-grid">
+  {% for key, cat in categories.items() if cat.side == side %}
+  <div class="solaris-card">
+    <h4>{{ cat.label }}</h4>
+    <form method="post" action="/games/imposter/start">
+      <input type="hidden" name="category" value="{{ key }}">
+      <button type="submit">Play (random year)</button>
+    </form>
+    {% set top = boards[key] %}
+    {% if top %}
+    <table class="data-table">
+      <thead><tr><th>#</th><th>Player</th><th>Score</th></tr></thead>
+      <tbody>
+        {% for row in top %}
+        <tr><td>{{ row.rank }}</td><td>{{ row.username }}</td><td>{{ row.correct_count }} / 9{{ ' (won)' if row.status == 'won' else '' }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="subtle">No rounds played yet.</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endfor %}
+{% endblock %}

@@ -331,34 +331,53 @@ def get_round(conn, round_id, user_id):
     return round_row, items
 
 
-def submit_round(conn, round_id, user_id, guesses):
-    """guesses: {item_key: raw guess string}. Scores every item, updates
-    the round's score/completed_at, and returns the round_id (or None if
-    it doesn't belong to this user / is already completed)."""
+def current_item(items):
+    """First not-yet-guessed item in round order, or None once every item
+    has a guess -- items is get_round()'s list, already ordered by rowid."""
+    for item in items:
+        if item["guess"] is None:
+            return item
+    return None
+
+
+def submit_guess(conn, round_id, user_id, item_key, guess):
+    """Scores one item at a time (guessed row by row rather than filling in
+    the whole round and submitting once) -- marks the round completed once
+    every item has a guess. Returns True/False (whether this guess was
+    correct) or None if the round doesn't belong to this user, is already
+    completed, or item_key is already answered."""
     round_row = conn.execute(
         "SELECT * FROM trivia_rounds WHERE round_id = ? AND user_id = ?", (round_id, user_id)
     ).fetchone()
     if round_row is None or round_row["completed_at"] is not None:
         return None
+    item = conn.execute(
+        "SELECT * FROM trivia_round_items WHERE round_id = ? AND item_key = ?", (round_id, item_key)
+    ).fetchone()
+    if item is None or item["guess"] is not None:
+        return None
 
-    items = conn.execute("SELECT * FROM trivia_round_items WHERE round_id = ?", (round_id,)).fetchall()
-    correct_count = 0
-    for item in items:
-        guess = (guesses.get(item["item_key"]) or "").strip()
-        correct_names = {normalize_name(n) for n in item["correct_answer"].split("|")}
-        is_correct = bool(guess) and normalize_name(guess) in correct_names
-        if is_correct:
-            correct_count += 1
-        conn.execute(
-            "UPDATE trivia_round_items SET guess = ?, is_correct = ? WHERE round_id = ? AND item_key = ?",
-            (guess or None, int(is_correct), round_id, item["item_key"]),
-        )
+    guess = (guess or "").strip()
+    correct_names = {normalize_name(n) for n in item["correct_answer"].split("|")}
+    is_correct = bool(guess) and normalize_name(guess) in correct_names
     conn.execute(
-        "UPDATE trivia_rounds SET score = ?, completed_at = datetime('now') WHERE round_id = ?",
-        (correct_count, round_id),
+        "UPDATE trivia_round_items SET guess = ?, is_correct = ? WHERE round_id = ? AND item_key = ?",
+        (guess or None, int(is_correct), round_id, item_key),
     )
+
+    remaining = conn.execute(
+        "SELECT count(*) FROM trivia_round_items WHERE round_id = ? AND guess IS NULL", (round_id,)
+    ).fetchone()[0]
+    if remaining == 0:
+        correct_count = conn.execute(
+            "SELECT coalesce(sum(is_correct), 0) FROM trivia_round_items WHERE round_id = ?", (round_id,)
+        ).fetchone()[0]
+        conn.execute(
+            "UPDATE trivia_rounds SET score = ?, completed_at = datetime('now') WHERE round_id = ?",
+            (correct_count, round_id),
+        )
     conn.commit()
-    return round_id
+    return is_correct
 
 
 def leaderboard(conn, game_type, category=None):

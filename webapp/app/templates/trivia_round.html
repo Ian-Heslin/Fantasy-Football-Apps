@@ -4,14 +4,11 @@
 <h1>{{ game_label }}: {{ round['category'] }}</h1>
 <p class="subtle"><a href="{{ '/games/daily' if round['game_type'] == 'weekly_leaders' else '/games/trivia' }}">&larr; {{ 'Daily' if round['game_type'] == 'weekly_leaders' else 'Trivia' }}</a></p>
 
-{% if completed %}
-<div class="notice">
-  <p>Score: {{ round['score'] }} / {{ round['total'] }}</p>
-</div>
+{% if answered %}
 <table class="data-table">
   <thead><tr><th>Clue</th><th>Your guess</th><th>Correct answer</th><th></th></tr></thead>
   <tbody>
-    {% for item in items %}
+    {% for item in answered %}
     <tr>
       <td>{{ item['prompt_label'] }}</td>
       <td>{{ item['guess'] or '—' }}</td>
@@ -21,25 +18,23 @@
     {% endfor %}
   </tbody>
 </table>
+{% endif %}
+
+{% if current_item %}
+<form method="post" action="/games/trivia/round/{{ round['round_id'] }}/guess">
+  <input type="hidden" name="item_key" value="{{ current_item['item_key'] }}">
+  <p><strong>{{ current_item['prompt_label'] }}</strong></p>
+  <p><input type="text" name="guess" autocomplete="off" autofocus required></p>
+  <button type="submit">Submit guess</button>
+</form>
+{% else %}
+<div class="notice">
+  <p>Score: {{ round['score'] }} / {{ round['total'] }}</p>
+</div>
 <form method="post" action="/games/trivia/start">
   <input type="hidden" name="game_type" value="{{ round['game_type'] }}">
   <input type="hidden" name="category" value="{{ round['category'] }}">
   <button type="submit">Play another round</button>
-</form>
-{% else %}
-<form method="post" action="/games/trivia/round/{{ round['round_id'] }}">
-  <table class="data-table">
-    <thead><tr><th>Clue</th><th>Your guess</th></tr></thead>
-    <tbody>
-      {% for item in items %}
-      <tr>
-        <td>{{ item['prompt_label'] }}</td>
-        <td><input type="text" name="guess_{{ item['item_key'] }}" autocomplete="off"></td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-  <p><button type="submit">Submit answers</button></p>
 </form>
 {% endif %}
 {% endblock %}
