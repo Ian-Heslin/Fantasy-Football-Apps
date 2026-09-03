@@ -40,30 +40,32 @@
   <p>No arbitrage signals found. Run <code>scripts/build_arbitrage_signals.py</code>.</p>
 </div>
 {% else %}
-<table class="data-table">
-  <thead>
-    <tr>
-      <th>Player</th><th>Pos</th><th>Team</th>
-      <th>Dynasty %ile</th><th>Redraft %ile</th><th>Gap</th><th>Signal</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for r in rows %}
-    <tr>
-      <td>{{ r['name'] or r['player_id'] }}</td>
-      <td>{{ r['position'] or '—' }}</td>
-      <td>{{ r['team'] or '—' }}</td>
-      <td>{{ '%.0f%%'|format(r['dynasty_percentile'] * 100) }}</td>
-      <td>{{ '%.0f%%'|format(r['redraft_percentile'] * 100) }}</td>
-      <td>{{ '%+.0f%%'|format(r['gap'] * 100) }}</td>
-      <td>
-        <span class="badge badge-{{ r['signal']|lower|replace('_', '-') }}">
-          {{ signal_labels.get(r['signal'], r['signal']) }}
-        </span>
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Player</th><th>Pos</th><th>Team</th>
+        <th>Dynasty %ile</th><th>Redraft %ile</th><th>Gap</th><th>Signal</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r['name'] or r['player_id'] }}</td>
+        <td>{{ r['position'] or '—' }}</td>
+        <td>{{ r['team'] or '—' }}</td>
+        <td>{{ '%.0f%%'|format(r['dynasty_percentile'] * 100) }}</td>
+        <td>{{ '%.0f%%'|format(r['redraft_percentile'] * 100) }}</td>
+        <td>{{ '%+.0f%%'|format(r['gap'] * 100) }}</td>
+        <td>
+          <span class="badge badge-{{ r['signal']|lower|replace('_', '-') }}">
+            {{ signal_labels.get(r['signal'], r['signal']) }}
+          </span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endif %}
 {% endblock %}

@@ -10,16 +10,16 @@
 </div>
 
 {% if picks %}
-<table class="data-table">
+<table class="data-table table-stack">
   <thead><tr><th>Pick</th><th>Player</th><th>Year</th><th>Value</th><th>Remaining after</th></tr></thead>
   <tbody>
     {% for p in picks %}
     <tr>
-      <td>#{{ p['pick_num'] }}</td>
-      <td>{{ p['player'] }}</td>
-      <td>{{ p['year'] }}</td>
-      <td>{{ '%.1f'|format(p['stat_value']) }}</td>
-      <td>{{ '%.1f'|format(p['remaining_after']) }}</td>
+      <td data-label="Pick">#{{ p['pick_num'] }}</td>
+      <td data-label="Player">{{ p['player'] }}</td>
+      <td data-label="Year">{{ p['year'] }}</td>
+      <td data-label="Value">{{ '%.1f'|format(p['stat_value']) }}</td>
+      <td data-label="Remaining after">{{ '%.1f'|format(p['remaining_after']) }}</td>
     </tr>
     {% endfor %}
   </tbody>
@@ -36,7 +36,7 @@
 </form>
 {% else %}
 {% if error %}<div class="notice notice-error"><p>{{ error }}</p></div>{% endif %}
-<form method="post" action="/games/501/game/{{ game['game_id'] }}/pick">
+<form class="stack-form" method="post" action="/games/501/game/{{ game['game_id'] }}/pick">
   <p>Pick {{ game['picks_made'] + 1 }} of 5 -- {{ remaining_slots }} left</p>
   <label>Year
     <input type="number" name="year" autocomplete="off" required>

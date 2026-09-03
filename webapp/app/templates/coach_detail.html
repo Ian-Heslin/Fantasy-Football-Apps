@@ -7,23 +7,25 @@
 {% if not rows %}
 <div class="empty-state"><p>No coaching history found for {{ coach_name }}.</p></div>
 {% else %}
-<table class="data-table">
-  <thead>
-    <tr><th>Season</th><th>Team</th><th>Role</th><th>PPG</th><th>EPA/play</th><th>Offense rank</th><th>Offense %ile</th></tr>
-  </thead>
-  <tbody>
-    {% for r in rows %}
-    <tr>
-      <td>{{ r['season'] }}</td>
-      <td><a href="/teams/{{ r['team'] }}">{{ r['team'] }}</a></td>
-      <td>{{ r['role'] }}</td>
-      <td>{{ '%.1f'|format(r['ppg']) if r['ppg'] is not none else '—' }}</td>
-      <td>{{ '%.3f'|format(r['epa_per_play']) if r['epa_per_play'] is not none else '—' }}</td>
-      <td>{{ r['epa_rank'] if r['epa_rank'] is not none else '—' }}</td>
-      <td>{{ '%.0f%%'|format(r['epa_per_play_pctile'] * 100) if r['epa_per_play_pctile'] is not none else '—' }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr><th>Season</th><th>Team</th><th>Role</th><th>PPG</th><th>EPA/play</th><th>Offense rank</th><th>Offense %ile</th></tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r['season'] }}</td>
+        <td><a href="/teams/{{ r['team'] }}">{{ r['team'] }}</a></td>
+        <td>{{ r['role'] }}</td>
+        <td>{{ '%.1f'|format(r['ppg']) if r['ppg'] is not none else '—' }}</td>
+        <td>{{ '%.3f'|format(r['epa_per_play']) if r['epa_per_play'] is not none else '—' }}</td>
+        <td>{{ r['epa_rank'] if r['epa_rank'] is not none else '—' }}</td>
+        <td>{{ '%.0f%%'|format(r['epa_per_play_pctile'] * 100) if r['epa_per_play_pctile'] is not none else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endif %}
 {% endblock %}

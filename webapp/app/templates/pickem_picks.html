@@ -44,7 +44,10 @@
 <form method="post" action="/games/pickem/picks">
   <input type="hidden" name="season" value="{{ season }}">
   <input type="hidden" name="week" value="{{ week }}">
-  <table class="data-table pickem-table">
+  {# table-stack: each game becomes its own card on a phone, with the two
+     team buttons stacked full-width (see .pickem-vs in style.css) -- they
+     shared one squeezed cell before, wrapping team names over four lines. #}
+  <table class="data-table pickem-table table-stack">
     <thead>
       <tr>
         <th>Matchup</th>
@@ -58,7 +61,7 @@
       {% set fav = favorite_team(g) %}
       {% set line_text = (fav ~ ' -' ~ (g['spread_line']|abs|string)) if fav else "Pick'em" %}
       <tr>
-        <td>
+        <td class="cell-block">
           <div class="pickem-matchup">
             <div class="pickem-line">{{ line_text }}</div>
             <div class="pickem-vs">
@@ -90,7 +93,7 @@
           </div>
         </td>
         {% if settings.confidence_enabled %}
-        <td>
+        <td data-label="Confidence">
           {% if locked %}
             {# Kicked off: the number is frozen whether or not a team was
                ever picked. An unpicked one still holds its value (and

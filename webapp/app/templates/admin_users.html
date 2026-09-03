@@ -8,28 +8,30 @@
     Promote someone else to admin first.</p>
 </div>
 {% endif %}
-<table class="data-table">
-  <thead>
-    <tr><th>Username</th><th>Tier</th><th>Sleeper linked</th><th>ESPN linked</th><th>Joined</th></tr>
-  </thead>
-  <tbody>
-    {% for u in users %}
-    <tr>
-      <td>{{ u['username'] }}</td>
-      <td>
-        <form method="post" action="/admin/users/{{ u['user_id'] }}/tier" class="inline-form">
-          <select name="tier" onchange="this.form.submit()">
-            {% for t in tiers %}
-            <option value="{{ t }}" {{ 'selected' if t == u['tier'] else '' }}>{{ t }}</option>
-            {% endfor %}
-          </select>
-        </form>
-      </td>
-      <td>{{ 'yes' if u['sleeper_owner_id'] else '—' }}</td>
-      <td>{{ 'yes' if u['espn_owner_id'] else '—' }}</td>
-      <td>{{ u['created_at'] }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr><th>Username</th><th>Tier</th><th>Sleeper linked</th><th>ESPN linked</th><th>Joined</th></tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td>{{ u['username'] }}</td>
+        <td>
+          <form method="post" action="/admin/users/{{ u['user_id'] }}/tier" class="inline-form">
+            <select name="tier" onchange="this.form.submit()">
+              {% for t in tiers %}
+              <option value="{{ t }}" {{ 'selected' if t == u['tier'] else '' }}>{{ t }}</option>
+              {% endfor %}
+            </select>
+          </form>
+        </td>
+        <td>{{ 'yes' if u['sleeper_owner_id'] else '—' }}</td>
+        <td>{{ 'yes' if u['espn_owner_id'] else '—' }}</td>
+        <td>{{ u['created_at'] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endblock %}

@@ -34,7 +34,7 @@
 
 {% if next_pick %}
 {% if error %}<div class="notice notice-error"><p>{{ error }}</p></div>{% endif %}
-<form method="post" action="/games/daily/stat-pad">
+<form class="stack-form" method="post" action="/games/daily/stat-pad">
   <input type="hidden" name="pick_num" value="{{ next_pick }}">
   <p>Pick #{{ next_pick }} of {{ pick_count }}</p>
   <label>Year
