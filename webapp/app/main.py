@@ -21,7 +21,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.auth import Forbidden, NotAuthenticated, load_current_user
 from app.routes import (
     admin, arbitrage, auth, coaches, fantasy_draft, five_oh_one, game_settings, games_hub, group, home,
-    imposter, pickem, predictions, profile, rosters, teams, trivia,
+    imposter, keepers, pickem, predictions, profile, rosters, teams, trivia,
 )
 from app.templating import templates
 
@@ -109,3 +109,4 @@ app.include_router(fantasy_draft.router)
 app.include_router(five_oh_one.router)
 app.include_router(imposter.router)
 app.include_router(game_settings.router)
+app.include_router(keepers.router)

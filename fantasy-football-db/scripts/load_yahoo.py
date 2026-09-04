@@ -73,9 +73,11 @@ YAHOO_COOKIE = os.environ.get("YAHOO_COOKIE")
 YAHOO_GAME_KEY = "470"
 YAHOO_LEAGUE_ID = "3157"
 MY_MANAGER_GUID = "YEHVGA7JAHA4MKR52LSDYS2SEM"
-# Not yet derived from real Yahoo league settings data (no captured example
-# of that resource) -- edit if WHMFFL turns out to be superflex.
-YAHOO_FORMAT = "1QB"
+# WHMFFL is superflex, confirmed by Ian (not yet derived from real Yahoo
+# league settings data -- no captured example of that resource). Update
+# this if that ever changes, or replace with a real settings lookup if a
+# usable resource capture turns up.
+YAHOO_FORMAT = "SF"
 
 
 def yahoo_get(resource_path, extra_params=None):
@@ -153,6 +155,65 @@ def get_league_teams(game_key, league_id):
         fields.update(extra)
         teams.append(fields)
     return league, teams
+
+
+def get_draft_results(game_key, league_id):
+    """Returns a list of {'pick', 'round', 'team_key', 'player_key'} dicts,
+    one per pick, for one league-season's actual draft -- empty before the
+    draft has happened (see load_league()'s draft_status check) or if
+    Yahoo has no history for that season. Same 'draft_results' field
+    directly on the merged league dict as 'teams' in get_league_teams()
+    (see that function's comment on the shape)."""
+    data = yahoo_get(f"/league/{game_key}.l.{league_id}/draftresults")
+    league_node = (data.get("fantasy_content") or {}).get("league")
+    league = _merge_fields(league_node) if isinstance(league_node, list) else (league_node or {})
+    picks = []
+    for wrapper in _collection_items(league.get("draft_results") or {}):
+        result = wrapper.get("draft_result") if isinstance(wrapper, dict) else None
+        if result is None:
+            continue
+        # draft_result is a flat dict in every capture seen so far;
+        # _merge_fields is a no-op on one and normalizes it if Yahoo ever
+        # sends it list-wrapped like team/player instead.
+        fields = _merge_fields(result) if isinstance(result, list) else result
+        if fields.get("pick") is not None:
+            picks.append(fields)
+    return picks
+
+
+def load_draft_results(conn, anchor_league_id, season, teams, picks):
+    """Inserts one season's real draft into league_draft_picks. `teams` is
+    get_league_teams()'s team list (for team_key -> roster_id); `picks` is
+    get_draft_results()'s return. No-op if the draft hasn't happened yet
+    (picks is empty) -- callers don't need to check draft_status
+    themselves. Returns how many picks were written."""
+    if not picks:
+        return 0
+    team_key_to_roster_id = {t.get("team_key"): str(t.get("team_id")) for t in teams}
+    n = 0
+    for p in picks:
+        roster_id = team_key_to_roster_id.get(p.get("team_key"))
+        player_key = p.get("player_key")
+        round_num, overall_pick = p.get("round"), p.get("pick")
+        if roster_id is None or player_key is None or round_num is None or overall_pick is None:
+            continue
+        # player_key is '{game_key}.p.{player_id}' -- the same id space as
+        # get_team_roster_player_ids()'s 'player_id' field, just composite
+        # here since draft_result doesn't also give the bare id.
+        yahoo_player_id = player_key.rsplit(".p.", 1)[-1]
+        conn.execute(
+            """INSERT INTO league_draft_picks
+                   (league_id, season, round, overall_pick, roster_id, player_id)
+               VALUES (?, ?, ?, ?, ?, ?)
+               ON CONFLICT(league_id, season, overall_pick) DO UPDATE SET
+                   round=excluded.round, roster_id=excluded.roster_id,
+                   player_id=excluded.player_id""",
+            (anchor_league_id, season, int(round_num), int(overall_pick),
+             roster_id, f"yahoo:{yahoo_player_id}"),
+        )
+        n += 1
+    conn.commit()
+    return n
 
 
 def get_team_roster_player_ids(team_key):
@@ -249,21 +310,33 @@ def load_league(conn, game_key, league_id):
 
     conn.commit()
     print(f"[load_yahoo] loaded league '{name}' ({anchor_league_id}): {len(teams)} teams")
+
+    try:
+        picks = get_draft_results(game_key, league_id)
+    except requests.RequestException as e:
+        print(f"[load_yahoo] WARNING: failed to load draft results for {game_key}.{league_id}: {e}")
+        picks = []
+    n_picks = load_draft_results(conn, anchor_league_id, season, teams, picks)
+    if n_picks:
+        print(f"[load_yahoo] loaded {n_picks} draft picks for league '{name}' season {season}")
+
     return league
 
 
 def resolve_yahoo_player_ids(conn):
-    """roster_players stores raw yahoo ids as 'yahoo:<id>' -- if a player
-    also has a fantasypros_id in the players table (loaded by
-    build_db.py), repoint roster_players at that canonical id so it joins
-    cleanly against trade_values/arbitrage_signals/model_predictions.
-    Players with no fantasypros match keep the yahoo: id."""
+    """roster_players and league_draft_picks store raw yahoo ids as
+    'yahoo:<id>' -- if a player also has a fantasypros_id in the players
+    table (loaded by build_db.py), repoint both at that canonical id so
+    they join cleanly against trade_values/arbitrage_signals/
+    model_predictions. Players with no fantasypros match keep the
+    yahoo: id."""
     rows = conn.execute(
         "SELECT player_id, yahoo_id FROM players WHERE yahoo_id IS NOT NULL"
     ).fetchall()
     remap = {f"yahoo:{yahoo_id}": canonical_id for canonical_id, yahoo_id in rows}
 
     updated = 0
+    draft_updated = 0
     for raw_id, canonical_id in remap.items():
         if raw_id == canonical_id:
             continue
@@ -272,8 +345,14 @@ def resolve_yahoo_player_ids(conn):
             (canonical_id, raw_id),
         )
         updated += cur.rowcount
+        cur = conn.execute(
+            "UPDATE OR IGNORE league_draft_picks SET player_id = ? WHERE player_id = ?",
+            (canonical_id, raw_id),
+        )
+        draft_updated += cur.rowcount
     conn.commit()
-    print(f"[load_yahoo] remapped {updated} roster_players rows to canonical player_id")
+    print(f"[load_yahoo] remapped {updated} roster_players rows and {draft_updated} "
+          f"league_draft_picks rows to canonical player_id")
 
 
 def load_season_history(conn, anchor_league_id, current_league):
@@ -329,6 +408,17 @@ def load_season_history(conn, anchor_league_id, current_league):
         conn.commit()
         print(f"[load_yahoo] history: loaded {season} standings for league {anchor_league_id} "
               f"(Yahoo league {game_key}.{league_id}, {len(teams)} teams)")
+
+        try:
+            picks = get_draft_results(game_key, league_id)
+        except requests.RequestException as e:
+            print(f"[load_yahoo] history: draft results request failed for "
+                  f"{game_key}.{league_id}: {e}")
+            picks = []
+        n_picks = load_draft_results(conn, anchor_league_id, season, teams, picks)
+        if n_picks:
+            print(f"[load_yahoo] history: loaded {n_picks} draft picks for {season}")
+
         seasons_loaded += 1
         renew = league.get("renew")
 

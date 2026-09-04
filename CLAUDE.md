@@ -146,6 +146,10 @@ blocker -- don't reintroduce without checking first:
   as a separate, bigger future project.
 - Timeline (order personal in-joke events chronologically) -- no real
   dates for the events yet, explicitly deferred.
+- Real draft history for Sleeper/ESPN leagues (`league_draft_picks` is
+  Yahoo-only right now) -- explicitly wanted eventually, deferred until
+  after the Yahoo keeper tool itself is finished; not blocked on
+  anything, just sequencing.
 
 **Resolved via Cowork** (Wikipedia-sourced data fetched in a browser,
 since this sandbox can't reach Wikipedia directly): `nfl_top_100` (the
@@ -155,6 +159,28 @@ CSVs (`load_nfl_top100.py`, `load_team_executives.py`). GM-level draft-
 reach attribution now exists alongside the HC-level analysis in
 `analyze_draft_reaches.py` (`draft_reach_by_gm.csv`). The NFL Top 100
 game itself is built (`/games/trivia`, game_type `nfl_top100`).
+
+## Keeper planning (`/rosters/{league}/keepers`, `/mock-draft`)
+
+WHMFFL (the Yahoo league) is a keeper league: `load_yahoo.py --history`
+now also pulls real draft results (round/pick/team/player) into
+`league_draft_picks`, for every season Yahoo's renew chain reaches plus
+the current season if it's already drafted -- **Yahoo only for now**;
+`load_sleeper.py`/`load_espn.py` don't pull draft history yet (see
+"Explicitly not built yet" below). `app/keepers.py` has the actual house
+rule: a kept player costs the round after where they were drafted last
+year, except a 1st-round pick keeps its 1st-round slot; if two of one
+team's keepers land on the same round, the later one bumps up a round
+(cascading further if that's also taken) rather than double-booking a
+slot. Keeper predictions (up to 3/team, hand-entered -- Yahoo doesn't
+expose "who's being kept" until the real draft happens) and the
+resulting mock-draft board (keeper cells computed live; open cells filled
+by hand or by "Auto-fill remaining", ranked by `arbitrage_signals`'
+redraft percentile) are both saved per user, not shared.
+
+WHMFFL is **superflex**, not 1QB (`load_yahoo.py`'s `YAHOO_FORMAT`, fixed
+2026-09 -- it had been wrong; re-run `load_yahoo.py` to correct the
+`leagues.format` value already in `app.db`).
 
 ## Data source conventions (matters when adding new data)
 

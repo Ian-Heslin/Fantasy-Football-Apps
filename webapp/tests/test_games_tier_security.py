@@ -50,7 +50,8 @@ def make_victim(tier="games"):
 # =====================================================================
 
 FANTASY_PAGES = ["/rosters", "/arbitrage", "/predictions", "/teams", "/coaches",
-                 "/teams/KC", "/coaches/Andy%20Reid"]
+                 "/teams/KC", "/coaches/Andy%20Reid",
+                 "/rosters/1/keepers", "/rosters/1/mock-draft"]
 
 
 @pytest.mark.parametrize("path", FANTASY_PAGES)

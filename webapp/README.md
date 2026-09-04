@@ -64,6 +64,13 @@ player would notice being wrong, not the route boilerplate:
   every connection, and that a failed paired open leaks nothing.
 - `test_routes.py` -- end to end through the real ASGI app, real schema
   and real templates: the auth flow, tier boundaries, and cookie flags.
+- `test_keepers.py` -- the keeper round-shift/collision rule (a 1st-round
+  keeper keeps its slot, colliding keepers cascade up rather than
+  double-booking a round), keeper-eligibility (a traded-away player isn't
+  keeper-eligible), and the mock-draft board's pick/auto-fill validation.
+  `test_keepers_routes.py` -- the same, end to end through real templates
+  (catches a Jinja mistake the pure-logic tests can't, e.g. the board's
+  dict-of-tuples lookup).
 
 ## Accounts & tiers
 
@@ -331,6 +338,21 @@ or all 5 Daily Stat Pad/501 picks) and submitting it all at once.
   moving a Sell High player for a Buy Low one. Empty until
   `scripts/load_sleeper.py`/`scripts/load_espn.py` have been run somewhere
   with real network access to those platforms' APIs.
+- **`/rosters/{league}/keepers`**, **`/rosters/{league}/mock-draft`** --
+  keeper-league planning for leagues with real draft history loaded (see
+  `fantasy-football-db/scripts/load_yahoo.py --history`; Yahoo only for
+  now). Keepers: pick up to 3 keepers per team from last year's draftees
+  still on that roster; each one's cost is computed by
+  `app/keepers.py`'s house rule -- the round after where they were
+  drafted, except a 1st-rounder keeps its 1st-round slot, with same-round
+  collisions on one team bumped up (earlier/cascading) rather than
+  double-booked. Mock draft: a round x team board with those keeper
+  rounds locked in and every other cell open -- type a player into any
+  cell (name matching + suggestions, same as Fantasy Draft/501), or
+  "Auto-fill remaining" to fill every open cell at once by redraft
+  consensus rank (`arbitrage_signals.redraft_percentile`), still
+  overwritable by hand afterward. Predictions and the board are saved
+  per user, not shared -- two accounts can disagree.
 - **`/arbitrage`** -- every player's buy-low/sell-high signal (dynasty vs.
   redraft ECR percentile gap), not just yours. Filterable by format
   (1QB/superflex), signal, and position.
@@ -401,6 +423,10 @@ app/
   team_colors.py         -- Team Colors: the 32-team color/logo table + resolve()
                          (ported from docs/solaris-design-spec.md's JS) --
                          also pure functions, no FastAPI/route code
+  keepers.py             -- keeper round-shift/collision rule, keeper-eligible
+                         players, the mock-draft board (keeper cells computed
+                         live, manual/auto picks persisted), best-available by
+                         redraft rank -- pure functions
   db.py               -- SQLite + DuckDB connection helpers (path resolution, row_factory,
                          duckdb_rows() to give DuckDB's tuples the same dict-style
                          template access as sqlite3.Row)
@@ -423,6 +449,7 @@ app/
     five_oh_one.py         -- /games/501 routes (games-tier+)
     imposter.py           -- /games/imposter routes (games-tier+)
     game_settings.py        -- /games/settings routes (games-tier+)
+    keepers.py             -- /rosters/{league}/keepers, /mock-draft routes (fantasy-tier+)
     home.py, rosters.py, predictions.py, arbitrage.py, teams.py, coaches.py
                            (fantasy-tier+, except home.py which is games-tier+ but
                            redirects games-tier users to /games)

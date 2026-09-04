@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Predict Keepers{% endblock %}
+{% block content %}
+{% if league is none %}
+<div class="empty-state"><p>League not found.</p></div>
+{% else %}
+<p><a href="/rosters/{{ league['league_id'] }}">&larr; {{ league['name'] or '(unnamed league)' }}</a></p>
+<h1>Predict Keepers</h1>
+<p class="subtle">
+  Guess up to {{ max_keepers }} keepers per team for the {{ keeper_season }} draft, from who's still
+  on that roster from the {{ draft_season }} draft. A kept player costs the round after where they
+  were drafted last year (a 1st-rounder keeps its 1st-round slot); if two of one team's guesses land
+  on the same round, the later one moves up a round. See the
+  <a href="/rosters/{{ league['league_id'] }}/mock-draft">Mock draft</a> for the resulting board.
+</p>
+
+{% if not draft_season %}
+<div class="empty-state">
+  <p>No draft history loaded for this league yet -- run
+  <code>scripts/load_{{ league['platform'] }}.py --history</code> to pull it in.</p>
+</div>
+{% else %}
+{% for t in teams %}
+<div class="solaris-card">
+  <h3>{{ t['owner_name'] or ('Team ' + t['roster_id']) }}{{ ' (you)' if t['is_mine'] else '' }}</h3>
+  {% set players = eligible.get(t['roster_id'], []) %}
+  {% if not players %}
+  <p class="subtle">No {{ draft_season }} draftees still on this roster.</p>
+  {% else %}
+  {% set picked = predictions.get(t['roster_id'], []) %}
+  <form method="post" action="/rosters/{{ league['league_id'] }}/keepers">
+    <input type="hidden" name="roster_id" value="{{ t['roster_id'] }}">
+    <table class="data-table table-stack">
+      <thead>
+        <tr><th>Keep?</th><th>Player</th><th>Pos</th><th>Team</th><th>Drafted round</th></tr>
+      </thead>
+      <tbody>
+        {% for p in players %}
+        <tr>
+          <td data-label="Keep?">
+            <input type="checkbox" name="player_ids" value="{{ p['player_id'] }}"
+                   {{ 'checked' if p['player_id'] in picked else '' }}>
+          </td>
+          <td data-label="Player">{{ p['name'] }}</td>
+          <td data-label="Pos">{{ p['position'] }}</td>
+          <td data-label="Team">{{ p['team'] }}</td>
+          <td data-label="Drafted round">{{ p['drafted_round'] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="subtle">Up to {{ max_keepers }} -- extra checks beyond that are dropped when you save.</p>
+    <button type="submit">Save keepers</button>
+  </form>
+  {% endif %}
+</div>
+{% endfor %}
+{% endif %}
+{% endif %}
+{% endblock %}

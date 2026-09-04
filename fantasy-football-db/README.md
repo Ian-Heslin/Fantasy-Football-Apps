@@ -53,7 +53,10 @@ python3 scripts/load_yahoo.py     # pulls Ian's Yahoo league/roster via a
                                    # Yahoo section); requires YAHOO_COOKIE env
                                    # var (private league, no no-auth fallback);
                                    # add --history for past seasons via Yahoo's
-                                   # renew/renewed season chain
+                                   # renew/renewed season chain -- also pulls
+                                   # real draft results (league_draft_picks)
+                                   # for whichever seasons have actually
+                                   # drafted, current season included
 python3 scripts/load_nflverse.py  # loads 1999-2025 play-by-play (defaults to
                                    # the full range; pass --start/--end for a
                                    # smaller window)
@@ -256,6 +259,18 @@ machine):
   canonical `player_id` (via `players.sleeper_id`/`players.espn_id`), so
   trade values/arbitrage signals join against both platforms' rosters the
   same way.
+
+Loaded by `load_yahoo.py --history` (Yahoo only for now -- `load_sleeper.py`/
+`load_espn.py` don't pull draft results yet; extending them the same way is
+deferred, not blocked on anything, see `CLAUDE.md`):
+- `league_draft_picks` (SQLite) -- real draft history (round, overall
+  pick, team, player) for WHMFFL, one row per pick, for every season
+  Yahoo's renew/renewed chain reaches plus the current season if it's
+  already drafted. Powers the web app's keeper-prediction/mock-draft
+  tool (`webapp/app/keepers.py`) -- see its docstring for the round-shift
+  keeper rule. `keeper_predictions`/`mock_draft_picks` (also SQLite) are
+  the tool's own tables, entered by hand through the web app, not loaded
+  by any script.
 
 **Still not populated -- no reachable source found:**
 - `adp_history` (DuckDB) -- the methodology doc's sources (footballguys.com

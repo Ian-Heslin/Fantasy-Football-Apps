@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Mock Draft{% endblock %}
+{% block content %}
+{% if league is none %}
+<div class="empty-state"><p>League not found.</p></div>
+{% else %}
+<p><a href="/rosters/{{ league['league_id'] }}">&larr; {{ league['name'] or '(unnamed league)' }}</a></p>
+<h1>Mock Draft</h1>
+<p class="subtle">
+  Keeper rounds (marked <span class="badge badge-primary">Keeper</span>) come from your
+  <a href="/rosters/{{ league['league_id'] }}/keepers">predicted keepers</a> for {{ keeper_season }},
+  computed from the {{ draft_season }} draft. Everything else is open -- type a player into any cell,
+  or use "Auto-fill remaining" to fill every open cell by redraft consensus rank in one go; an
+  auto-filled pick can still be overwritten by hand afterward.
+</p>
+
+{% if not draft_season %}
+<div class="empty-state">
+  <p>No draft history loaded for this league yet -- run
+  <code>scripts/load_{{ league['platform'] }}.py --history</code> to pull it in.</p>
+</div>
+{% else %}
+{% if error %}<div class="notice notice-error"><p>{{ error }}</p></div>{% endif %}
+
+<p>
+  <form class="inline-form" method="post" action="/rosters/{{ league['league_id'] }}/mock-draft/auto-fill">
+    <button type="submit">Auto-fill remaining</button>
+  </form>
+  <form class="inline-form" method="post" action="/rosters/{{ league['league_id'] }}/mock-draft/reset">
+    <button type="submit">Reset my picks</button>
+  </form>
+</p>
+
+<div class="table-scroll">
+<table class="data-table table-stack">
+  <thead>
+    <tr>
+      <th>Round</th>
+      {% for t in teams %}<th>{{ t['owner_name'] or ('Team ' + t['roster_id']) }}</th>{% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in round_range %}
+    <tr>
+      <td data-label="Round" class="cell-block"><strong>Round {{ r }}</strong></td>
+      {% for t in teams %}
+      {% set cell = grid.get((r, t['roster_id'])) %}
+      <td data-label="{{ t['owner_name'] or ('Team ' + t['roster_id']) }}" class="cell-block">
+        {% if cell %}
+          {{ cell['name'] }} ({{ cell['position'] }})
+          {% if cell['source'] == 'keeper' %}
+            <span class="badge {{ 'badge-brown' if cell['conflict'] else 'badge-primary' }}">
+              {{ 'Keeper, conflict' if cell['conflict'] else 'Keeper' }}
+            </span>
+          {% else %}
+            <form class="inline-form" method="post" action="/rosters/{{ league['league_id'] }}/mock-draft/clear">
+              <input type="hidden" name="round" value="{{ r }}">
+              <input type="hidden" name="roster_id" value="{{ t['roster_id'] }}">
+              <button type="submit" class="link-button">clear</button>
+            </form>
+          {% endif %}
+        {% else %}
+          <form method="post" action="/rosters/{{ league['league_id'] }}/mock-draft/pick">
+            <input type="hidden" name="round" value="{{ r }}">
+            <input type="hidden" name="roster_id" value="{{ t['roster_id'] }}">
+            <input type="text" name="player_name" autocomplete="off" placeholder="Player">
+            <button type="submit">Pick</button>
+          </form>
+        {% endif %}
+      </td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

@@ -156,6 +156,63 @@ CREATE TABLE IF NOT EXISTS league_season_standings (
 );
 CREATE INDEX IF NOT EXISTS idx_league_standings_league ON league_season_standings(league_id, season);
 
+-- Real league draft history: who actually drafted whom, which round/pick,
+-- for a given league-season -- distinct from fantasy_draft_entries/
+-- group_draft_picks (the site's own all-time-redraft game) and from
+-- analytics.duckdb's draft_picks (the real NFL draft). Keyed under the
+-- CURRENT season's league_id, same convention as league_season_standings,
+-- since Yahoo/Sleeper mint a new league_id every season and chain them.
+-- Currently populated for Yahoo only -- see load_yahoo.py's
+-- load_draft_results(). player_id is the raw 'yahoo:<id>' form until
+-- resolve_yahoo_player_ids() remaps it to the canonical id, same as
+-- roster_players.
+CREATE TABLE IF NOT EXISTS league_draft_picks (
+    league_id       TEXT NOT NULL,
+    season          INTEGER NOT NULL,
+    round           INTEGER NOT NULL,
+    overall_pick    INTEGER NOT NULL,
+    roster_id       TEXT NOT NULL,
+    player_id       TEXT NOT NULL,
+    PRIMARY KEY (league_id, season, overall_pick)
+);
+CREATE INDEX IF NOT EXISTS idx_league_draft_picks_player ON league_draft_picks(league_id, season, player_id);
+CREATE INDEX IF NOT EXISTS idx_league_draft_picks_roster ON league_draft_picks(league_id, season, roster_id);
+
+-- Keeper-league planning tool (see app/keepers.py): a user's predicted
+-- keepers for an UPCOMING draft, entered by hand -- Yahoo doesn't expose
+-- "who's being kept" until the real draft happens, so this is a guess,
+-- not pulled data. `season` is the season being predicted FOR; the
+-- player's prior-season round comes from a league_draft_picks row for
+-- season - 1 (or whatever season this league last actually drafted).
+-- Scoped per user since two accounts could disagree on a prediction.
+CREATE TABLE IF NOT EXISTS keeper_predictions (
+    user_id         INTEGER NOT NULL REFERENCES users(user_id),
+    league_id       TEXT NOT NULL,
+    season          INTEGER NOT NULL,
+    roster_id       TEXT NOT NULL,
+    player_id       TEXT NOT NULL,
+    updated_at      TEXT DEFAULT (datetime('now')),
+    PRIMARY KEY (user_id, league_id, season, roster_id, player_id)
+);
+
+-- One user's mock-draft board for a league-season: every cell they've
+-- filled in, keeper or not, so the board survives a reload. 'keeper' rows
+-- are written by app.keepers.compute_keeper_board (locked, not directly
+-- editable); 'manual' is a cell the user typed in themselves; 'auto' is
+-- the "fill remaining with best available" action -- overwritable by a
+-- manual pick same as an empty cell, just not by another auto-fill.
+CREATE TABLE IF NOT EXISTS mock_draft_picks (
+    user_id         INTEGER NOT NULL REFERENCES users(user_id),
+    league_id       TEXT NOT NULL,
+    season          INTEGER NOT NULL,
+    round           INTEGER NOT NULL,
+    roster_id       TEXT NOT NULL,
+    player_id       TEXT NOT NULL,
+    source          TEXT NOT NULL DEFAULT 'manual',  -- 'keeper' | 'manual' | 'auto'
+    updated_at      TEXT DEFAULT (datetime('now')),
+    PRIMARY KEY (user_id, league_id, season, round, roster_id)
+);
+
 -- Site accounts. tier is a strict hierarchy (see app/auth.py's TIER_RANK):
 -- 'games' (default on signup -- Games section + leaderboards only),
 -- 'fantasy' (also gets rosters/arbitrage/predictions/teams/coaches),
