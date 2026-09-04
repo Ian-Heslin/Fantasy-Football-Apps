@@ -16,6 +16,8 @@
   {% if season['draft_locked_at'] %}&middot; <a href="/pokemon/seasons/{{ season['season_id'] }}/draft">Draft room</a>{% endif %}
   &middot; <a href="/pokemon/seasons/{{ season['season_id'] }}/schedule">Schedule</a>
   &middot; <a href="/pokemon/seasons/{{ season['season_id'] }}/standings">Standings</a>
+  &middot; <a href="/pokemon/seasons/{{ season['season_id'] }}/playoffs">Playoffs</a>
+  {% if my_seat %}&middot; <a href="/pokemon/seasons/{{ season['season_id'] }}/roster/{{ my_seat['coach_id'] }}">My team</a>{% endif %}
 </p>
 
 {% if season['format_rules_text'] %}
@@ -38,7 +40,7 @@
     <input type="number" name="roster_freeze_week" value="{{ season['roster_freeze_week'] or '' }}" min="1"></label></p>
   <p><label>Playoff bracket size<br>
     <select name="playoff_bracket_size">
-      {% for n in [2, 4, 6, 8] %}
+      {% for n in [2, 4, 8] %}
       <option value="{{ n }}" {{ 'selected' if season['playoff_bracket_size'] == n else '' }}>{{ n }} teams</option>
       {% endfor %}
     </select></label></p>
@@ -73,7 +75,7 @@
       {% for c in coaches %}
       <tr>
         <td>{{ c['draft_order'] or '—' }}</td>
-        <td>{{ c['team_name'] }}</td>
+        <td><a href="/pokemon/seasons/{{ season['season_id'] }}/roster/{{ c['coach_id'] }}">{{ c['team_name'] }}</a></td>
         <td>{{ c['username'] }}{% if c['user_id'] == season['commissioner_user_id'] %} <span class="badge badge-outline">commissioner</span>{% endif %}</td>
         {% if is_commissioner and not season['draft_locked_at'] %}
         <td>

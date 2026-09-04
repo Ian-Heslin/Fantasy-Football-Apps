@@ -7,3 +7,4 @@ pandas
 numpy
 statsmodels
 scikit-learn
+openpyxl        # load_pokemon_historical_seasons.py reads the historical .xlsx league docs

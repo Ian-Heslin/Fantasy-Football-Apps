@@ -10,6 +10,7 @@ from app.auth import require_tier
 from app.common import db_missing_response
 from app.db import get_connection
 from app.pokemon_draft import matches as pk_matches
+from app.pokemon_draft import playoffs as pk_playoffs
 from app.pokemon_draft import replay as pk_replay
 from app.pokemon_draft import roster as pk_roster
 from app.pokemon_draft import schedule as pk_schedule
@@ -192,6 +193,11 @@ def confirm_match(request: Request, season_id: int, match_id: int):
         return db_missing_response(request, e)
     try:
         error = pk_matches.confirm_match(conn, match_id, user["user_id"])
+        if error is None:
+            # Harmless no-op for a non-playoff match or a season with no
+            # bracket yet -- only walks the bracket forward when this
+            # match's schedule row actually has a bracket_slot set.
+            pk_playoffs.advance_bracket(conn, season_id)
     finally:
         conn.close()
     dest = f"/pokemon/seasons/{season_id}/matches/{match_id}"
@@ -231,6 +237,8 @@ async def resolve_dispute(request: Request, season_id: int, match_id: int):
         games, error = _parse_games_from_form(conn, form, match, home_roster, away_roster)
         if error is None:
             error = pk_matches.resolve_dispute(conn, match_id, user["user_id"], form.get("note", ""), games)
+        if error is None:
+            pk_playoffs.advance_bracket(conn, season_id)
     finally:
         conn.close()
     dest = f"/pokemon/seasons/{season_id}/matches/{match_id}"
@@ -259,3 +267,61 @@ def standings_page(request: Request, season_id: int):
         request, "pokemon/standings.html",
         {"season": season, "standings": rows, "leaderboard": leaderboard},
     )
+
+
+# ---------------------------------------------------------------------
+# Playoffs
+# ---------------------------------------------------------------------
+
+@router.get("/seasons/{season_id}/playoffs", response_class=HTMLResponse)
+def playoffs_page(request: Request, season_id: int):
+    user = request.state.user
+    try:
+        conn = get_connection()
+    except FileNotFoundError as e:
+        return db_missing_response(request, e)
+    try:
+        season = pk_seasons.get_season(conn, season_id)
+        if season is None:
+            return RedirectResponse("/pokemon/seasons", status_code=303)
+        is_commissioner = user["tier"] == "admin" or user["user_id"] == season["commissioner_user_id"]
+        seeded = pk_playoffs.is_seeded(conn, season_id)
+        bracket = pk_playoffs.bracket_view(conn, season_id) if seeded else []
+        champion_coach_id = pk_playoffs.champion(conn, season_id) if seeded else None
+    finally:
+        conn.close()
+    return templates.TemplateResponse(
+        request, "pokemon/playoffs.html",
+        {
+            "season": season, "is_commissioner": is_commissioner, "seeded": seeded,
+            "bracket": bracket, "champion_coach_id": champion_coach_id, "error": None,
+        },
+    )
+
+
+@router.post("/seasons/{season_id}/playoffs/seed", dependencies=[Depends(require_commissioner)])
+def seed_playoffs(request: Request, season_id: int):
+    try:
+        conn = get_connection()
+    except FileNotFoundError as e:
+        return db_missing_response(request, e)
+    try:
+        error = pk_playoffs.seed_bracket(conn, season_id)
+    finally:
+        conn.close()
+    dest = f"/pokemon/seasons/{season_id}/playoffs"
+    return RedirectResponse(f"{dest}?error={quote(error)}" if error else dest, status_code=303)
+
+
+@router.post("/seasons/{season_id}/playoffs/clear", dependencies=[Depends(require_commissioner)])
+def clear_playoffs(request: Request, season_id: int):
+    try:
+        conn = get_connection()
+    except FileNotFoundError as e:
+        return db_missing_response(request, e)
+    try:
+        error = pk_playoffs.clear_bracket(conn, season_id)
+    finally:
+        conn.close()
+    dest = f"/pokemon/seasons/{season_id}/playoffs"
+    return RedirectResponse(f"{dest}?error={quote(error)}" if error else dest, status_code=303)

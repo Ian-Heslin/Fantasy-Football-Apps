@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ season['name'] }}: Playoffs{% endblock %}
+{% block content %}
+<h1>{{ season['name'] }}: Playoffs</h1>
+<p class="subtle"><a href="/pokemon/seasons/{{ season['season_id'] }}">&larr; {{ season['name'] }}</a></p>
+
+{% if error %}
+<div class="notice notice-error"><p>{{ error }}</p></div>
+{% endif %}
+
+{% if not seeded %}
+<div class="empty-state"><p>The bracket hasn't been seeded yet.</p></div>
+{% if is_commissioner %}
+<form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/playoffs/seed">
+  <p class="subtle">Seeds the top {{ season['playoff_bracket_size'] }} teams from the current standings.</p>
+  <button type="submit">Seed bracket</button>
+</form>
+{% endif %}
+{% else %}
+
+{% if champion_coach_id %}
+<div class="notice"><p><strong>Champion:</strong>
+  {% for row in bracket %}{% if row['slot'] == 'F' %}{{ row['team_name'] }}{% endif %}{% endfor %}
+</p></div>
+{% endif %}
+
+{% for round in ['QF', 'SF', 'F'] %}
+{% set round_rows = bracket|selectattr('round', 'equalto', round)|list %}
+{% if round_rows %}
+<h2>{{ 'Final' if round == 'F' else (round + 's') }}</h2>
+<div class="table-scroll">
+  <table class="data-table">
+    <thead><tr><th>Slot</th><th>Matchup</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for row in round_rows %}
+      <tr>
+        <td>{{ row['slot'] }}</td>
+        <td>
+          {% if row['home_team'] %}{{ row['home_team'] }} vs {{ row['away_team'] }}
+          {% else %}TBD{% endif %}
+        </td>
+        <td>{% if row['status'] %}<span class="badge {{ 'badge-secondary' if row['status']=='confirmed' else 'badge-outline' }}">{{ row['status'] }}</span>{% endif %}</td>
+        <td>{% if row['match_id'] %}<a href="/pokemon/seasons/{{ season['season_id'] }}/matches/{{ row['match_id'] }}">View</a>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endfor %}
+
+{% if is_commissioner %}
+<form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/playoffs/clear">
+  <button type="submit" class="link-button">Clear bracket</button>
+</form>
+{% endif %}
+{% endif %}
+{% endblock %}

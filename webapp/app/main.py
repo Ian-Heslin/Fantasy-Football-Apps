@@ -24,8 +24,8 @@ from app.routes import (
     imposter, pickem, predictions, profile, rosters, teams, trivia,
 )
 from app.routes.pokemon_draft import (
-    draft as pokemon_draft, pokedex as pokemon_pokedex, schedule as pokemon_schedule,
-    seasons as pokemon_seasons,
+    draft as pokemon_draft, pokedex as pokemon_pokedex, roster as pokemon_roster,
+    schedule as pokemon_schedule, seasons as pokemon_seasons,
 )
 from app.templating import templates
 
@@ -117,3 +117,4 @@ app.include_router(pokemon_seasons.router)
 app.include_router(pokemon_pokedex.router)
 app.include_router(pokemon_draft.router)
 app.include_router(pokemon_schedule.router)
+app.include_router(pokemon_roster.router)

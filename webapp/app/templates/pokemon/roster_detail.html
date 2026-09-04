@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}{{ coach['team_name'] }}{% endblock %}
+{% block content %}
+<h1>{{ coach['team_name'] }}</h1>
+<p class="subtle"><a href="/pokemon/seasons/{{ season['season_id'] }}">&larr; {{ season['name'] }}</a>
+  &middot; coach {{ coach['username'] }}</p>
+
+{% if error %}
+<div class="notice notice-error"><p>{{ error }}</p></div>
+{% endif %}
+
+<p>{{ count }}/{{ season['roster_size_cap'] }} Pokemon &middot; {{ spent }}/{{ season['point_budget'] }} points
+  &middot; {{ fa_used }}/{{ season['fa_transactions_allowed'] }} FA transactions used</p>
+
+{% if not team_roster %}
+<div class="empty-state"><p>No Pokemon rostered yet.</p></div>
+{% else %}
+<div class="table-scroll">
+  <table class="data-table">
+    <thead><tr><th></th><th>Pokemon</th><th>Type</th><th>Cost</th>{% if is_own_team %}<th></th>{% endif %}</tr></thead>
+    <tbody>
+      {% for p in team_roster %}
+      <tr>
+        <td>{% if p['sprite_url'] %}<img src="{{ p['sprite_url'] }}" alt="" width="32" height="32">{% endif %}</td>
+        <td>{{ p['display_name'] }}</td>
+        <td>{{ p['type1'] }}{% if p['type2'] %} / {{ p['type2'] }}{% endif %}</td>
+        <td>{{ cost_by_id.get(p['pokemon_id'], '') }}</td>
+        {% if is_own_team %}
+        <td>
+          <form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/roster/{{ coach['coach_id'] }}/fa-drop" class="inline-form">
+            <input type="hidden" name="pokemon_id" value="{{ p['pokemon_id'] }}">
+            <button type="submit" class="link-button">Drop</button>
+          </form>
+        </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if is_own_team %}
+<h2>Free agency</h2>
+<form method="get" action="/pokemon/seasons/{{ season['season_id'] }}/roster/{{ coach['coach_id'] }}">
+  <p><input type="text" name="q" value="{{ query }}" placeholder="Search available Pokemon..."> <button type="submit">Search</button></p>
+</form>
+{% if fa_search %}
+<div class="table-scroll">
+  <table class="data-table">
+    <thead><tr><th></th><th>Pokemon</th><th>Cost</th><th></th></tr></thead>
+    <tbody>
+      {% for p in fa_search %}
+      <tr>
+        <td>{% if p['sprite_url'] %}<img src="{{ p['sprite_url'] }}" alt="" width="32" height="32">{% endif %}</td>
+        <td>{{ p['display_name'] }}</td>
+        <td>{{ p['effective_cost'] }}</td>
+        <td>
+          <form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/roster/{{ coach['coach_id'] }}/fa-add" class="inline-form">
+            <input type="hidden" name="pokemon_id" value="{{ p['pokemon_id'] }}">
+            <button type="submit">Add</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<h2>Trades</h2>
+{% if pending_trades %}
+<div class="table-scroll">
+  <table class="data-table">
+    <thead><tr><th>With</th><th>Direction</th><th></th></tr></thead>
+    <tbody>
+      {% for t in pending_trades %}
+      <tr>
+        <td>trade #{{ t['trade_id'] }}</td>
+        <td>{{ 'you proposed' if t['proposing_coach_id'] == coach['coach_id'] else 'sent to you' }}</td>
+        <td>
+          {% if t['receiving_coach_id'] == coach['coach_id'] %}
+          <form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/trades/{{ t['trade_id'] }}/accept" class="inline-form">
+            <button type="submit">Accept</button>
+          </form>
+          {% endif %}
+          <form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/trades/{{ t['trade_id'] }}/respond" class="inline-form">
+            <button type="submit" class="link-button">{{ 'Cancel' if t['proposing_coach_id'] == coach['coach_id'] else 'Reject' }}</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="subtle">No pending trades.</p>
+{% endif %}
+
+<p><a href="/pokemon/seasons/{{ season['season_id'] }}/roster/{{ coach['coach_id'] }}/trade/new">Propose a trade &rarr;</a></p>
+{% endif %}
+{% endblock %}

@@ -468,6 +468,135 @@ def test_reporting_via_replay_link_populates_stats(attacker, monkeypatch):
     assert stats == 2  # Mon1's kill row + Mon2's death row
 
 
+def test_cannot_seed_or_clear_another_seasons_playoffs(attacker):
+    from app import db
+    from app.pokemon_draft import seasons as pk_seasons
+
+    season_id, commissioner_id = make_commissioner_season()
+    conn = db.get_connection()
+    for i in range(2):
+        pk_seasons.add_coach(conn, season_id, commissioner_id if i == 0 else
+                              query("SELECT user_id FROM users WHERE username = ?", (ATTACKER,))[0]["user_id"],
+                              f"Team{i}")
+    pk_seasons.update_ruleset(conn, season_id, 1, 20, True, 0, None, 2)
+    conn.close()
+
+    r = attacker.post(f"/pokemon/seasons/{season_id}/playoffs/seed", follow_redirects=False)
+    assert r.status_code == 403
+    assert query("SELECT count(*) c FROM pokemon_playoff_bracket")[0]["c"] == 0
+
+    r = attacker.post(f"/pokemon/seasons/{season_id}/playoffs/clear", follow_redirects=False)
+    assert r.status_code == 403
+
+
+def test_nonexistent_season_404s_on_playoff_routes(attacker):
+    r = attacker.post("/pokemon/seasons/999999/playoffs/seed", follow_redirects=False)
+    assert r.status_code == 404
+    r = attacker.post("/pokemon/seasons/999999/playoffs/clear", follow_redirects=False)
+    assert r.status_code == 404
+
+
+# =====================================================================
+# 7. Roster: free agency + trades
+# =====================================================================
+
+def _second_coach_roster_setup():
+    """COMMISSIONER owns a season and its own coach seat with one drafted
+    Pokemon; ATTACKER is a completely separate coach in the same season.
+    Returns (season_id, commissioner_coach_id, attacker_coach_id)."""
+    from app import db
+    from app.pokemon_draft import draft_pool as pk_pool
+    from app.pokemon_draft import seasons as pk_seasons
+
+    season_id, commissioner_id = make_commissioner_season()
+    _pool_pokemon(2)
+    attacker_id = query("SELECT user_id FROM users WHERE username = ?", (ATTACKER,))[0]["user_id"]
+    conn = db.get_connection()
+    pk_seasons.add_coach(conn, season_id, commissioner_id, "Commissioner's Team")
+    pk_seasons.add_coach(conn, season_id, attacker_id, "Attacker's Team")
+    coaches = pk_seasons.list_coaches(conn, season_id)
+    commissioner_coach_id = next(c["coach_id"] for c in coaches if c["user_id"] == commissioner_id)
+    attacker_coach_id = next(c["coach_id"] for c in coaches if c["user_id"] == attacker_id)
+    pk_pool.add_to_pool(conn, season_id, 1, cost_override=5)
+    conn.execute(
+        """INSERT INTO pokemon_roster_moves (season_id, coach_id, pokemon_id, move_type, cost,
+               counts_toward_fa_cap) VALUES (?, ?, 1, 'draft', 5, 0)""",
+        (season_id, commissioner_coach_id),
+    )
+    conn.commit()
+    conn.close()
+    return season_id, commissioner_coach_id, attacker_coach_id
+
+
+def test_cannot_fa_add_or_drop_on_another_coachs_roster(attacker):
+    season_id, commissioner_coach_id, attacker_coach_id = _second_coach_roster_setup()
+    from app import db
+    from app.pokemon_draft import draft_pool as pk_pool
+    conn = db.get_connection()
+    pk_pool.add_to_pool(conn, season_id, 2, cost_override=5)
+    conn.close()
+
+    r = attacker.post(f"/pokemon/seasons/{season_id}/roster/{commissioner_coach_id}/fa-add",
+                       data={"pokemon_id": "2"}, follow_redirects=False)
+    assert "error=" in r.headers["location"]
+    assert query("SELECT count(*) c FROM pokemon_roster_moves WHERE coach_id = ? AND pokemon_id = 2",
+                 (commissioner_coach_id,))[0]["c"] == 0
+
+    r = attacker.post(f"/pokemon/seasons/{season_id}/roster/{commissioner_coach_id}/fa-drop",
+                       data={"pokemon_id": "1"}, follow_redirects=False)
+    assert "error=" in r.headers["location"]
+    assert query("SELECT count(*) c FROM pokemon_roster_moves WHERE coach_id = ? AND move_type = 'drop'",
+                 (commissioner_coach_id,))[0]["c"] == 0
+
+
+def test_cannot_propose_a_trade_as_another_coach(attacker):
+    season_id, commissioner_coach_id, attacker_coach_id = _second_coach_roster_setup()
+    r = attacker.post(f"/pokemon/seasons/{season_id}/roster/{commissioner_coach_id}/trade/new",
+                       data={"target_coach_id": str(attacker_coach_id), f"my_1": "trade"},
+                       follow_redirects=False)
+    assert r.status_code == 303
+    # Redirected away (ownership check fails before ever reaching propose_trade) --
+    # no trade offer gets written.
+    assert query("SELECT count(*) c FROM pokemon_trade_offers")[0]["c"] == 0
+
+
+def test_only_the_receiving_coach_can_accept_a_trade(attacker):
+    from app import db
+    from app.pokemon_draft import roster as pk_roster
+
+    season_id, commissioner_coach_id, attacker_coach_id = _second_coach_roster_setup()
+    conn = db.get_connection()
+    trade_id, error = pk_roster.propose_trade(conn, season_id, commissioner_coach_id, attacker_coach_id, [
+        {"pokemon_id": 1, "from_coach_id": commissioner_coach_id, "action": "trade"}])
+    assert error is None
+    conn.close()
+
+    # attacker's client is logged in as ATTACKER, but the trade's receiving
+    # coach here is attacker_coach_id -- so attacker CAN accept their own
+    # incoming trade. Prove a genuinely uninvolved third account cannot.
+    from app import auth as auth_module
+    cur_conn = db.get_connection()
+    cur_conn.execute("INSERT INTO users (username, password_hash, tier) VALUES (?, ?, 'games')",
+                      ("eve", auth_module.hash_password(GOOD_PASSWORD)))
+    cur_conn.commit()
+    cur_conn.close()
+    from fastapi.testclient import TestClient
+    from app.main import app
+    eve = TestClient(app, base_url="https://testserver")
+    eve.post("/login", data={"username": "eve", "password": GOOD_PASSWORD}, follow_redirects=False)
+
+    r = eve.post(f"/pokemon/seasons/{season_id}/trades/{trade_id}/accept", follow_redirects=False)
+    assert "error=" in r.headers["location"]
+    assert query("SELECT status FROM pokemon_trade_offers WHERE trade_id = ?", (trade_id,))[0]["status"] == "pending"
+
+
+def test_nonexistent_trade_does_not_500(attacker):
+    r = attacker.post("/pokemon/seasons/1/trades/999999/accept", follow_redirects=False)
+    assert r.status_code == 303
+    r = attacker.post("/pokemon/seasons/1/trades/999999/respond", follow_redirects=False)
+    assert r.status_code == 303
+
+
 def test_a_replay_fetch_failure_writes_nothing(attacker, monkeypatch):
     from app.pokemon_draft import replay as pk_replay
 

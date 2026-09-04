@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Propose a Trade{% endblock %}
+{% block content %}
+<h1>Propose a trade</h1>
+<p class="subtle"><a href="/pokemon/seasons/{{ season['season_id'] }}/roster/{{ coach['coach_id'] }}">&larr; {{ coach['team_name'] }}</a></p>
+
+<form method="get" action="/pokemon/seasons/{{ season['season_id'] }}/roster/{{ coach['coach_id'] }}/trade/new">
+  <p><label>Trade with<br>
+    <select name="with_coach_id" onchange="this.form.submit()">
+      <option value="">Choose a team...</option>
+      {% for c in other_coaches %}
+      <option value="{{ c['coach_id'] }}" {{ 'selected' if their_coach and their_coach['coach_id'] == c['coach_id'] else '' }}>{{ c['team_name'] }}</option>
+      {% endfor %}
+    </select>
+  </label></p>
+</form>
+
+{% if their_coach %}
+<form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/roster/{{ coach['coach_id'] }}/trade/new">
+  <input type="hidden" name="target_coach_id" value="{{ their_coach['coach_id'] }}">
+
+  <h2>Your roster ({{ coach['team_name'] }})</h2>
+  <p class="subtle">For each Pokemon: leave as "keep" to hold onto it, "give up" to send it to {{ their_coach['team_name'] }},
+    or "also drop" to release it entirely (bundle drops here if the trade would otherwise put you over budget/roster cap).</p>
+  <div class="table-scroll">
+    <table class="data-table">
+      <thead><tr><th>Pokemon</th><th>Action</th></tr></thead>
+      <tbody>
+        {% for p in my_roster %}
+        <tr>
+          <td>{{ p['display_name'] }}</td>
+          <td>
+            <label><input type="radio" name="my_{{ p['pokemon_id'] }}" value="" checked> Keep</label>
+            <label><input type="radio" name="my_{{ p['pokemon_id'] }}" value="trade"> Give up (to {{ their_coach['team_name'] }})</label>
+            <label><input type="radio" name="my_{{ p['pokemon_id'] }}" value="drop"> Also drop</label>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <h2>{{ their_coach['team_name'] }}'s roster</h2>
+  <p class="subtle">Check any Pokemon you'd like to receive.</p>
+  <div class="table-scroll">
+    <table class="data-table">
+      <thead><tr><th>Pokemon</th><th>Want it?</th></tr></thead>
+      <tbody>
+        {% for p in their_roster %}
+        <tr>
+          <td>{{ p['display_name'] }}</td>
+          <td><input type="checkbox" name="their_{{ p['pokemon_id'] }}" value="1"></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <p><button type="submit">Propose trade</button></p>
+</form>
+{% endif %}
+{% endblock %}

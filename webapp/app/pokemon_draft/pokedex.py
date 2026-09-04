@@ -44,6 +44,17 @@ def find_by_species_name(conn, species_name):
     one unrecognized name -- most commonly a cosmetic-only form Showdown
     tracks (e.g. a Pikachu cosplay form) that isn't a separate PokeAPI
     entry."""
-    slug = species_name.strip().lower().replace(" ", "-").replace("'", "").replace(".", "")
+    cleaned = species_name.strip().replace("(", " ").replace(")", " ")
+    slug = " ".join(cleaned.split()).lower().replace(" ", "-").replace("'", "").replace(".", "")
     row = conn.execute("SELECT pokemon_id FROM pokemon WHERE slug = ?", (slug,)).fetchone()
+    if row:
+        return row["pokemon_id"]
+    # A bare species name with no form suffix (e.g. 'Maushold', 'Tatsugiri') has no
+    # exact slug match when every one of that species' forms carries a suffixed slug
+    # (there's no plain 'maushold' row) -- fall back to whichever of its forms
+    # PokeAPI marks as the default variety (pokemon_id == species_id there).
+    row = conn.execute(
+        "SELECT pokemon_id FROM pokemon WHERE pokemon_id = species_id AND slug LIKE ? ORDER BY slug LIMIT 1",
+        (slug + "-%",),
+    ).fetchone()
     return row["pokemon_id"] if row else None
