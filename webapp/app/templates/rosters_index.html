@@ -13,21 +13,23 @@ python3 scripts/load_sleeper.py
 python3 scripts/load_espn.py</pre>
 </div>
 {% else %}
-<table class="data-table">
-  <thead>
-    <tr><th>League</th><th>Platform</th><th>Season</th><th>Format</th><th>Status</th></tr>
-  </thead>
-  <tbody>
-    {% for lg in leagues %}
-    <tr>
-      <td><a href="/rosters/{{ lg['league_id'] }}">{{ lg['name'] or '(unnamed league)' }}</a></td>
-      <td>{{ lg['platform'] }}</td>
-      <td>{{ lg['season'] }}</td>
-      <td>{{ lg['format'] }}</td>
-      <td>{{ lg['status'] }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr><th>League</th><th>Platform</th><th>Season</th><th>Format</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      {% for lg in leagues %}
+      <tr>
+        <td><a href="/rosters/{{ lg['league_id'] }}">{{ lg['name'] or '(unnamed league)' }}</a></td>
+        <td>{{ lg['platform'] }}</td>
+        <td>{{ lg['season'] }}</td>
+        <td>{{ lg['format'] }}</td>
+        <td>{{ lg['status'] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endif %}
 {% endblock %}

@@ -5,15 +5,15 @@
 <p class="subtle"><a href="{{ '/games/daily' if round['game_type'] == 'weekly_leaders' else '/games/trivia' }}">&larr; {{ 'Daily' if round['game_type'] == 'weekly_leaders' else 'Trivia' }}</a></p>
 
 {% if answered %}
-<table class="data-table">
+<table class="data-table table-stack">
   <thead><tr><th>Clue</th><th>Your guess</th><th>Correct answer</th><th></th></tr></thead>
   <tbody>
     {% for item in answered %}
     <tr>
-      <td>{{ item['prompt_label'] }}</td>
-      <td>{{ item['guess'] or '—' }}</td>
-      <td>{{ item['correct_answer'].replace('|', ' / ') }}</td>
-      <td>{{ '✓' if item['is_correct'] else '✗' }}</td>
+      <td data-label="Clue">{{ item['prompt_label'] }}</td>
+      <td data-label="Your guess">{{ item['guess'] or '—' }}</td>
+      <td data-label="Correct answer">{{ item['correct_answer'].replace('|', ' / ') }}</td>
+      <td data-label="Result">{{ '✓' if item['is_correct'] else '✗' }}</td>
     </tr>
     {% endfor %}
   </tbody>
@@ -21,7 +21,7 @@
 {% endif %}
 
 {% if current_item %}
-<form method="post" action="/games/trivia/round/{{ round['round_id'] }}/guess">
+<form class="stack-form" method="post" action="/games/trivia/round/{{ round['round_id'] }}/guess">
   <input type="hidden" name="item_key" value="{{ current_item['item_key'] }}">
   <p><strong>{{ current_item['prompt_label'] }}</strong></p>
   <p><input type="text" name="guess" autocomplete="off" autofocus required></p>

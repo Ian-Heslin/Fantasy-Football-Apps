@@ -40,34 +40,36 @@
 {% if not rows %}
 <div class="empty-state"><p>No predictions match these filters.</p></div>
 {% else %}
-<table class="data-table">
-  <thead>
-    <tr><th>Player</th><th>Pos</th><th>Team</th><th>Probability</th><th>Actual outcome</th></tr>
-  </thead>
-  <tbody>
-    {% for r in rows %}
-    <tr>
-      <td>{{ r['name'] or r['player_id'] }}</td>
-      <td>{{ r['position'] or '—' }}</td>
-      <td>{{ r['team'] or '—' }}</td>
-      <td>
-        <div class="prob-bar">
-          <div class="prob-bar-fill" style="width: {{ (r['predicted_probability'] * 100)|round(1) }}%"></div>
-          <span>{{ '%.1f%%'|format(r['predicted_probability'] * 100) }}</span>
-        </div>
-      </td>
-      <td>
-        {% if r['actual_outcome'] is none %}
-          <span class="subtle">TBD ({{ r['season'] }})</span>
-        {% elif r['actual_outcome'] == 1 %}
-          <span class="badge badge-yes">Yes</span>
-        {% else %}
-          <span class="badge badge-no">No</span>
-        {% endif %}
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr><th>Player</th><th>Pos</th><th>Team</th><th>Probability</th><th>Actual outcome</th></tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r['name'] or r['player_id'] }}</td>
+        <td>{{ r['position'] or '—' }}</td>
+        <td>{{ r['team'] or '—' }}</td>
+        <td>
+          <div class="prob-bar">
+            <div class="prob-bar-fill" style="width: {{ (r['predicted_probability'] * 100)|round(1) }}%"></div>
+            <span>{{ '%.1f%%'|format(r['predicted_probability'] * 100) }}</span>
+          </div>
+        </td>
+        <td>
+          {% if r['actual_outcome'] is none %}
+            <span class="subtle">TBD ({{ r['season'] }})</span>
+          {% elif r['actual_outcome'] == 1 %}
+            <span class="badge badge-yes">Yes</span>
+          {% else %}
+            <span class="badge badge-no">No</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endif %}
 {% endblock %}

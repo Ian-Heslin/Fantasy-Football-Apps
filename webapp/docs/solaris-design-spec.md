@@ -70,6 +70,51 @@ Single flowing page, ~1440px reference width, black-framed as above. Sections to
 7. **Arbitrage Signals** — section title + status badge, intro line, then a bordered list of rows (icon chip + label + tag).
 8. **3px black rule, then footer** — source line left, small accent-colored dot row + timestamp right.
 
+### Narrow viewports (phones)
+
+The layout above is the desktop design and is what renders at >720px. It was
+originally the *only* layout -- there were no media queries at all, so a phone
+got it verbatim and the games broke worst: the `/games` tab row and four game
+tables overflowed the viewport, and Pick'em's two team buttons shared one
+squeezed table cell, wrapping "Kansas City Chiefs (KC)" over four lines.
+
+At **≤720px** a mobile layer (bottom of `style.css`) rearranges the same
+components without changing the design language -- still flat fills, square
+corners, `2.5px` ink borders, no shadows. What changes:
+
+- **Page frame** thins to `5px` and `main`'s gutters to `14px`; at the desktop
+  values the frame plus gutters cost 88px of a 390px screen before any content.
+- **Top bar** goes to three explicit rows: brand + user chip + Log out, then
+  the Team Colors picker, then nav as a single horizontal scroll strip
+  (eight links can't fit on one line at this width). Without the explicit
+  `order`, the picker and Log out each took a row of their own and pushed nav
+  to a fourth.
+- **Games tab row** fits all five tabs down to 320px on reduced padding, and
+  scrolls below that. The Settings tab's `margin-left: auto` comes from
+  `.tab-settings`, not an inline style, so this layer can neutralise it.
+- **Controls** are all ≥16px and ≥44px tall. 16px is not cosmetic: iOS Safari
+  zooms the page in when you focus a smaller field and leaves it zoomed. Four
+  selectors (`.team-colors-form select`, `.filter-bar select`,
+  `.confidence-select`, `.stack-form input/select`) carry their own font-size
+  and have to be named explicitly to be overridden.
+- **Team Colors toggle** keeps its spec proportions scaled to 52×28 (18px
+  knob, 22px travel) so it's actually hittable.
+- **Tables** use one of two utilities, and any new table should pick one:
+  - `.table-scroll` (a wrapper div) — the table keeps its columns and scrolls
+    inside its own box; the ink border moves to the wrapper. For read-only,
+    many-column data tables (Teams' nine columns, Arbitrage, Predictions).
+  - `.table-stack` (on the table) — each row becomes a card and each cell a
+    "label: value" line read from the cell's `data-label`. For tables with
+    inputs or a cell you must tap, where sideways scrolling would hide the
+    control: Fantasy Draft, Pick'em picks, group draft board, 501, trivia.
+    A cell carrying its own heading or a whole stacked block opts out with
+    `.cell-block`.
+- **Pick'em matchups** stack the two team buttons full-width (`.pickem-vs`
+  becomes a column), which both fixes the four-line team names and turns the
+  primary action into a comfortable 48px target.
+- **Row hover** is suppressed under `@media (hover: none)` — on a touch screen
+  it sticks to whatever you last tapped.
+
 ## 5. Components
 
 **Badge / status tag** (e.g. "Sleeper", "ESPN", "Preseason Beta", league-name tags in the signals list): solid accent-color fill, bold uppercase 10–12px text, no border unless it's a hairline `1.5px solid var(--ink)`. Text color is **not** hardcoded — see contrast rule in §6.

@@ -38,38 +38,40 @@
 {% if not suggestions %}
 <div class="empty-state"><p>No fair-value 1-for-1 trades found with this team right now.</p></div>
 {% else %}
-<table class="data-table">
-  <thead>
-    <tr>
-      <th>You give</th><th>Value</th><th>You get</th><th>Value</th><th>Value gap</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for s in suggestions %}
-    <tr>
-      <td>
-        {{ s['give']['name'] }} ({{ s['give']['position'] }})
-        {% if s['give']['signal'] %}
-          <span class="badge badge-{{ s['give']['signal']|lower|replace('_', '-') }}">
-            {{ signal_labels.get(s['give']['signal'], s['give']['signal']) }}
-          </span>
-        {% endif %}
-      </td>
-      <td>{{ '%.0f'|format(s['give'][value_col]) }}</td>
-      <td>
-        {{ s['get']['name'] }} ({{ s['get']['position'] }})
-        {% if s['get']['signal'] %}
-          <span class="badge badge-{{ s['get']['signal']|lower|replace('_', '-') }}">
-            {{ signal_labels.get(s['get']['signal'], s['get']['signal']) }}
-          </span>
-        {% endif %}
-      </td>
-      <td>{{ '%.0f'|format(s['get'][value_col]) }}</td>
-      <td>{{ '%.0f%%'|format(s['value_gap_pct'] * 100) }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>You give</th><th>Value</th><th>You get</th><th>Value</th><th>Value gap</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in suggestions %}
+      <tr>
+        <td>
+          {{ s['give']['name'] }} ({{ s['give']['position'] }})
+          {% if s['give']['signal'] %}
+            <span class="badge badge-{{ s['give']['signal']|lower|replace('_', '-') }}">
+              {{ signal_labels.get(s['give']['signal'], s['give']['signal']) }}
+            </span>
+          {% endif %}
+        </td>
+        <td>{{ '%.0f'|format(s['give'][value_col]) }}</td>
+        <td>
+          {{ s['get']['name'] }} ({{ s['get']['position'] }})
+          {% if s['get']['signal'] %}
+            <span class="badge badge-{{ s['get']['signal']|lower|replace('_', '-') }}">
+              {{ signal_labels.get(s['get']['signal'], s['get']['signal']) }}
+            </span>
+          {% endif %}
+        </td>
+        <td>{{ '%.0f'|format(s['get'][value_col]) }}</td>
+        <td>{{ '%.0f%%'|format(s['value_gap_pct'] * 100) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endif %}
 {% endif %}
 {% endif %}

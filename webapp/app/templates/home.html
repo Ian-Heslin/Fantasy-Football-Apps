@@ -85,20 +85,22 @@
 {% endif %}
 
 <h2>Data freshness</h2>
-<table class="data-table">
-  <thead>
-    <tr><th>Table</th><th>Source</th><th>Last synced</th><th>Rows</th><th>Notes</th></tr>
-  </thead>
-  <tbody>
-    {% for row in sync_log %}
-    <tr>
-      <td>{{ row['table_name'] }}</td>
-      <td>{{ row['source'] }}</td>
-      <td>{{ row['last_synced_at'] }}</td>
-      <td>{{ row['row_count'] }}</td>
-      <td>{{ row['notes'] }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr><th>Table</th><th>Source</th><th>Last synced</th><th>Rows</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      {% for row in sync_log %}
+      <tr>
+        <td>{{ row['table_name'] }}</td>
+        <td>{{ row['source'] }}</td>
+        <td>{{ row['last_synced_at'] }}</td>
+        <td>{{ row['row_count'] }}</td>
+        <td>{{ row['notes'] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endblock %}

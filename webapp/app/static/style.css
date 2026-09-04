@@ -397,3 +397,257 @@ button:hover { opacity: 0.85; }
 .footer-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--yellow); }
 .footer-dot:nth-child(2) { background: var(--green); }
 .footer-dot:nth-child(3) { background: var(--sky); }
+
+/* =========================================================================
+   Mobile / narrow-viewport layer
+   =========================================================================
+   Everything above this line is the desktop design (the spec's ~1440px
+   reference width, docs/solaris-design-spec.md). None of it was responsive:
+   there were no media queries at all, so a phone got the desktop layout
+   scaled down, which broke the games worst of all -- the /games tab row and
+   four game tables overflowed the viewport, every form control sat below
+   iOS's 16px zoom threshold, and Pick'em's two team buttons shared one
+   squeezed table cell so "Kansas City Chiefs (KC)" wrapped over four lines.
+
+   The rules below are additive and phone-only. The design language is
+   unchanged -- still flat fills, square corners, 2.5px ink borders, no
+   shadows; only the *arrangement* changes (rows stack, wide tables become
+   labelled cards, tap targets grow).
+
+   Two shared utilities do most of the work, and any new table can opt in:
+     .table-scroll  wrapper -- table keeps its columns and scrolls sideways
+                    inside its own box, so the page itself never scrolls.
+     .table-stack   on the table -- each row becomes a card and each cell a
+                    "label: value" line, read from the cell's data-label.
+                    Use for tables with inputs or many columns, where
+                    sideways scrolling would hide the thing you need to tap.
+   ------------------------------------------------------------------------- */
+
+/* Wide tables scroll inside their own box at every width -- the page body
+   must never scroll horizontally. Harmless on desktop, where nothing
+   overflows and so nothing scrolls. */
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* Row hover is a mouse affordance; on a touch screen it sticks to whatever
+   you last tapped, so it's gated behind an actual hovering pointer. */
+@media (hover: none) {
+  .data-table tbody tr:hover { background: transparent; }
+}
+
+.tab-settings { margin-left: auto; }
+
+/* Range sliders (the Game Settings year range) -- the checkbox rules already
+   set accent-color, but these were left at the browser default blue, which
+   reads as a foreign control now they run the full width on a phone. */
+input[type="range"] { accent-color: var(--ink); }
+
+/* .stack-form marks the guess/pick forms (Daily Stat Pad, 501, trivia, group
+   draft) whose bare inline `<label>Year <input></label>` markup runs the
+   fields together mid-sentence on a narrow screen. It is deliberately a
+   no-op at desktop width -- that layout was already fine, and restyling it
+   there moved things for no mobile benefit. All of its styling lives in the
+   mobile layer below. */
+
+@media (max-width: 720px) {
+  /* ---- Page chrome -------------------------------------------------------
+     The frame + main padding cost 88px of a 390px screen (23% of it) before
+     any content. Thinner frame, tighter gutters. */
+  .page-frame { padding: 5px; }
+  main { padding: 16px 14px 48px; }
+
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1rem; margin: 24px 0 10px; }
+  .masthead { padding: 18px 0 14px; }
+  .masthead-title { font-size: 1.6rem; }
+
+  /* ---- Top bar -----------------------------------------------------------
+     Eight nav links wrapping into four rows pushed all content below the
+     fold. Nav gets its own full-width row as a single horizontal scroll
+     strip instead. */
+  .topbar { padding: 10px 14px; gap: 8px 10px; }
+  /* Explicit ordering: identity + account actions on the first row, the Team
+     Colors picker (too wide to share it) on the second, nav on the third.
+     Without this the picker and the Log out form each wrapped onto a row of
+     their own, pushing nav to a fourth and the page content off-screen. */
+  .topbar .brand { order: 1; }
+  .topbar-right { order: 2; flex: 1 1 auto; justify-content: flex-end; gap: 8px 10px; }
+  .topbar-right .user-chip { order: 1; }
+  .topbar-right .inline-form { order: 2; }
+  .team-colors-form { order: 3; width: 100%; justify-content: flex-end; }
+  .topbar nav {
+    order: 3; width: 100%; flex-wrap: nowrap;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; gap: 0;
+    border-top: 1.5px solid var(--ink-faint); padding-top: 4px;
+  }
+  .topbar nav::-webkit-scrollbar { display: none; }
+  .topbar nav a { flex: 0 0 auto; margin: 0 18px 0 0; padding: 6px 0; }
+  .topbar-right { gap: 10px; }
+  .team-colors-form select { flex: 0 1 auto; max-width: 60vw; }
+  .link-button { margin-left: 8px; }
+
+  /* ---- Games tab row -----------------------------------------------------
+     The five tabs plus Settings' margin-left:auto forced the row to 481px,
+     i.e. every /games/* page scrolled sideways. Tighter padding fits all
+     five inside 390px; the auto margin goes, and overflow-x is the safety
+     net for narrower phones. */
+  .tabs {
+    flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; gap: 0;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { flex: 0 0 auto; padding: 10px 8px; font-size: 0.85rem; }
+  .tab-settings { margin-left: 0; }
+
+  /* ---- Touch targets & the iOS zoom threshold ----------------------------
+     Every control was 12.8-13.6px, and iOS Safari zooms the whole page in
+     when you focus anything under 16px -- so tapping a Pick'em confidence
+     select or a Fantasy Draft player field zoomed the layout and left it
+     zoomed. 16px stops that; 44px is the usual minimum tap target. */
+  input[type="text"], input[type="number"], input[type="password"],
+  input[type="email"], select, textarea, button,
+  /* These four carry their own font-size, which is more specific than the
+     bare element selectors above and would otherwise still win here. */
+  .team-colors-form select, .filter-bar select, .confidence-select,
+  .stack-form input, .stack-form select, .auth-form input {
+    font-size: 16px;
+  }
+  input[type="text"], input[type="number"], input[type="password"],
+  input[type="email"], select, textarea {
+    min-height: 44px; padding: 8px 10px; max-width: 100%;
+  }
+  button { min-height: 44px; padding: 10px 18px; }
+  /* Log out reads as a text link, not a button, so it keeps its size -- just
+     enough vertical padding to be hittable. */
+  .link-button { min-height: 0; padding: 10px 4px; font-size: 0.9rem; }
+  input[type="range"] { width: 100%; height: 44px; }
+  /* The Team Colors toggle keeps the spec's proportions (38x20, 12px knob,
+     sliding 16px) scaled up to a hittable size on a touch screen. */
+  .toggle-switch { width: 52px; height: 28px; }
+  .toggle-switch::before { top: 2px; left: 2px; width: 18px; height: 18px; }
+  .toggle-switch:checked::before { transform: translateX(22px); }
+  input[type="checkbox"]:not(.toggle-switch) { width: 22px; height: 22px; }
+  .filter-bar .checkbox-label input { width: 22px; height: 22px; }
+  .hint-toggles input { width: 22px; height: 22px; }
+  .hint-toggles { gap: 4px 14px; }
+  .hint-toggles label { min-height: 40px; }
+
+  /* ---- Forms -------------------------------------------------------------
+     Guess/pick forms (Daily Stat Pad, 501, group draft) were bare inline
+     labels, so the year and player fields ran together mid-sentence. They
+     stack full-width instead -- one field per line, then the button. */
+  .filter-bar { gap: 12px; }
+  .filter-bar select { width: 100%; }
+  .stack-form { display: flex; flex-direction: column; align-items: stretch; gap: 12px; }
+  .stack-form label {
+    display: flex; flex-direction: column; gap: 4px; width: 100%;
+    font-size: 0.72rem; color: var(--ink-soft); font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .stack-form input, .stack-form select {
+    width: 100%; background: var(--paper); color: var(--ink);
+    border: 1.5px solid var(--ink); font-family: inherit;
+  }
+  .stack-form button { width: 100%; }
+  .stack-form p { margin: 0; }
+  .auth-form { max-width: none; }
+
+  /* ---- Tables ------------------------------------------------------------
+     Tighter cells so 3-4 column leaderboards fit without wrapping every
+     header word onto its own line. */
+  .data-table { margin-top: 6px; }
+  .data-table th, .data-table td { padding: 8px 10px; font-size: 0.85rem; }
+  .data-table th { font-size: 0.66rem; }
+
+  /* .table-scroll: the table keeps its natural column widths and scrolls
+     inside the box. Without width:max-content a width:100% table just
+     compresses to the container again and nothing ever scrolls. The ink
+     border moves to the wrapper so the frame stays put while it scrolls. */
+  .table-scroll { border: 2.5px solid var(--ink); }
+  .table-scroll > .data-table {
+    width: max-content; min-width: 100%; border: none; margin-top: 0;
+  }
+
+  /* .table-stack: rows become cards, cells become "label: value" lines.
+     thead is redundant once each cell carries its own label. */
+  .table-stack {
+    border: none; background: none; display: block;
+  }
+  .table-stack thead { display: none; }
+  .table-stack tbody, .table-stack tfoot { display: block; }
+  .table-stack tr {
+    display: block; background: var(--paper);
+    border: 2.5px solid var(--ink); margin-bottom: 12px;
+  }
+  .table-stack td {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; text-align: right; padding: 9px 12px;
+    border-bottom: 1.5px solid var(--ink-faint); font-size: 0.9rem;
+  }
+  .table-stack tr td:last-child { border-bottom: none; }
+  .table-stack td::before {
+    content: attr(data-label);
+    flex: 0 0 auto; text-align: left;
+    font-weight: 700; font-size: 0.68rem; text-transform: uppercase;
+    letter-spacing: 0.04em; color: var(--ink-soft);
+  }
+  /* A cell that carries its own heading (or a whole stacked block, like a
+     Pick'em matchup) opts out of the label/value split. */
+  .table-stack td.cell-block { display: block; text-align: left; }
+  .table-stack td.cell-block::before { display: none; }
+  /* Inputs inside a stacked cell take the room left by the label. */
+  .table-stack td input[type="text"],
+  .table-stack td input[type="number"] { flex: 1 1 auto; min-width: 0; }
+  .table-stack tfoot tr { border-top-width: 2.5px; }
+
+  /* ---- Cards -------------------------------------------------------------
+     One column at this width, so the min-width in the auto-fit grids is
+     what pushes them wide; and a card's action button should be as wide as
+     the card rather than a small target in its corner. */
+  .card-grid, .game-card-grid, .stat-grid { grid-template-columns: 1fr; gap: 12px; }
+  .solaris-card, .game-card { padding: 14px; }
+  .solaris-card button, .game-card button, .solaris-card form button { width: 100%; }
+  .solaris-card input[type="text"] { width: 100%; }
+
+  /* Imposter's 10 names were 10 full cards, each holding one small button:
+     ~10 screens of scrolling to play one round. Compact list instead. */
+  .name-grid { gap: 8px; }
+  .name-grid .solaris-card { padding: 8px 10px; border-top-width: 3px; }
+  .name-grid .solaris-card p { margin: 6px 2px; }
+
+  /* ---- Pick'em -----------------------------------------------------------
+     The two team buttons shared one squeezed cell, so full team names wrapped
+     over four lines and each row ran ~180px tall. Stacked full-width instead:
+     the names fit on one line and each button is a comfortable target. */
+  .pickem-matchup { align-items: stretch; gap: 8px; }
+  .pickem-vs { flex-direction: column; align-items: stretch; gap: 6px; }
+  .pickem-team-pick { justify-content: center; min-height: 48px; padding: 10px 12px; }
+  .pickem-at { text-align: center; font-size: 0.72rem; letter-spacing: 0.08em; }
+  .pickem-line, .pickem-kickoff { text-align: center; }
+  .confidence-select { width: auto; min-width: 76px; }
+
+  /* Group mode: the host ticks one box per participant per clue, so those
+     boxes are the whole interaction -- give them room. */
+  .group-check-table td:last-child { text-align: center; }
+  .group-check-table input[type="checkbox"] { width: 28px; height: 28px; }
+
+  .prob-bar { width: 100%; max-width: 140px; }
+  .empty-state, .notice { padding: 14px; }
+  .site-footer { padding: 12px 14px; }
+}
+
+/* Small phones (<=380px): the tab row and long team names are the two things
+   that still crowd at this width. */
+@media (max-width: 380px) {
+  .tab { padding: 9px 6px; font-size: 0.8rem; }
+  .brand-tagline { display: none; }
+  .data-table th, .data-table td { padding: 7px 8px; }
+}
+
+/* Smallest supported phones (<=340px, e.g. an iPhone SE 1st gen at 320px):
+   just enough to keep all five game tabs on screen rather than clipping
+   "Settings" mid-word. Below this the strip still scrolls. */
+@media (max-width: 340px) {
+  .tab { padding: 9px 4px; font-size: 0.78rem; }
+  main { padding: 14px 10px 40px; }
+}

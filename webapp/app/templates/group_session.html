@@ -10,7 +10,7 @@
 </div>
 <form method="post" action="/games/group/session/{{ session['session_id'] }}/reveal">
   <input type="hidden" name="item_key" value="{{ item['item_key'] }}">
-  <table class="data-table">
+  <table class="data-table group-check-table">
     <thead><tr><th>Participant</th><th>Got it right?</th></tr></thead>
     <tbody>
       {% for p in participants %}

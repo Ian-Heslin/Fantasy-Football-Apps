@@ -36,21 +36,23 @@
 {% if not rows %}
 <div class="empty-state"><p>No coaching data loaded -- run <code>scripts/load_coaching_and_offense.py</code>.</p></div>
 {% else %}
-<table class="data-table">
-  <thead>
-    <tr><th>Coach</th><th>Seasons (HC/OC)</th><th>First</th><th>Last</th><th>Avg offense %ile</th></tr>
-  </thead>
-  <tbody>
-    {% for r in rows %}
-    <tr>
-      <td><a href="/coaches/{{ r['coach_name'] }}">{{ r['coach_name'] }}</a></td>
-      <td>{{ r['n_seasons'] }}</td>
-      <td>{{ r['first_season'] }}</td>
-      <td>{{ r['last_season'] }}</td>
-      <td>{{ '%.0f%%'|format(r['avg_epa_pctile'] * 100) if r['avg_epa_pctile'] is not none else '—' }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr><th>Coach</th><th>Seasons (HC/OC)</th><th>First</th><th>Last</th><th>Avg offense %ile</th></tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td><a href="/coaches/{{ r['coach_name'] }}">{{ r['coach_name'] }}</a></td>
+        <td>{{ r['n_seasons'] }}</td>
+        <td>{{ r['first_season'] }}</td>
+        <td>{{ r['last_season'] }}</td>
+        <td>{{ '%.0f%%'|format(r['avg_epa_pctile'] * 100) if r['avg_epa_pctile'] is not none else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endif %}
 {% endblock %}

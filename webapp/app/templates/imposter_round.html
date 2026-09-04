@@ -8,7 +8,8 @@
 <p class="subtle">Correct so far: {{ round['correct_count'] }} / 9</p>
 {% endif %}
 
-<div class="card-grid">
+{# name-grid: compact rows on a phone rather than ten full-height cards #}
+<div class="card-grid name-grid">
   {% for n in names %}
   <div class="solaris-card">
     {% if n['clicked'] %}

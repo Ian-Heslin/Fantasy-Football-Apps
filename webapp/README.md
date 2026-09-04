@@ -137,6 +137,52 @@ other page uses the same tokens/components (cards, badges, status dots,
 tables, buttons, the toggle switch) for a consistent look, without
 necessarily matching a layout the spec never drew.
 
+### Phones (the mobile layer)
+
+The design above is the desktop layout, and for a long time it was the only
+one -- `style.css` had no media queries, so a phone rendered the 1440px
+design as-is. The games suffered most: the `/games` tab row and four game
+tables ran off the side of the screen, every form control sat under iOS's
+16px zoom threshold, and Pick'em put both team buttons in one squeezed table
+cell so team names wrapped over four lines.
+
+There's now a **mobile layer at the bottom of `style.css`**, breaking at
+**720px** (plus small tweaks at 380px and 340px). It's additive and
+phone-only: 16 of the 17 game/hub pages render pixel-identically on desktop
+before and after it (the one intended desktop change is the Game Settings
+year sliders picking up `accent-color: var(--ink)` instead of browser blue).
+`docs/solaris-design-spec.md` §4 has the full list of what it changes.
+
+Two table utilities do most of the work, and **a new table should pick one**:
+
+| Utility | Where it goes | Behaviour on a phone | Use for |
+| --- | --- | --- | --- |
+| `.table-scroll` | wrapper `<div>` | table keeps its columns, scrolls inside its own box | read-only, many-column tables (Teams, Arbitrage, Predictions) |
+| `.table-stack` | on the `<table>` | each row becomes a card, each cell a "label: value" line from its `data-label` | tables with inputs or a cell you must tap (Fantasy Draft, Pick'em picks, group draft, 501, trivia) |
+
+`.table-stack` reads its labels from `data-label` on each `<td>`, so **adding
+a column means adding its `data-label` too** or that cell loses its heading
+on a phone. A cell that carries its own heading, or holds a whole stacked
+block like a Pick'em matchup, opts out with `.cell-block`.
+
+Two things worth knowing before touching this layer:
+
+- **16px on controls isn't cosmetic.** iOS Safari zooms the whole page in
+  when you focus an input under 16px and leaves it zoomed. Four selectors
+  (`.team-colors-form select`, `.filter-bar select`, `.confidence-select`,
+  `.stack-form input/select`) set their own font-size, so they're named
+  explicitly in the mobile block -- a bare `select { font-size: 16px }`
+  loses to them on specificity.
+- **The Settings tab's `margin-left: auto` lives in `.tab-settings`**, not an
+  inline `style=` on the macro. An inline style can't be overridden by a
+  media query, and that auto margin is what pushed the tab row past the
+  viewport on every `/games/*` page.
+
+`.stack-form` marks the guess/pick forms whose bare inline
+`<label>Year <input></label>` markup runs together on a narrow screen (Daily
+Stat Pad, 501, trivia, group draft). It is deliberately a **no-op above
+720px** -- the desktop layout of those forms was already fine.
+
 ## Pages
 
 - **`/`** -- data freshness dashboard (reads `sync_log`) and quick counts.

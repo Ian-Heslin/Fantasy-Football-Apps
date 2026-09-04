@@ -18,25 +18,27 @@
   <code>scripts/load_{{ league['platform'] }}.py --history</code> to pull it in.</p>
 </div>
 {% else %}
-<table class="data-table">
-  <thead>
-    <tr>
-      <th>Season</th><th>Rank</th><th>Team</th><th>Record</th><th>PF</th><th>PA</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for r in rows %}
-    <tr>
-      <td>{{ r['season'] }}</td>
-      <td>{{ r['final_rank'] }}</td>
-      <td>{{ r['owner_name'] or ('Team ' + r['roster_id']) }}</td>
-      <td>{{ r['wins'] }}-{{ r['losses'] }}{{ '-' + r['ties']|string if r['ties'] else '' }}</td>
-      <td>{{ '%.1f'|format(r['points_for']) if r['points_for'] is not none else '—' }}</td>
-      <td>{{ '%.1f'|format(r['points_against']) if r['points_against'] is not none else '—' }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Season</th><th>Rank</th><th>Team</th><th>Record</th><th>PF</th><th>PA</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r['season'] }}</td>
+        <td>{{ r['final_rank'] }}</td>
+        <td>{{ r['owner_name'] or ('Team ' + r['roster_id']) }}</td>
+        <td>{{ r['wins'] }}-{{ r['losses'] }}{{ '-' + r['ties']|string if r['ties'] else '' }}</td>
+        <td>{{ '%.1f'|format(r['points_for']) if r['points_for'] is not none else '—' }}</td>
+        <td>{{ '%.1f'|format(r['points_against']) if r['points_against'] is not none else '—' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endif %}
 {% endif %}
 {% endblock %}

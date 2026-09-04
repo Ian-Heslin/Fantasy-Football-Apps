@@ -38,37 +38,39 @@
   <code>scripts/load_{{ league['platform'] }}.py</code> to pull it in.</p>
 </div>
 {% else %}
-<table class="data-table">
-  <thead>
-    <tr>
-      <th>Player</th><th>Pos</th><th>Team</th>
-      <th>Value ({{ 'SF' if league['format'] == 'SF' else '1QB' }})</th>
-      <th>Signal</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for p in players %}
-    <tr>
-      <td>{{ p['name'] }}</td>
-      <td>{{ p['position'] }}</td>
-      <td>{{ p['team'] }}</td>
-      <td>{{ '%.0f'|format(p['value_2qb'] if league['format'] == 'SF' else p['value_1qb']) if (p['value_2qb'] if league['format'] == 'SF' else p['value_1qb']) is not none else '—' }}</td>
-      <td>
-        {% if p['signal'] %}
-          <span class="badge badge-{{ p['signal']|lower|replace('_', '-') }}">
-            {{ signal_labels.get(p['signal'], p['signal']) }}
-          </span>
-          {% if p['gap'] is not none %}
-            <span class="subtle">({{ '%+.0f%%'|format(p['gap'] * 100) }})</span>
+<div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Player</th><th>Pos</th><th>Team</th>
+        <th>Value ({{ 'SF' if league['format'] == 'SF' else '1QB' }})</th>
+        <th>Signal</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in players %}
+      <tr>
+        <td>{{ p['name'] }}</td>
+        <td>{{ p['position'] }}</td>
+        <td>{{ p['team'] }}</td>
+        <td>{{ '%.0f'|format(p['value_2qb'] if league['format'] == 'SF' else p['value_1qb']) if (p['value_2qb'] if league['format'] == 'SF' else p['value_1qb']) is not none else '—' }}</td>
+        <td>
+          {% if p['signal'] %}
+            <span class="badge badge-{{ p['signal']|lower|replace('_', '-') }}">
+              {{ signal_labels.get(p['signal'], p['signal']) }}
+            </span>
+            {% if p['gap'] is not none %}
+              <span class="subtle">({{ '%+.0f%%'|format(p['gap'] * 100) }})</span>
+            {% endif %}
+          {% else %}
+            <span class="subtle">&mdash;</span>
           {% endif %}
-        {% else %}
-          <span class="subtle">&mdash;</span>
-        {% endif %}
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endif %}
 {% endif %}
 {% endblock %}

@@ -12,7 +12,7 @@
 <div class="notice">
   <p><strong>{{ turn_participant['name'] }}'s pick</strong> -- open slots: {{ open_slots|join(', ') }}</p>
 </div>
-<form method="post" action="/games/group/draft/{{ session['session_id'] }}/pick">
+<form class="stack-form" method="post" action="/games/group/draft/{{ session['session_id'] }}/pick">
   <label>Slot
     <select name="slot">
       {% for s in open_slots %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
@@ -31,17 +31,17 @@
 {% endif %}
 
 <h2>Draft board</h2>
-<table class="data-table">
+<table class="data-table table-stack">
   <thead><tr><th>#</th><th>Participant</th><th>Slot</th><th>Year</th><th>Player</th><th>Points</th></tr></thead>
   <tbody>
     {% for pick in picks %}
     <tr>
-      <td>{{ pick['pick_order'] }}</td>
-      <td>{{ standings|selectattr('participant_id', 'equalto', pick['participant_id'])|map(attribute='name')|first }}</td>
-      <td>{{ pick['slot'] }}</td>
-      <td>{{ pick['year'] }}</td>
-      <td>{{ pick['player'] }}</td>
-      <td>{{ '%.1f'|format(pick['points']) if pick['points'] is not none else '—' }}</td>
+      <td data-label="Pick">{{ pick['pick_order'] }}</td>
+      <td data-label="Participant">{{ standings|selectattr('participant_id', 'equalto', pick['participant_id'])|map(attribute='name')|first }}</td>
+      <td data-label="Slot">{{ pick['slot'] }}</td>
+      <td data-label="Year">{{ pick['year'] }}</td>
+      <td data-label="Player">{{ pick['player'] }}</td>
+      <td data-label="Points">{{ '%.1f'|format(pick['points']) if pick['points'] is not none else '—' }}</td>
     </tr>
     {% endfor %}
   </tbody>
