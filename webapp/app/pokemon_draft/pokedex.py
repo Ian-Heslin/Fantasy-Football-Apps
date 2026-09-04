@@ -34,3 +34,16 @@ def search(conn, query=None, generation=None, page=1):
 
 def generations(conn):
     return [r[0] for r in conn.execute("SELECT DISTINCT generation FROM pokemon ORDER BY generation")]
+
+
+def find_by_species_name(conn, species_name):
+    """Best-effort match of a Pokemon Showdown battle-log species string
+    (e.g. 'Landorus-Therian', from app/pokemon_draft/replay.py's parser)
+    to a pokemon_id, or None if nothing matches. Callers skip an
+    unmatched stat entry rather than fail an entire replay import over
+    one unrecognized name -- most commonly a cosmetic-only form Showdown
+    tracks (e.g. a Pikachu cosplay form) that isn't a separate PokeAPI
+    entry."""
+    slug = species_name.strip().lower().replace(" ", "-").replace("'", "").replace(".", "")
+    row = conn.execute("SELECT pokemon_id FROM pokemon WHERE slug = ?", (slug,)).fetchone()
+    return row["pokemon_id"] if row else None

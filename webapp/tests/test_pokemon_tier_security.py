@@ -339,8 +339,11 @@ def _scheduled_match():
     from app.pokemon_draft import seasons as pk_seasons
 
     conn = db.get_connection()
+    # INSERT OR IGNORE: _scheduled_match() may be called more than once in a
+    # single test (independent matches for independent scenarios), and this
+    # shared static pokemon data only needs to exist once.
     conn.executemany(
-        """INSERT INTO pokemon (pokemon_id, species_id, slug, display_name, national_dex_number,
+        """INSERT OR IGNORE INTO pokemon (pokemon_id, species_id, slug, display_name, national_dex_number,
                generation, type1, base_hp, base_atk, base_def, base_spa, base_spd, base_spe)
            VALUES (?, ?, ?, ?, ?, 1, 'normal', 50, 50, 50, 50, 50, 50)""",
         [(i, i, f"mon{i}", f"Mon{i}", i) for i in range(1, 3)],
@@ -428,3 +431,55 @@ def test_nonexistent_match_does_not_500(attacker):
     r = attacker.post("/pokemon/seasons/1/matches/999999/confirm", follow_redirects=False)
     assert r.status_code == 303
     assert "error=" in r.headers["location"]
+
+
+# =====================================================================
+# 6. Reporting a game via a Showdown replay link
+# =====================================================================
+
+def test_reporting_via_replay_link_populates_stats(attacker, monkeypatch):
+    from app.pokemon_draft import replay as pk_replay
+
+    (season_id, match_id, commissioner_id, commissioner_coach_id,
+     attacker_id, attacker_coach_id) = _scheduled_match()
+
+    log = """|player|p1|Commissioner's Team|266|1000
+|player|p2|Attacker's Team|265|1000
+|switch|p1a: Mon1|Mon1, L50|100/100
+|switch|p2a: Mon2|Mon2, L50|100/100
+|move|p1a: Mon1|Tackle|p2a: Mon2
+|-damage|p2a: Mon2|0 fnt
+|faint|p2a: Mon2
+|win|Commissioner's Team"""
+    monkeypatch.setattr(pk_replay, "fetch_replay_json",
+                         lambda url: {"log": log, "uploadtime": 42})
+
+    r = attacker.post(f"/pokemon/seasons/{season_id}/matches/{match_id}/report", data={
+        "replay_url_1": "https://replay.pokemonshowdown.com/gen9ou-1",
+        "replay_home_is_p1_1": "1",
+    }, follow_redirects=False)
+    assert r.status_code == 303 and "error" not in r.headers["location"]
+    row = query("SELECT status, winner_coach_id FROM pokemon_matches WHERE match_id = ?", (match_id,))[0]
+    assert row["status"] == "pending_confirmation"
+    assert row["winner_coach_id"] == commissioner_coach_id
+    game = query("SELECT entry_method, parse_status FROM pokemon_match_games WHERE match_id = ?", (match_id,))[0]
+    assert game["entry_method"] == "replay" and game["parse_status"] == "parsed"
+    stats = query("SELECT count(*) c FROM pokemon_match_stats")[0]["c"]
+    assert stats == 2  # Mon1's kill row + Mon2's death row
+
+
+def test_a_replay_fetch_failure_writes_nothing(attacker, monkeypatch):
+    from app.pokemon_draft import replay as pk_replay
+
+    (season_id, match_id, *_rest) = _scheduled_match()
+    monkeypatch.setattr(pk_replay, "fetch_replay_json",
+                         lambda url: (_ for _ in ()).throw(pk_replay.ReplayFetchError("timed out")))
+
+    r = attacker.post(f"/pokemon/seasons/{season_id}/matches/{match_id}/report", data={
+        "replay_url_1": "https://replay.pokemonshowdown.com/gen9ou-2",
+        "replay_home_is_p1_1": "1",
+    }, follow_redirects=False)
+    assert "error=" in r.headers["location"]
+    row = query("SELECT status FROM pokemon_matches WHERE match_id = ?", (match_id,))[0]
+    assert row["status"] == "unreported"
+    assert query("SELECT count(*) c FROM pokemon_match_games WHERE match_id = ?", (match_id,))[0]["c"] == 0

@@ -1,10 +1,13 @@
 """Match report/confirm/dispute state machine. A "match" is one Bo3
 series between the two coaches in a pokemon_schedule row; individual
 games (pokemon_match_games) and per-Pokemon K/D (pokemon_match_stats) are
-source-agnostic -- this phase only ever writes them from a hand-typed
-report ('manual' entry_method); a later phase adds Showdown replay
-parsing as an alternate way to populate the exact same rows without
-touching this state machine at all.
+source-agnostic -- this module accepts a `games` payload built either from
+a hand-typed report ('manual' entry_method) or from a parsed Showdown
+replay link (see app/pokemon_draft/replay.py's build_game_from_replay(),
+'replay' entry_method) without needing to know or care which. The route
+layer resolves replay URLs into the same games-payload shape before
+calling report_match()/resolve_dispute() -- this state machine itself
+never fetches anything.
 
 State machine: unreported -> pending_confirmation (either coach reports)
 -> confirmed (the OTHER coach confirms) or disputed (the other coach
@@ -102,9 +105,13 @@ def _write_result(conn, match_id, games):
     conn.execute("DELETE FROM pokemon_match_games WHERE match_id = ?", (match_id,))
     for i, g in enumerate(games, start=1):
         cur = conn.execute(
-            "INSERT INTO pokemon_match_games (match_id, game_num, entry_method, winner_coach_id) "
-            "VALUES (?, ?, 'manual', ?)",
-            (match_id, i, g["winner_coach_id"]),
+            """INSERT INTO pokemon_match_games
+                   (match_id, game_num, entry_method, winner_coach_id, replay_url,
+                    replay_battle_id, parse_status, parse_error, raw_log_uploadtime)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (match_id, i, g.get("entry_method", "manual"), g["winner_coach_id"],
+             g.get("replay_url"), g.get("replay_battle_id"), g.get("parse_status"),
+             g.get("parse_error"), g.get("raw_log_uploadtime")),
         )
         game_id = cur.lastrowid
         for s in g["stats"]:

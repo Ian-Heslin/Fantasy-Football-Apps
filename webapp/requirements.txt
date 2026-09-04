@@ -6,3 +6,6 @@ duckdb
 bcrypt          # password hashing (app/auth.py)
 itsdangerous    # signs session cookies (starlette.middleware.sessions.SessionMiddleware)
 python-multipart  # needed to parse HTML <form> POSTs (login/signup/picks/etc.)
+requests        # outbound HTTP for the running app itself (Pokemon Draft League's
+                # Showdown replay fetch and Smogon usage-stat fetch) -- previously only
+                # the offline fantasy-football-db/scripts/*.py loaders made outbound calls

@@ -10,6 +10,7 @@ from app.auth import require_tier
 from app.common import db_missing_response
 from app.db import get_connection
 from app.pokemon_draft import matches as pk_matches
+from app.pokemon_draft import replay as pk_replay
 from app.pokemon_draft import roster as pk_roster
 from app.pokemon_draft import schedule as pk_schedule
 from app.pokemon_draft import seasons as pk_seasons
@@ -80,13 +81,32 @@ def clear_schedule(request: Request, season_id: int):
 # Match report / confirm / dispute / resolve
 # ---------------------------------------------------------------------
 
-def _parse_games_from_form(form, match, home_roster, away_roster):
-    """Reads winner_1..3 (home/away) and kills_/deaths_{game}_{coach_id}_
-    {pokemon_id} fields into matches.py's games payload shape. A roster
-    row with both kills and deaths left blank is treated as "didn't play"
-    -- no stats row, not a zero row (matches the schema's own convention)."""
+def _parse_games_from_form(conn, form, match, home_roster, away_roster):
+    """(games, None) on success or (None, error string) on failure --
+    reads game 1..3's input in one of two ways, checked in order:
+
+    1. A "replay_url_{g}" field, if filled -- fetched and parsed via
+       app/pokemon_draft/replay.py, using "replay_home_is_p1_{g}" (a "1"
+       checkbox value) to map Showdown's p1/p2 sides onto our home/away
+       coaches. A fetch/parse failure here aborts the WHOLE report with
+       that error, before anything is written -- same "nothing saved on
+       error" contract report_match()/resolve_dispute() already have.
+    2. Otherwise, the manual entry fields: winner_{g} (home/away) plus
+       kills_/deaths_{g}_{coach_id}_{pokemon_id} per roster row. A row
+       with both kills and deaths left blank is treated as "didn't play"
+       -- no stats row, not a zero row (matches the schema's convention)."""
     games = []
     for g in (1, 2, 3):
+        replay_url = (form.get(f"replay_url_{g}") or "").strip()
+        if replay_url:
+            home_is_p1 = form.get(f"replay_home_is_p1_{g}") == "1"
+            game, error = pk_replay.build_game_from_replay(
+                conn, replay_url, match["coach_id_home"], match["coach_id_away"], home_is_p1)
+            if error:
+                return None, f"Game {g} replay: {error}"
+            games.append(game)
+            continue
+
         winner_side = form.get(f"winner_{g}")
         if winner_side not in ("home", "away"):
             continue
@@ -105,7 +125,7 @@ def _parse_games_from_form(form, match, home_roster, away_roster):
                     "kills": int(k) if k else 0, "deaths": int(d) if d else 0,
                 })
         games.append({"winner_coach_id": winner_coach_id, "stats": stats})
-    return games
+    return games, None
 
 
 @router.get("/seasons/{season_id}/matches/{match_id}", response_class=HTMLResponse)
@@ -154,8 +174,9 @@ async def report_match(request: Request, season_id: int, match_id: int):
             return RedirectResponse(f"/pokemon/seasons/{season_id}/schedule", status_code=303)
         home_roster = pk_roster.current_roster_with_pokemon(conn, season_id, match["coach_id_home"])
         away_roster = pk_roster.current_roster_with_pokemon(conn, season_id, match["coach_id_away"])
-        games = _parse_games_from_form(form, match, home_roster, away_roster)
-        error = pk_matches.report_match(conn, match_id, user["user_id"], games)
+        games, error = _parse_games_from_form(conn, form, match, home_roster, away_roster)
+        if error is None:
+            error = pk_matches.report_match(conn, match_id, user["user_id"], games)
     finally:
         conn.close()
     dest = f"/pokemon/seasons/{season_id}/matches/{match_id}"
@@ -207,8 +228,9 @@ async def resolve_dispute(request: Request, season_id: int, match_id: int):
             return RedirectResponse(f"/pokemon/seasons/{season_id}/schedule", status_code=303)
         home_roster = pk_roster.current_roster_with_pokemon(conn, season_id, match["coach_id_home"])
         away_roster = pk_roster.current_roster_with_pokemon(conn, season_id, match["coach_id_away"])
-        games = _parse_games_from_form(form, match, home_roster, away_roster)
-        error = pk_matches.resolve_dispute(conn, match_id, user["user_id"], form.get("note", ""), games)
+        games, error = _parse_games_from_form(conn, form, match, home_roster, away_roster)
+        if error is None:
+            error = pk_matches.resolve_dispute(conn, match_id, user["user_id"], form.get("note", ""), games)
     finally:
         conn.close()
     dest = f"/pokemon/seasons/{season_id}/matches/{match_id}"

@@ -9,6 +9,13 @@
   {% for g in [1, 2, 3] %}
   <h3>Game {{ g }}</h3>
   <p>
+    <label>Pokemon Showdown replay link (optional -- fills in the winner and stats below automatically)<br>
+      <input type="text" name="replay_url_{{ g }}" placeholder="https://replay.pokemonshowdown.com/..." style="width:28em"></label>
+    <br><label><input type="checkbox" name="replay_home_is_p1_{{ g }}" value="1" checked>
+      {{ match['home_team'] }} was Player 1 in that replay</label>
+  </p>
+  <p class="subtle">Only needed if you're not pasting a replay link above:</p>
+  <p>
     Winner:
     <label><input type="radio" name="winner_{{ g }}" value="home"> {{ match['home_team'] }}</label>
     <label><input type="radio" name="winner_{{ g }}" value="away"> {{ match['away_team'] }}</label>
@@ -102,7 +109,13 @@
   {% if game['winner_coach_id'] %}-- winner:
     {{ match['home_team'] if game['winner_coach_id'] == match['coach_id_home'] else match['away_team'] }}
   {% endif %}
+  {% if game['entry_method'] == 'replay' %}
+  <span class="badge badge-outline">via replay</span>
+  {% endif %}
 </h3>
+{% if game['replay_url'] %}
+<p class="subtle"><a href="{{ game['replay_url'] }}" target="_blank" rel="noopener">View replay &rarr;</a></p>
+{% endif %}
 {% if stats %}
 <div class="table-scroll">
   <table class="data-table">
