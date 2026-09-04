@@ -326,6 +326,26 @@ Restart the app (after a `git pull` or new database files):
 sudo systemctl restart fantasyfootball.service
 ```
 
+Then check the tunnel is still up -- `curl -sS -o /dev/null -w '%{http_code}\n'
+https://solarisfantasyfootball.com/login` should give 200, not a Cloudflare
+error page:
+
+```bash
+systemctl is-active cloudflared-tunnel.service    # expect: active
+```
+
+Both cloudflared units used to declare `Requires=fantasyfootball.service`,
+which propagates *stops*: restarting the app stopped the tunnel with it and
+did not bring it back, so the site served Cloudflare **error 1033** until
+someone restarted the tunnel by hand. They now use `Wants=` instead, so an
+app restart leaves the tunnel alone. If you're on a Pi set up before that
+change, reinstall the tunnel unit (below) or the old behaviour persists in
+`/etc/systemd/system/`. Either way, if the site is down after a restart:
+
+```bash
+sudo systemctl restart cloudflared-tunnel.service
+```
+
 Restart the tunnel (gets you a fresh quick-tunnel URL):
 
 ```bash

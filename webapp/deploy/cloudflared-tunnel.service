@@ -8,7 +8,14 @@
 Description=Cloudflare Tunnel (named) for Fantasy Football web app
 After=network-online.target fantasyfootball.service
 Wants=network-online.target
-Requires=fantasyfootball.service
+# Wants=, NOT Requires=. Requires= propagates *stops*: `systemctl restart
+# fantasyfootball.service` stops the app, which drags this unit down with
+# it -- and restarting the app does not bring its dependents back, so the
+# tunnel just stays dead and the site serves Cloudflare error 1033 until
+# someone notices. Confirmed the hard way after an ordinary app restart.
+# Wants= keeps the "start the app alongside this" intent, and After=
+# above still guarantees the ordering, without the stop propagation.
+Wants=fantasyfootball.service
 StartLimitIntervalSec=600
 StartLimitBurst=5
 

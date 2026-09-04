@@ -11,7 +11,10 @@
 Description=Cloudflare Tunnel (quick tunnel) for Fantasy Football web app
 After=network-online.target fantasyfootball.service
 Wants=network-online.target
-Requires=fantasyfootball.service
+# Wants=, not Requires= -- see cloudflared-tunnel.service for why
+# (Requires= propagates stops, so an app restart silently kills the
+# tunnel and leaves the site serving Cloudflare error 1033).
+Wants=fantasyfootball.service
 # Give up after 3 failures within 10 minutes rather than restarting
 # forever -- see RestartSec below for why that matters here.
 StartLimitIntervalSec=600
