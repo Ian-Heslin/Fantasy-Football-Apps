@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}{{ match['home_team'] }} vs {{ match['away_team'] }}{% endblock %}
+{% block content %}
+{% macro kd_grid(action_url, submit_label, note_field=false) %}
+<form method="post" action="{{ action_url }}">
+  {% if note_field %}
+  <p><label>Resolution note<br><textarea name="note" rows="2" cols="60"></textarea></label></p>
+  {% endif %}
+  {% for g in [1, 2, 3] %}
+  <h3>Game {{ g }}</h3>
+  <p>
+    Winner:
+    <label><input type="radio" name="winner_{{ g }}" value="home"> {{ match['home_team'] }}</label>
+    <label><input type="radio" name="winner_{{ g }}" value="away"> {{ match['away_team'] }}</label>
+    <label><input type="radio" name="winner_{{ g }}" value="" checked> not played</label>
+  </p>
+  <div class="table-scroll">
+    <table class="data-table">
+      <thead><tr><th>Team</th><th>Pokemon</th><th>Kills</th><th>Deaths</th></tr></thead>
+      <tbody>
+        {% for r in home_roster %}
+        <tr>
+          <td>{{ match['home_team'] }}</td>
+          <td>{{ r['display_name'] }}</td>
+          <td><input type="number" name="kills_{{ g }}_{{ match['coach_id_home'] }}_{{ r['pokemon_id'] }}" min="0" style="width:4em"></td>
+          <td><input type="number" name="deaths_{{ g }}_{{ match['coach_id_home'] }}_{{ r['pokemon_id'] }}" min="0" max="1" style="width:4em"></td>
+        </tr>
+        {% endfor %}
+        {% for r in away_roster %}
+        <tr>
+          <td>{{ match['away_team'] }}</td>
+          <td>{{ r['display_name'] }}</td>
+          <td><input type="number" name="kills_{{ g }}_{{ match['coach_id_away'] }}_{{ r['pokemon_id'] }}" min="0" style="width:4em"></td>
+          <td><input type="number" name="deaths_{{ g }}_{{ match['coach_id_away'] }}_{{ r['pokemon_id'] }}" min="0" max="1" style="width:4em"></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endfor %}
+  <p class="subtle">Leave a Pokemon's kills and deaths both blank if it didn't play that game.
+    Fill in at least the first game's winner -- the 2nd/3rd are optional if the series didn't need them.</p>
+  <p><button type="submit">{{ submit_label }}</button></p>
+</form>
+{% endmacro %}
+
+<h1>{{ match['home_team'] }} vs {{ match['away_team'] }}</h1>
+<p class="subtle"><a href="/pokemon/seasons/{{ season_id }}/schedule">&larr; Schedule</a>
+  {% if match['week'] %}&middot; Week {{ match['week'] }}{% endif %}</p>
+
+{% if error %}
+<div class="notice notice-error"><p>{{ error }}</p></div>
+{% endif %}
+
+<p>Status:
+  <span class="badge {{ 'badge-secondary' if match['status'] == 'confirmed' else ('badge-outline' if match['status'] == 'unreported' else 'badge-primary') }}">
+    {{ match['status'] }}
+  </span>
+</p>
+
+{% if match['status'] == 'unreported' %}
+  {% if is_my_matchup %}
+  <h2>Report result</h2>
+  {{ kd_grid('/pokemon/seasons/' ~ season_id ~ '/matches/' ~ match['match_id'] ~ '/report', 'Submit report') }}
+  {% else %}
+  <div class="empty-state"><p>Not reported yet.</p></div>
+  {% endif %}
+
+{% elif match['status'] == 'pending_confirmation' %}
+  {% if is_reporter %}
+  <div class="notice"><p>Waiting on the other coach to confirm or dispute this result.</p></div>
+  {% elif is_my_matchup %}
+  <h2>Confirm or dispute</h2>
+  <p class="subtle">See the reported result below. If that's not what happened, dispute it with a reason
+    and your commissioner will step in.</p>
+  <form method="post" action="/pokemon/seasons/{{ season_id }}/matches/{{ match['match_id'] }}/confirm" class="inline-form">
+    <button type="submit">Confirm this result</button>
+  </form>
+  <form method="post" action="/pokemon/seasons/{{ season_id }}/matches/{{ match['match_id'] }}/dispute">
+    <p><textarea name="reason" rows="2" cols="60" placeholder="Why are you disputing this?" required></textarea></p>
+    <button type="submit" class="link-button">Dispute this result</button>
+  </form>
+  {% endif %}
+
+{% elif match['status'] == 'disputed' %}
+  <div class="notice notice-error"><p><strong>Disputed:</strong> {{ match['dispute_reason'] }}</p></div>
+  {% if is_commissioner %}
+  <h2>Resolve dispute</h2>
+  <p class="subtle">Submit the corrected result -- this replaces whatever was reported before.</p>
+  {{ kd_grid('/pokemon/seasons/' ~ season_id ~ '/matches/' ~ match['match_id'] ~ '/resolve', 'Resolve with this result', note_field=true) }}
+  {% else %}
+  <p class="subtle">Waiting on the commissioner to resolve this.</p>
+  {% endif %}
+{% endif %}
+
+<h2>Result</h2>
+{% if not games_with_stats %}
+<div class="empty-state"><p>No result reported yet.</p></div>
+{% else %}
+{% for game, stats in games_with_stats %}
+<h3>Game {{ game['game_num'] }}
+  {% if game['winner_coach_id'] %}-- winner:
+    {{ match['home_team'] if game['winner_coach_id'] == match['coach_id_home'] else match['away_team'] }}
+  {% endif %}
+</h3>
+{% if stats %}
+<div class="table-scroll">
+  <table class="data-table">
+    <thead><tr><th>Pokemon</th><th>Kills</th><th>Deaths</th></tr></thead>
+    <tbody>
+      {% for s in stats %}
+      <tr><td>{{ s['display_name'] }}</td><td>{{ s['kills'] }}</td><td>{{ s['deaths'] }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endfor %}
+{% if match['status'] == 'confirmed' and match['dispute_resolution_note'] %}
+<p class="subtle">Resolved by the commissioner: {{ match['dispute_resolution_note'] }}</p>
+{% endif %}
+{% endif %}
+{% endblock %}

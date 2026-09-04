@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ season['name'] }}: Schedule{% endblock %}
+{% block content %}
+<h1>{{ season['name'] }}: Schedule</h1>
+<p class="subtle"><a href="/pokemon/seasons/{{ season['season_id'] }}">&larr; {{ season['name'] }}</a></p>
+
+{% if not weeks %}
+<div class="empty-state"><p>No schedule yet.</p></div>
+{% if is_commissioner %}
+<form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/schedule/generate">
+  <label>Weeks <input type="number" name="num_weeks" value="7" min="1" style="width:4em"></label>
+  <button type="submit">Generate schedule</button>
+</form>
+{% endif %}
+{% else %}
+{% for week, rows in weeks.items() %}
+<h2>Week {{ week }}</h2>
+<div class="table-scroll">
+  <table class="data-table">
+    <thead><tr><th>Home</th><th>Away</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r['home_team'] }}</td>
+        <td>{{ r['away_team'] or 'BYE' }}</td>
+        <td>{% if r['status'] %}<span class="badge {{ 'badge-secondary' if r['status']=='confirmed' else 'badge-outline' }}">{{ r['status'] }}</span>{% endif %}</td>
+        <td>{% if r['match_id'] %}<a href="/pokemon/seasons/{{ season['season_id'] }}/matches/{{ r['match_id'] }}">View</a>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endfor %}
+
+{% if is_commissioner %}
+<form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/schedule/clear">
+  <button type="submit" class="link-button">Clear schedule</button>
+</form>
+{% endif %}
+{% endif %}
+{% endblock %}

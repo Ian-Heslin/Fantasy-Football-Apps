@@ -23,7 +23,10 @@ from app.routes import (
     admin, arbitrage, auth, coaches, fantasy_draft, five_oh_one, game_settings, games_hub, group, home,
     imposter, pickem, predictions, profile, rosters, teams, trivia,
 )
-from app.routes.pokemon_draft import draft as pokemon_draft, pokedex as pokemon_pokedex, seasons as pokemon_seasons
+from app.routes.pokemon_draft import (
+    draft as pokemon_draft, pokedex as pokemon_pokedex, schedule as pokemon_schedule,
+    seasons as pokemon_seasons,
+)
 from app.templating import templates
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -113,3 +116,4 @@ app.include_router(game_settings.router)
 app.include_router(pokemon_seasons.router)
 app.include_router(pokemon_pokedex.router)
 app.include_router(pokemon_draft.router)
+app.include_router(pokemon_schedule.router)

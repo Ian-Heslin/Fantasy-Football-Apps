@@ -303,3 +303,128 @@ def test_nonexistent_season_does_not_500_on_pool_or_draft_pages(attacker):
     assert attacker.get("/pokemon/seasons/999999/draft", follow_redirects=False).status_code == 303
     r = attacker.post("/pokemon/seasons/999999/draft/pick", data={"pokemon_id": "1"}, follow_redirects=False)
     assert r.status_code == 303  # redirected with an error, not a 500
+
+
+# =====================================================================
+# 5. Schedule + match report/confirm/dispute/resolve
+# =====================================================================
+
+def test_cannot_generate_or_clear_another_seasons_schedule(attacker):
+    season_id, _ = make_commissioner_season()
+    from app import db
+    from app.pokemon_draft import seasons as pk_seasons
+    conn = db.get_connection()
+    pk_seasons.add_coach(conn, season_id, query("SELECT user_id FROM users WHERE username = ?",
+                                                  (COMMISSIONER,))[0]["user_id"], "Solo Team")
+    conn.close()
+
+    r = attacker.post(f"/pokemon/seasons/{season_id}/schedule/generate",
+                       data={"num_weeks": "3"}, follow_redirects=False)
+    assert r.status_code == 403
+    assert query("SELECT count(*) c FROM pokemon_schedule")[0]["c"] == 0
+
+    r = attacker.post(f"/pokemon/seasons/{season_id}/schedule/clear", follow_redirects=False)
+    assert r.status_code == 403
+
+
+def _scheduled_match():
+    """Commissioner + attacker as the two coaches, drafted, with a
+    generated 1-week schedule -- one unreported match between them.
+    Returns (season_id, match_id, commissioner_id, commissioner_coach_id,
+    attacker_id, attacker_coach_id)."""
+    from app import auth, db
+    from app.pokemon_draft import draft as pk_draft
+    from app.pokemon_draft import draft_pool as pk_pool
+    from app.pokemon_draft import schedule as pk_schedule
+    from app.pokemon_draft import seasons as pk_seasons
+
+    conn = db.get_connection()
+    conn.executemany(
+        """INSERT INTO pokemon (pokemon_id, species_id, slug, display_name, national_dex_number,
+               generation, type1, base_hp, base_atk, base_def, base_spa, base_spd, base_spe)
+           VALUES (?, ?, ?, ?, ?, 1, 'normal', 50, 50, 50, 50, 50, 50)""",
+        [(i, i, f"mon{i}", f"Mon{i}", i) for i in range(1, 3)],
+    )
+    cur = conn.execute(
+        "INSERT INTO users (username, password_hash, tier) VALUES (?, ?, ?)",
+        (COMMISSIONER, auth.hash_password(GOOD_PASSWORD), "games"))
+    commissioner_id = cur.lastrowid
+    attacker_id = query("SELECT user_id FROM users WHERE username = ?", (ATTACKER,))[0]["user_id"]
+
+    pk_seasons.create_format(conn, "gen9ou", "Gen 9 OU", "singles", "", 1, 20, True)
+    season_id, _ = pk_seasons.create_season(conn, "Match Season", "gen9ou", commissioner_id)
+    pk_seasons.add_coach(conn, season_id, commissioner_id, "Commissioner's Team")
+    pk_seasons.add_coach(conn, season_id, attacker_id, "Attacker's Team")
+    coaches = pk_seasons.list_coaches(conn, season_id)
+    commissioner_coach_id = next(c["coach_id"] for c in coaches if c["user_id"] == commissioner_id)
+    attacker_coach_id = next(c["coach_id"] for c in coaches if c["user_id"] == attacker_id)
+    pk_seasons.set_draft_order(conn, season_id, [commissioner_coach_id, attacker_coach_id])
+    pk_pool.add_to_pool(conn, season_id, 1, cost_override=5)
+    pk_pool.add_to_pool(conn, season_id, 2, cost_override=5)
+    pk_seasons.lock_draft_board(conn, season_id)
+    pk_draft.start_draft(conn, season_id)
+    pk_draft.make_pick(conn, season_id, commissioner_id, 1)
+    pk_draft.make_pick(conn, season_id, attacker_id, 2)
+    pk_schedule.generate_schedule(conn, season_id, num_weeks=1)
+    row = pk_schedule.overview(conn, season_id)[0]
+    conn.close()
+    return (season_id, row["match_id"], commissioner_id, commissioner_coach_id,
+            attacker_id, attacker_coach_id)
+
+
+def test_a_non_coach_cannot_report_a_match(attacker):
+    """A third account (not either coach in the matchup) tries to report
+    a result via a direct POST. `attacker` is unused directly (a separate
+    "eve" client is the one attacking) but requesting it is what wires up
+    the isolated throwaway database for this test and creates the
+    ATTACKER account that _scheduled_match() looks up by username."""
+    from app import auth as auth_module
+    from app import db
+    (season_id, match_id, commissioner_id, commissioner_coach_id,
+     attacker_id, attacker_coach_id) = _scheduled_match()
+
+    conn = db.get_connection()
+    cur = conn.execute(
+        "INSERT INTO users (username, password_hash, tier) VALUES (?, ?, ?)",
+        ("eve", auth_module.hash_password(GOOD_PASSWORD), "games"))
+    conn.commit()
+    conn.close()
+
+    from fastapi.testclient import TestClient
+    from app.main import app
+    eve = TestClient(app, base_url="https://testserver")
+    eve.post("/login", data={"username": "eve", "password": GOOD_PASSWORD}, follow_redirects=False)
+
+    r = eve.post(f"/pokemon/seasons/{season_id}/matches/{match_id}/report",
+                 data={"winner_1": "home"}, follow_redirects=False)
+    assert "error=" in r.headers["location"]
+    assert query("SELECT count(*) c FROM pokemon_match_games")[0]["c"] == 0
+
+
+def test_only_commissioner_can_resolve_a_disputed_match(attacker):
+    from app import db
+    from app.pokemon_draft import matches as pk_matches
+
+    (season_id, match_id, commissioner_id, commissioner_coach_id,
+     attacker_id, attacker_coach_id) = _scheduled_match()
+
+    conn = db.get_connection()
+    pk_matches.report_match(conn, match_id, commissioner_id, [
+        {"winner_coach_id": commissioner_coach_id, "stats": []},
+        {"winner_coach_id": commissioner_coach_id, "stats": []},
+    ])
+    pk_matches.dispute_match(conn, match_id, attacker_id, "disagree with this result")
+    conn.close()
+
+    r = attacker.post(f"/pokemon/seasons/{season_id}/matches/{match_id}/resolve",
+                       data={"winner_1": "away", "winner_2": "away"}, follow_redirects=False)
+    assert r.status_code == 403
+    row = query("SELECT status FROM pokemon_matches WHERE match_id = ?", (match_id,))[0]
+    assert row["status"] == "disputed"
+
+
+def test_nonexistent_match_does_not_500(attacker):
+    assert attacker.get("/pokemon/seasons/1/matches/999999", follow_redirects=False).status_code == 303
+    r = attacker.post("/pokemon/seasons/1/matches/999999/confirm", follow_redirects=False)
+    assert r.status_code == 303
+    assert "error=" in r.headers["location"]

@@ -1,0 +1,239 @@
+"""Pokemon Draft League: schedule, match report/confirm/dispute, and
+standings/leaderboard routes. See app/pokemon_draft/{schedule,matches,
+standings}.py for the underlying logic."""
+from urllib.parse import quote
+
+from fastapi import APIRouter, Depends, Form, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
+
+from app.auth import require_tier
+from app.common import db_missing_response
+from app.db import get_connection
+from app.pokemon_draft import matches as pk_matches
+from app.pokemon_draft import roster as pk_roster
+from app.pokemon_draft import schedule as pk_schedule
+from app.pokemon_draft import seasons as pk_seasons
+from app.pokemon_draft import standings as pk_standings
+from app.pokemon_draft.permissions import require_commissioner
+from app.templating import templates
+
+router = APIRouter(prefix="/pokemon", dependencies=[Depends(require_tier("games"))])
+
+
+# ---------------------------------------------------------------------
+# Schedule
+# ---------------------------------------------------------------------
+
+@router.get("/seasons/{season_id}/schedule", response_class=HTMLResponse)
+def schedule_page(request: Request, season_id: int):
+    user = request.state.user
+    try:
+        conn = get_connection()
+    except FileNotFoundError as e:
+        return db_missing_response(request, e)
+    try:
+        season = pk_seasons.get_season(conn, season_id)
+        if season is None:
+            return RedirectResponse("/pokemon/seasons", status_code=303)
+        is_commissioner = user["tier"] == "admin" or user["user_id"] == season["commissioner_user_id"]
+        rows = pk_schedule.overview(conn, season_id)
+    finally:
+        conn.close()
+
+    weeks = {}
+    for r in rows:
+        weeks.setdefault(r["week"], []).append(r)
+
+    return templates.TemplateResponse(
+        request, "pokemon/schedule.html",
+        {"season": season, "is_commissioner": is_commissioner, "weeks": weeks, "error": None},
+    )
+
+
+@router.post("/seasons/{season_id}/schedule/generate", dependencies=[Depends(require_commissioner)])
+def generate_schedule(request: Request, season_id: int, num_weeks: int = Form(...)):
+    try:
+        conn = get_connection()
+    except FileNotFoundError as e:
+        return db_missing_response(request, e)
+    try:
+        pk_schedule.generate_schedule(conn, season_id, num_weeks)
+    finally:
+        conn.close()
+    return RedirectResponse(f"/pokemon/seasons/{season_id}/schedule", status_code=303)
+
+
+@router.post("/seasons/{season_id}/schedule/clear", dependencies=[Depends(require_commissioner)])
+def clear_schedule(request: Request, season_id: int):
+    try:
+        conn = get_connection()
+    except FileNotFoundError as e:
+        return db_missing_response(request, e)
+    try:
+        pk_schedule.clear_schedule(conn, season_id)
+    finally:
+        conn.close()
+    return RedirectResponse(f"/pokemon/seasons/{season_id}/schedule", status_code=303)
+
+
+# ---------------------------------------------------------------------
+# Match report / confirm / dispute / resolve
+# ---------------------------------------------------------------------
+
+def _parse_games_from_form(form, match, home_roster, away_roster):
+    """Reads winner_1..3 (home/away) and kills_/deaths_{game}_{coach_id}_
+    {pokemon_id} fields into matches.py's games payload shape. A roster
+    row with both kills and deaths left blank is treated as "didn't play"
+    -- no stats row, not a zero row (matches the schema's own convention)."""
+    games = []
+    for g in (1, 2, 3):
+        winner_side = form.get(f"winner_{g}")
+        if winner_side not in ("home", "away"):
+            continue
+        winner_coach_id = match["coach_id_home"] if winner_side == "home" else match["coach_id_away"]
+        stats = []
+        for side_roster, coach_id in ((home_roster, match["coach_id_home"]),
+                                       (away_roster, match["coach_id_away"])):
+            for r in side_roster:
+                pid = r["pokemon_id"]
+                k = (form.get(f"kills_{g}_{coach_id}_{pid}") or "").strip()
+                d = (form.get(f"deaths_{g}_{coach_id}_{pid}") or "").strip()
+                if not k and not d:
+                    continue
+                stats.append({
+                    "coach_id": coach_id, "pokemon_id": pid,
+                    "kills": int(k) if k else 0, "deaths": int(d) if d else 0,
+                })
+        games.append({"winner_coach_id": winner_coach_id, "stats": stats})
+    return games
+
+
+@router.get("/seasons/{season_id}/matches/{match_id}", response_class=HTMLResponse)
+def match_detail(request: Request, season_id: int, match_id: int):
+    user = request.state.user
+    try:
+        conn = get_connection()
+    except FileNotFoundError as e:
+        return db_missing_response(request, e)
+    try:
+        match = pk_matches.get_match(conn, match_id)
+        if match is None or match["season_id"] != season_id:
+            return RedirectResponse(f"/pokemon/seasons/{season_id}/schedule", status_code=303)
+        season = pk_seasons.get_season(conn, season_id)
+        is_commissioner = user["tier"] == "admin" or user["user_id"] == season["commissioner_user_id"]
+        is_my_matchup = pk_matches.coach_in_match(match, user["user_id"]) is not None
+        is_reporter = match["reported_by_user_id"] == user["user_id"]
+        home_roster = pk_roster.current_roster_with_pokemon(conn, season_id, match["coach_id_home"])
+        away_roster = pk_roster.current_roster_with_pokemon(conn, season_id, match["coach_id_away"])
+        games = pk_matches.get_games(conn, match_id)
+        games_with_stats = [(g, pk_matches.get_stats(conn, g["game_id"])) for g in games]
+    finally:
+        conn.close()
+    return templates.TemplateResponse(
+        request, "pokemon/match_detail.html",
+        {
+            "season_id": season_id, "match": match, "is_commissioner": is_commissioner,
+            "is_my_matchup": is_my_matchup, "is_reporter": is_reporter,
+            "home_roster": home_roster, "away_roster": away_roster,
+            "games_with_stats": games_with_stats, "error": request.query_params.get("error"),
+        },
+    )
+
+
+@router.post("/seasons/{season_id}/matches/{match_id}/report")
+async def report_match(request: Request, season_id: int, match_id: int):
+    user = request.state.user
+    form = await request.form()
+    try:
+        conn = get_connection()
+    except FileNotFoundError as e:
+        return db_missing_response(request, e)
+    try:
+        match = pk_matches.get_match(conn, match_id)
+        if match is None:
+            return RedirectResponse(f"/pokemon/seasons/{season_id}/schedule", status_code=303)
+        home_roster = pk_roster.current_roster_with_pokemon(conn, season_id, match["coach_id_home"])
+        away_roster = pk_roster.current_roster_with_pokemon(conn, season_id, match["coach_id_away"])
+        games = _parse_games_from_form(form, match, home_roster, away_roster)
+        error = pk_matches.report_match(conn, match_id, user["user_id"], games)
+    finally:
+        conn.close()
+    dest = f"/pokemon/seasons/{season_id}/matches/{match_id}"
+    return RedirectResponse(f"{dest}?error={quote(error)}" if error else dest, status_code=303)
+
+
+@router.post("/seasons/{season_id}/matches/{match_id}/confirm")
+def confirm_match(request: Request, season_id: int, match_id: int):
+    user = request.state.user
+    try:
+        conn = get_connection()
+    except FileNotFoundError as e:
+        return db_missing_response(request, e)
+    try:
+        error = pk_matches.confirm_match(conn, match_id, user["user_id"])
+    finally:
+        conn.close()
+    dest = f"/pokemon/seasons/{season_id}/matches/{match_id}"
+    return RedirectResponse(f"{dest}?error={quote(error)}" if error else dest, status_code=303)
+
+
+@router.post("/seasons/{season_id}/matches/{match_id}/dispute")
+async def dispute_match(request: Request, season_id: int, match_id: int):
+    user = request.state.user
+    form = await request.form()
+    try:
+        conn = get_connection()
+    except FileNotFoundError as e:
+        return db_missing_response(request, e)
+    try:
+        error = pk_matches.dispute_match(conn, match_id, user["user_id"], form.get("reason", ""))
+    finally:
+        conn.close()
+    dest = f"/pokemon/seasons/{season_id}/matches/{match_id}"
+    return RedirectResponse(f"{dest}?error={quote(error)}" if error else dest, status_code=303)
+
+
+@router.post("/seasons/{season_id}/matches/{match_id}/resolve", dependencies=[Depends(require_commissioner)])
+async def resolve_dispute(request: Request, season_id: int, match_id: int):
+    user = request.state.user
+    form = await request.form()
+    try:
+        conn = get_connection()
+    except FileNotFoundError as e:
+        return db_missing_response(request, e)
+    try:
+        match = pk_matches.get_match(conn, match_id)
+        if match is None:
+            return RedirectResponse(f"/pokemon/seasons/{season_id}/schedule", status_code=303)
+        home_roster = pk_roster.current_roster_with_pokemon(conn, season_id, match["coach_id_home"])
+        away_roster = pk_roster.current_roster_with_pokemon(conn, season_id, match["coach_id_away"])
+        games = _parse_games_from_form(form, match, home_roster, away_roster)
+        error = pk_matches.resolve_dispute(conn, match_id, user["user_id"], form.get("note", ""), games)
+    finally:
+        conn.close()
+    dest = f"/pokemon/seasons/{season_id}/matches/{match_id}"
+    return RedirectResponse(f"{dest}?error={quote(error)}" if error else dest, status_code=303)
+
+
+# ---------------------------------------------------------------------
+# Standings / leaderboard
+# ---------------------------------------------------------------------
+
+@router.get("/seasons/{season_id}/standings", response_class=HTMLResponse)
+def standings_page(request: Request, season_id: int):
+    try:
+        conn = get_connection()
+    except FileNotFoundError as e:
+        return db_missing_response(request, e)
+    try:
+        season = pk_seasons.get_season(conn, season_id)
+        if season is None:
+            return RedirectResponse("/pokemon/seasons", status_code=303)
+        rows = pk_standings.standings(conn, season_id)
+        leaderboard = pk_standings.pokemon_leaderboard(conn, season_id)
+    finally:
+        conn.close()
+    return templates.TemplateResponse(
+        request, "pokemon/standings.html",
+        {"season": season, "standings": rows, "leaderboard": leaderboard},
+    )

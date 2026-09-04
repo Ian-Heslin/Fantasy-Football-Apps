@@ -14,6 +14,8 @@
 <p>
   <a href="/pokemon/seasons/{{ season['season_id'] }}/pool">Draft board</a>
   {% if season['draft_locked_at'] %}&middot; <a href="/pokemon/seasons/{{ season['season_id'] }}/draft">Draft room</a>{% endif %}
+  &middot; <a href="/pokemon/seasons/{{ season['season_id'] }}/schedule">Schedule</a>
+  &middot; <a href="/pokemon/seasons/{{ season['season_id'] }}/standings">Standings</a>
 </p>
 
 {% if season['format_rules_text'] %}

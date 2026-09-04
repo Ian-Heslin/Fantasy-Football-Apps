@@ -37,3 +37,21 @@ def roster_summary(conn, season_id, coach_id):
     """(pokemon_count, points_spent) for one coach's current roster."""
     rows = current_roster(conn, season_id, coach_id)
     return len(rows), sum(r["cost"] or 0 for r in rows)
+
+
+def current_roster_with_pokemon(conn, season_id, coach_id):
+    """Like current_roster(), but joined with the pokemon table for
+    display purposes (name, sprite, types) -- kept separate from
+    current_roster() so the hot paths that only need pokemon_id/cost
+    (make_pick's budget check, match reporting's roster validation) don't
+    pay for a join they don't use."""
+    ids = {r["pokemon_id"] for r in current_roster(conn, season_id, coach_id)}
+    if not ids:
+        return []
+    placeholders = ",".join("?" for _ in ids)
+    return conn.execute(
+        f"""SELECT pokemon_id, display_name, sprite_url, type1, type2
+            FROM pokemon WHERE pokemon_id IN ({placeholders})
+            ORDER BY display_name""",
+        list(ids),
+    ).fetchall()

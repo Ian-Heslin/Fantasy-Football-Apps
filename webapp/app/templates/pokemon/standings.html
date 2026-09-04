@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ season['name'] }}: Standings{% endblock %}
+{% block content %}
+<h1>{{ season['name'] }}: Standings</h1>
+<p class="subtle"><a href="/pokemon/seasons/{{ season['season_id'] }}">&larr; {{ season['name'] }}</a></p>
+
+{% if not standings %}
+<div class="empty-state"><p>No coaches yet.</p></div>
+{% else %}
+<div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr><th>#</th><th>Team</th><th>Series</th><th>Games</th><th>Diff</th><th>SoS</th></tr>
+    </thead>
+    <tbody>
+      {% for r in standings %}
+      <tr>
+        <td>{{ r['rank'] }}</td>
+        <td>{{ r['coach']['team_name'] }}</td>
+        <td>{{ r['series_w'] }}-{{ r['series_l'] }}</td>
+        <td>{{ r['game_w'] }}-{{ r['game_l'] }}</td>
+        <td>{{ '+' if r['differential'] > 0 else '' }}{{ r['differential'] }}</td>
+        <td>{{ '%.3f'|format(r['sos']) }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<p class="subtle">Ties broken by series wins &gt; game wins &gt; differential &gt; head-to-head &gt;
+  strength of schedule.</p>
+{% endif %}
+
+<h2>Pokemon Leaderboard</h2>
+{% if not leaderboard %}
+<div class="empty-state"><p>No stats reported yet.</p></div>
+{% else %}
+<div class="table-scroll">
+  <table class="data-table">
+    <thead><tr><th></th><th>Pokemon</th><th>Team</th><th>K</th><th>D</th><th>Diff</th><th>GP</th></tr></thead>
+    <tbody>
+      {% for row in leaderboard %}
+      <tr>
+        <td>{% if row['sprite_url'] %}<img src="{{ row['sprite_url'] }}" alt="" width="28" height="28">{% endif %}</td>
+        <td>{{ row['display_name'] }}</td>
+        <td>{{ row['team_name'] }}</td>
+        <td>{{ row['kills'] }}</td>
+        <td>{{ row['deaths'] }}</td>
+        <td>{{ '+' if row['differential'] > 0 else '' }}{{ row['differential'] }}</td>
+        <td>{{ row['games_played'] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}
