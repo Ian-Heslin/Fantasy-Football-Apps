@@ -204,10 +204,32 @@ def weekly_category(season, week):
 
 
 def parse_weekly_category(category):
-    m = WEEKLY_CATEGORY_RE.match(category)
+    m = WEEKLY_CATEGORY_RE.match(category or "")
     if not m:
         raise ValueError(f"not a weekly-leaders category: {category!r}")
     return int(m.group(1)), int(m.group(2))
+
+
+def is_valid_category(game_type, category):
+    """Whether this (game_type, category) pair is one the games actually
+    have, checked the same way for the Solo and Group entry points.
+
+    Both used to check `category.isdigit()` for nfl_top100 and to skip
+    category validation entirely for weekly_leaders. Neither is safe:
+    str.isdigit() is True for superscripts and other Unicode digit forms
+    that int() then rejects ("²"), and an unvalidated weekly category
+    reached parse_weekly_category's raise. Either way a signed-in user
+    could turn a form post into a 500."""
+    if game_type in ("award_winners", "season_leaders"):
+        categories = AWARD_CATEGORIES if game_type == "award_winners" else SEASON_CATEGORIES
+        return category in categories
+    if game_type == "weekly_leaders":
+        return WEEKLY_CATEGORY_RE.match(category or "") is not None
+    if game_type == "nfl_top100":
+        # str.isdigit() is too loose and str.isascii()+isdigit() is the
+        # narrow check int() actually accepts.
+        return bool(category) and category.isascii() and category.isdigit()
+    return False
 
 
 def latest_week(duckdb_conn):

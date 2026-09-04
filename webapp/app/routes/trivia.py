@@ -49,12 +49,10 @@ def trivia_index(request: Request):
 @router.post("/games/trivia/start")
 async def start_round(request: Request, game_type: str = Form(...), category: str = Form(...)):
     user = request.state.user
-    valid = (
-        (game_type in CATEGORIES and category in CATEGORIES[game_type])
-        or game_type == "weekly_leaders"
-        or (game_type == "nfl_top100" and category.isdigit())
-    )
-    if not valid:
+    # One shared validator (see trivia.is_valid_category) rather than a
+    # per-route expression -- the Group entry point had drifted from this
+    # one, and both let categories through that later raised.
+    if not trivia.is_valid_category(game_type, category):
         return RedirectResponse("/games/trivia", status_code=303)
 
     hints = None

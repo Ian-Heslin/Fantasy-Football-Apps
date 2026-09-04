@@ -1,6 +1,8 @@
 """Group mode routes -- shared-screen, host-run live sessions. See
 app/group_games.py (reveal-style trivia) and app/group_draft.py (live
 Fantasy Draft) for the actual game logic."""
+from urllib.parse import quote
+
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
@@ -44,6 +46,7 @@ def group_hub(request: Request):
             "reveal_sessions": reveal_sessions, "draft_sessions": draft_sessions,
             "game_labels": group_games.GAME_LABELS, "reveal_categories": REVEAL_CATEGORIES,
             "top100_years": top100_years, "top100_hint_labels": trivia.TOP100_HINT_LABELS,
+            "error": request.query_params.get("error"),
         },
     )
 
@@ -53,10 +56,11 @@ async def new_session(request: Request):
     user = request.state.user
     form = await request.form()
     game_type = form.get("game_type")
-    names = [n.strip() for n in form.get("participants", "").split(",") if n.strip()]
-
-    if len(names) < 2:
-        return RedirectResponse("/games/group", status_code=303)
+    # Bounded here rather than trusted from the form -- see
+    # group_games.clean_participant_names for why the cap matters.
+    names, error = group_games.clean_participant_names(form.get("participants"))
+    if error:
+        return RedirectResponse(f"/games/group?error={quote(error)}", status_code=303)
 
     try:
         conn, duckdb_conn = open_both()
@@ -69,11 +73,7 @@ async def new_session(request: Request):
             dest = f"/games/group/draft/{session_id}"
         elif game_type in REVEAL_CATEGORIES or game_type == "nfl_top100":
             category = form.get("category")
-            valid_category = (
-                category in REVEAL_CATEGORIES.get(game_type, [])
-                or (game_type == "nfl_top100" and (category or "").isdigit())
-            )
-            if not valid_category:
+            if not trivia.is_valid_category(game_type, category):
                 return RedirectResponse("/games/group", status_code=303)
             hints = set(form.getlist("hint")) & set(trivia.TOP100_HINT_LABELS) if game_type == "nfl_top100" else None
             session_id = group_games.start_session(
@@ -130,7 +130,18 @@ async def reveal_item(request: Request, session_id: int):
     try:
         session = group_games.get_session(conn, session_id, user["user_id"])
         if session is not None and item_key:
-            correct_ids = {int(v) for k, v in form.items() if k.startswith("correct_")}
+            # int() on the raw form value raised ValueError -- and a 500 --
+            # for any non-numeric correct_* field. Skip what doesn't
+            # parse; mark_and_reveal only credits ids that belong to this
+            # session anyway, so a bogus one is inert rather than harmful.
+            correct_ids = set()
+            for key, value in form.items():
+                if not key.startswith("correct_"):
+                    continue
+                try:
+                    correct_ids.add(int(value))
+                except (TypeError, ValueError):
+                    continue
             group_games.mark_and_reveal(conn, session_id, item_key, correct_ids)
     finally:
         conn.close()
