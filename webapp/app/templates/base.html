@@ -42,6 +42,7 @@
     {% if user %}
     <nav>
       <a href="/games" class="{{ 'active' if request.url.path.startswith('/games') else '' }}">Games</a>
+      <a href="/pokemon" class="{{ 'active' if request.url.path.startswith('/pokemon') else '' }}">Pokemon Draft</a>
       {% if user['tier'] in ('fantasy', 'admin') %}
         <a href="/" class="{{ 'active' if request.url.path == '/' else '' }}">Dashboard</a>
         <a href="/rosters" class="{{ 'active' if request.url.path.startswith('/rosters') else '' }}">Rosters</a>

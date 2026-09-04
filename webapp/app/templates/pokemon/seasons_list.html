@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Pokemon Draft League{% endblock %}
+{% block content %}
+<h1>Pokemon Draft League</h1>
+<p class="subtle"><a href="/pokemon/seasons/new">+ Start a new season</a></p>
+
+{% if not seasons %}
+<div class="empty-state">
+  <p>No seasons yet. <a href="/pokemon/seasons/new">Start one</a> to begin drafting.</p>
+</div>
+{% else %}
+<div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr><th>Season</th><th>Format</th><th>Status</th><th>Commissioner</th></tr>
+    </thead>
+    <tbody>
+      {% for s in seasons %}
+      <tr>
+        <td><a href="/pokemon/seasons/{{ s['season_id'] }}">{{ s['name'] }}</a></td>
+        <td>{{ s['format_name'] }} <span class="subtle">({{ s['battle_style'] }})</span></td>
+        <td>
+          <span class="badge {{ 'badge-secondary' if s['status'] == 'active' else 'badge-outline' }}">
+            {{ s['status'] }}
+          </span>
+        </td>
+        <td>{{ s['commissioner_name'] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

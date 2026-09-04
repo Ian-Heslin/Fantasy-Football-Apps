@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}New Format{% endblock %}
+{% block content %}
+<h1>Define a format</h1>
+<p class="subtle"><a href="/pokemon/seasons/new">&larr; New season</a></p>
+<p class="subtle">A format is a reusable ruleset "shape" (singles vs doubles, battle rules, default
+  point budget and roster size) that a season is built on -- a season can still adjust its own
+  budget/roster cap/species clause on top of these defaults.</p>
+
+{% if error %}
+<div class="notice notice-error"><p>{{ error }}</p></div>
+{% endif %}
+
+<form method="post" action="/pokemon/formats">
+  <p>
+    <label>Format id<br>
+      <input type="text" name="format_id" required maxlength="40" placeholder="e.g. gen9ou">
+    </label>
+  </p>
+  <p>
+    <label>Display name<br>
+      <input type="text" name="display_name" required maxlength="80" placeholder="e.g. Gen 9 OU (Singles)">
+    </label>
+  </p>
+  <p>
+    <label>Battle style<br>
+      <select name="battle_style" required>
+        <option value="singles">Singles</option>
+        <option value="doubles">Doubles</option>
+      </select>
+    </label>
+  </p>
+  <p>
+    <label>Rules text<br>
+      <textarea name="rules_text" rows="6" cols="60" placeholder="Clauses, level cap, Bo3 rules, etc."></textarea>
+    </label>
+  </p>
+  <p>
+    <label>Default roster size<br>
+      <input type="number" name="default_roster_size" value="10" min="1" max="20">
+    </label>
+  </p>
+  <p>
+    <label>Default point budget<br>
+      <input type="number" name="default_point_budget" value="100" min="1">
+    </label>
+  </p>
+  <p>
+    <label><input type="checkbox" name="default_species_clause" checked> Species clause on by default</label>
+  </p>
+  <p><button type="submit">Create format</button></p>
+</form>
+{% endblock %}

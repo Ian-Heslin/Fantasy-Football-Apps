@@ -18,6 +18,7 @@ data/backups/
 data/analytics.duckdb
 data/_dynastyprocess_data/
 data/_nflverse_data/
+data/_pokeapi_data/
 
 __pycache__/
 *.pyc

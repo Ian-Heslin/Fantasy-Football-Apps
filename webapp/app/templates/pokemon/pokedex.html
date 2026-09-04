@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Pokedex{% endblock %}
+{% block content %}
+<h1>Pokedex</h1>
+<p class="subtle"><a href="/pokemon">&larr; Pokemon Draft League</a></p>
+<p class="subtle">Static reference data -- every Pokemon form, seeded from PokeAPI. Which of these
+  are actually draftable depends on the season you're playing (see that season's draft board).</p>
+
+<form method="get" action="/pokemon/pokedex">
+  <p>
+    <input type="text" name="q" value="{{ query }}" placeholder="Search by name...">
+    <select name="generation" onchange="this.form.submit()">
+      <option value="">All generations</option>
+      {% for g in generations %}
+      <option value="{{ g }}" {{ 'selected' if generation == g else '' }}>Gen {{ g }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit">Search</button>
+  </p>
+</form>
+
+<p class="subtle">{{ total }} Pokemon{% if query or generation %} matching{% endif %}</p>
+
+<div class="table-scroll">
+  <table class="data-table">
+    <thead>
+      <tr><th></th><th>Name</th><th>Dex #</th><th>Gen</th><th>Type</th>
+          <th>HP</th><th>Atk</th><th>Def</th><th>SpA</th><th>SpD</th><th>Spe</th></tr>
+    </thead>
+    <tbody>
+      {% for p in pokemon %}
+      <tr>
+        <td>{% if p['sprite_url'] %}<img src="{{ p['sprite_url'] }}" alt="" width="40" height="40" loading="lazy">{% endif %}</td>
+        <td>{{ p['display_name'] }}</td>
+        <td>{{ p['national_dex_number'] }}</td>
+        <td>{{ p['generation'] }}</td>
+        <td>{{ p['type1'] }}{% if p['type2'] %} / {{ p['type2'] }}{% endif %}</td>
+        <td>{{ p['base_hp'] }}</td>
+        <td>{{ p['base_atk'] }}</td>
+        <td>{{ p['base_def'] }}</td>
+        <td>{{ p['base_spa'] }}</td>
+        <td>{{ p['base_spd'] }}</td>
+        <td>{{ p['base_spe'] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<p>
+  {% if page > 1 %}<a href="/pokemon/pokedex?q={{ query }}&generation={{ generation or '' }}&page={{ page - 1 }}">&larr; Previous</a>{% endif %}
+  {% if has_next %}<a href="/pokemon/pokedex?q={{ query }}&generation={{ generation or '' }}&page={{ page + 1 }}">Next &rarr;</a>{% endif %}
+</p>
+{% endblock %}

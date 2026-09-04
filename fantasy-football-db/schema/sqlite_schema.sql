@@ -432,3 +432,315 @@ CREATE TABLE IF NOT EXISTS sync_log (
     row_count       INTEGER,
     notes           TEXT
 );
+
+-- ============================================================================
+-- POKEMON DRAFT LEAGUE
+-- ============================================================================
+-- A separate fantasy-style domain (draft real Pokemon on a point budget,
+-- play weekly Bo3 matches, track kills/deaths, standings, playoffs) that
+-- replaces a set of Excel workbooks. Reuses the `users` table/tier system
+-- above (every self-signup account gets `games` tier, the minimum this
+-- whole feature needs) rather than inventing separate accounts -- see
+-- webapp/app/pokemon_draft/permissions.py for the season-scoped
+-- "commissioner" role layered on top, which is NOT a site-wide tier.
+-- All new tables are `pokemon_`-prefixed, matching this file's existing
+-- per-feature namespacing (pickem_*, trivia_*, group_*).
+
+-- Static reference data, seeded once (and re-run per new generation
+-- release) by fantasy-football-db/scripts/load_pokemon_pokedex.py from
+-- PokeAPI's bulk static dump -- never written to by the running app.
+-- Modeled at PokeAPI's *form* level (pokemon_id), not species level:
+-- Landorus-Therian and Landorus-Incarnate are separate rows here since a
+-- draft picks a specific form, but species_id (shared across every form of
+-- one dex entry) is carried as its own column because species-clause
+-- enforcement checks THAT, not pokemon_id -- see pokemon_draft/draft.py.
+CREATE TABLE IF NOT EXISTS pokemon (
+    pokemon_id            INTEGER PRIMARY KEY,   -- PokeAPI `pokemon` resource id, NOT autoincrement,
+                                                  -- so re-running the seed script upserts the same row
+                                                  -- PokeAPI already assigns rather than minting new ids
+    species_id            INTEGER NOT NULL,      -- PokeAPI `pokemon-species` id -- the species-clause key
+    slug                   TEXT NOT NULL UNIQUE,  -- PokeAPI dash-case id, e.g. 'landorus-therian' --
+                                                  -- also the join key against Smogon usage-stat rows
+    display_name           TEXT NOT NULL,         -- e.g. 'Landorus (Therian)'
+    national_dex_number    INTEGER NOT NULL,
+    generation             INTEGER,               -- introduced generation (1-9)
+    type1                   TEXT NOT NULL,
+    type2                   TEXT,
+    base_hp INTEGER, base_atk INTEGER, base_def INTEGER,
+    base_spa INTEGER, base_spd INTEGER, base_spe INTEGER,
+    sprite_url              TEXT,   -- hotlinked to PokeAPI/sprites' raw.githubusercontent.com URL --
+                                    -- same external-URL pattern as app/team_colors.py's NFL logos,
+                                    -- nothing copied onto the Pi's disk
+    updated_at              TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_pokemon_species ON pokemon(species_id);
+CREATE INDEX IF NOT EXISTS idx_pokemon_gen     ON pokemon(generation);
+
+-- A reusable ruleset "shape" a season is built on -- singles vs doubles,
+-- which Smogon usage-stat file to pull, free-text rules. Distinct from a
+-- season's own ruleset (point budget, roster cap, etc. below) -- a season
+-- picks one format and can still override its numeric defaults.
+CREATE TABLE IF NOT EXISTS pokemon_formats (
+    format_id               TEXT PRIMARY KEY,   -- e.g. 'gen9ou', 'gen9vgc2024regh' -- matches the
+                                                 -- Smogon stats URL's formatid segment directly
+    display_name             TEXT NOT NULL,
+    battle_style               TEXT NOT NULL,      -- 'singles' | 'doubles' -- drives replay slot
+                                                    -- parsing (p1a/p2a only vs p1a/p1b/p2a/p2b)
+    smogon_stats_prefix        TEXT,               -- kept separate from format_id in case they diverge
+    rules_text                   TEXT,               -- free text: clauses, level, Bo3 rules -- shown
+                                                    -- as-is on the season's Rules page
+    default_roster_size          INTEGER NOT NULL DEFAULT 10,
+    default_point_budget           INTEGER NOT NULL DEFAULT 100,
+    default_species_clause           INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+
+-- One row per season. Only one may be 'active' at a time (unique partial
+-- index below); re-checked in pokemon_draft/seasons.py before the UPDATE
+-- too, for a friendly redirect+message instead of a raw IntegrityError.
+CREATE TABLE IF NOT EXISTS pokemon_seasons (
+    season_id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    name                       TEXT NOT NULL,
+    format_id                   TEXT NOT NULL REFERENCES pokemon_formats(format_id),
+    commissioner_user_id          INTEGER NOT NULL REFERENCES users(user_id),
+                                                 -- season-scoped role layered on top of the site-wide
+                                                 -- 'games' tier -- see pokemon_draft/permissions.py.
+                                                 -- The commissioner can ALSO hold a coach seat (a
+                                                 -- pokemon_season_coaches row with this same user_id) --
+                                                 -- checked by joining against this column, no separate flag.
+    status                        TEXT NOT NULL DEFAULT 'draft',
+                                                 -- 'draft' | 'active' | 'complete' | 'archived'
+    roster_size_cap                INTEGER NOT NULL,   -- copied from format default at creation,
+                                                        -- editable until draft_locked_at is set
+    point_budget                     INTEGER NOT NULL,
+    species_clause_enabled             INTEGER NOT NULL DEFAULT 1,
+    fa_transactions_allowed              INTEGER NOT NULL DEFAULT 0,  -- per-coach cap for the season
+    roster_freeze_week                    INTEGER,   -- moves rejected at/after this schedule week;
+                                                      -- NULL = no freeze configured yet
+    playoff_bracket_size                    INTEGER NOT NULL DEFAULT 4,  -- 4 = QF->SF->F
+    draft_locked_at                          TEXT,   -- set once the pool+costs are locked and
+                                                      -- picking can start
+    created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_one_active_pokemon_season
+    ON pokemon_seasons(status) WHERE status = 'active';
+
+-- One row per coach seat in a season.
+CREATE TABLE IF NOT EXISTS pokemon_season_coaches (
+    coach_id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    season_id                 INTEGER NOT NULL REFERENCES pokemon_seasons(season_id),
+    user_id                     INTEGER NOT NULL REFERENCES users(user_id),
+    team_name                     TEXT NOT NULL,
+    draft_order                     INTEGER,   -- 1..N snake seed, set at draft setup
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE (season_id, user_id)   -- one seat per account per season
+);
+CREATE INDEX IF NOT EXISTS idx_pk_season_coaches_season ON pokemon_season_coaches(season_id);
+
+-- Which pokemon are legal in a season and what they cost -- layered on top
+-- of the static `pokemon` table since legality/cost is season-specific
+-- (the same Pokemon could be a 14-point staple one season and banned the
+-- next). computed_cost (from usage stats) and cost_override (commissioner
+-- hand-edit) are kept in SEPARATE columns so a later usage-stat re-fetch
+-- can refresh computed_cost without clobbering a manual override --
+-- effective_cost() in pokemon_draft/draft_pool.py is COALESCE(cost_override,
+-- computed_cost).
+CREATE TABLE IF NOT EXISTS pokemon_draft_pool (
+    season_id       INTEGER NOT NULL REFERENCES pokemon_seasons(season_id),
+    pokemon_id        INTEGER NOT NULL REFERENCES pokemon(pokemon_id),
+    is_banned           INTEGER NOT NULL DEFAULT 0,
+    usage_percent         REAL,
+    computed_cost           INTEGER,
+    cost_override             INTEGER,
+    stats_fetched_at          TEXT,
+    PRIMARY KEY (season_id, pokemon_id)
+);
+CREATE INDEX IF NOT EXISTS idx_draft_pool_season ON pokemon_draft_pool(season_id);
+
+-- Configurable usage%->cost tiers (see pokemon_draft/points.py's
+-- compute_cost()). Ordered by min_usage_percent descending; a Pokemon's
+-- computed_cost is the point_cost of the first tier it clears. Seeded with
+-- placeholder defaults per format at season setup, editable by the
+-- commissioner before the draft board locks -- there's no historical
+-- usage-based formula to seed real boundaries from, since the source
+-- spreadsheets hand-assigned costs.
+CREATE TABLE IF NOT EXISTS pokemon_cost_tiers (
+    season_id          INTEGER NOT NULL REFERENCES pokemon_seasons(season_id),
+    tier_rank            INTEGER NOT NULL,   -- 1 = most expensive tier
+    min_usage_percent      REAL NOT NULL,
+    point_cost               INTEGER NOT NULL,
+    PRIMARY KEY (season_id, tier_rank)
+);
+
+-- One row per season -- a season only ever runs one draft.
+CREATE TABLE IF NOT EXISTS pokemon_draft_sessions (
+    season_id           INTEGER PRIMARY KEY REFERENCES pokemon_seasons(season_id),
+    status                 TEXT NOT NULL DEFAULT 'not_started',
+                                              -- 'not_started' | 'in_progress' | 'paused' | 'complete'
+    turn_index               INTEGER NOT NULL DEFAULT 0,  -- overall pick # about to be made (0-based) --
+                                                          -- snake order computed from this + coach
+                                                          -- count + roster_size_cap, same round/
+                                                          -- direction math as group_draft.whose_turn()
+    started_at TEXT,
+    completed_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS pokemon_draft_picks (
+    season_id       INTEGER NOT NULL REFERENCES pokemon_seasons(season_id),
+    coach_id          INTEGER NOT NULL REFERENCES pokemon_season_coaches(coach_id),
+    pokemon_id          INTEGER NOT NULL REFERENCES pokemon(pokemon_id),
+    pick_order            INTEGER NOT NULL,   -- overall 1-based pick number
+    cost_paid                INTEGER NOT NULL,   -- snapshot of effective_cost at pick time -- stable
+                                                -- even if cost_override changes later (same snapshot
+                                                -- philosophy as fantasy_draft_entries.points)
+    picked_at                  TEXT DEFAULT (datetime('now')),
+    PRIMARY KEY (season_id, pokemon_id),   -- the exact-form draft-conflict rule; species clause
+                                          -- (blocking a DIFFERENT form of an already-picked species)
+                                          -- is an application-code check, not a DB constraint --
+                                          -- see pokemon_draft/draft.py's make_pick()
+    UNIQUE (season_id, pick_order)
+);
+CREATE INDEX IF NOT EXISTS idx_draft_picks_coach ON pokemon_draft_picks(season_id, coach_id);
+
+-- Every roster change after the draft, append-only. Current roster is
+-- computed LIVE via a window-function query (see pokemon_draft/roster.py's
+-- current_roster()), never stored -- matches app/pickem.py's
+-- compute-don't-cache philosophy and avoids the drift-bug class this
+-- schema's own trade_values comment already documents once. A trade is
+-- one 'trade_out' row + one 'trade_in' row sharing trade_group_id.
+CREATE TABLE IF NOT EXISTS pokemon_roster_moves (
+    move_id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    season_id              INTEGER NOT NULL REFERENCES pokemon_seasons(season_id),
+    coach_id                 INTEGER NOT NULL REFERENCES pokemon_season_coaches(coach_id),
+    pokemon_id                 INTEGER NOT NULL REFERENCES pokemon(pokemon_id),
+    move_type                    TEXT NOT NULL,  -- 'draft' | 'fa_add' | 'drop' | 'trade_in' | 'trade_out'
+    cost                           INTEGER,   -- points charged/refunded by this move (NULL for 'drop')
+    trade_group_id                    TEXT REFERENCES pokemon_trade_offers(trade_id),
+                                              -- set only for trade_in/trade_out rows
+    counts_toward_fa_cap                INTEGER NOT NULL DEFAULT 0,   -- 1 only for standalone 'fa_add'
+                                                                     -- rows -- drops (including ones
+                                                                     -- bundled into a trade) are free,
+                                                                     -- stored explicitly rather than
+                                                                     -- inferred from move_type so the
+                                                                     -- cap rule can change later
+                                                                     -- without reinterpreting old rows
+    week                                  INTEGER,   -- schedule week this move was made in -- used for
+                                                     -- the roster-freeze cutoff and "roster as of week
+                                                     -- N" reconstruction
+    created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_roster_moves_season_coach ON pokemon_roster_moves(season_id, coach_id);
+CREATE INDEX IF NOT EXISTS idx_roster_moves_pokemon ON pokemon_roster_moves(season_id, pokemon_id);
+
+-- A pending/accepted/rejected trade between two coaches. Bundles both the
+-- Pokemon changing hands AND any drops needed to stay under budget/roster
+-- cap into ONE offer (pokemon_trade_offer_items.action) -- confirmed: a
+-- trade is proposed and accepted as a single atomic transaction, never one
+-- that completes first and leaves a coach over-budget to clean up
+-- afterward. See pokemon_draft/roster.py's accept_trade().
+CREATE TABLE IF NOT EXISTS pokemon_trade_offers (
+    trade_id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    season_id                 INTEGER NOT NULL REFERENCES pokemon_seasons(season_id),
+    proposing_coach_id           INTEGER NOT NULL REFERENCES pokemon_season_coaches(coach_id),
+    receiving_coach_id             INTEGER NOT NULL REFERENCES pokemon_season_coaches(coach_id),
+    status                           TEXT NOT NULL DEFAULT 'pending',
+                                                  -- 'pending' | 'accepted' | 'rejected' | 'cancelled'
+    created_at TEXT DEFAULT (datetime('now')),
+    resolved_at TEXT
+);
+CREATE TABLE IF NOT EXISTS pokemon_trade_offer_items (
+    trade_id        INTEGER NOT NULL REFERENCES pokemon_trade_offers(trade_id),
+    pokemon_id         INTEGER NOT NULL REFERENCES pokemon(pokemon_id),
+    from_coach_id         INTEGER NOT NULL REFERENCES pokemon_season_coaches(coach_id),  -- current
+                                                                                          -- owner
+    action                  TEXT NOT NULL DEFAULT 'trade',  -- 'trade' (moves to the offer's OTHER
+                                                            -- coach) | 'drop' (leaves from_coach_id's
+                                                            -- roster entirely, no receiver -- bundled
+                                                            -- in specifically to fix a budget/roster-cap
+                                                            -- overage the trade would otherwise cause)
+    PRIMARY KEY (trade_id, pokemon_id)
+);
+
+-- Regular-season and playoff matchups share one table (a playoff row sets
+-- `round` instead of `week`) -- a match is a match either way;
+-- pokemon_playoff_bracket below decides who fills a playoff row's
+-- coach_id_home/away once earlier rounds resolve.
+CREATE TABLE IF NOT EXISTS pokemon_schedule (
+    schedule_id      INTEGER PRIMARY KEY AUTOINCREMENT,
+    season_id           INTEGER NOT NULL REFERENCES pokemon_seasons(season_id),
+    week                  INTEGER,   -- regular-season week #; NULL for playoff rows
+    round                   TEXT,      -- 'QF' | 'SF' | 'F' for playoff rows; NULL otherwise --
+                                      -- exactly one of (week, round) is set, enforced in application code
+    coach_id_home              INTEGER REFERENCES pokemon_season_coaches(coach_id),
+    coach_id_away                 INTEGER REFERENCES pokemon_season_coaches(coach_id),  -- NULL = bye
+    bracket_slot                    TEXT,   -- e.g. 'QF1' -- links to pokemon_playoff_bracket.slot
+    created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_schedule_season_week ON pokemon_schedule(season_id, week);
+
+-- The Bo3 SERIES between two coaches for one schedule row -- tracks the
+-- self-report -> confirm/dispute workflow and the series winner once
+-- resolved. Individual games are pokemon_match_games below.
+CREATE TABLE IF NOT EXISTS pokemon_matches (
+    match_id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    schedule_id                  INTEGER NOT NULL REFERENCES pokemon_schedule(schedule_id),
+    reported_by_user_id             INTEGER REFERENCES users(user_id),
+    status                            TEXT NOT NULL DEFAULT 'unreported',
+                                            -- 'unreported' | 'pending_confirmation' | 'confirmed' |
+                                            -- 'disputed'
+    winner_coach_id                     INTEGER REFERENCES pokemon_season_coaches(coach_id),
+    dispute_reason                        TEXT,
+    dispute_resolved_by                     INTEGER REFERENCES users(user_id),  -- the commissioner
+    dispute_resolution_note                   TEXT,
+    confirmed_at TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_matches_schedule ON pokemon_matches(schedule_id);
+
+-- One row per game within a Bo3 series (1-3 rows -- a 2-0 series never
+-- gets a 3rd row). entry_method covers both a hand-typed winner+K/D grid
+-- ('manual') and a parsed Showdown replay link ('replay') with the same
+-- downstream shape -- see pokemon_draft/matches.py and .../replay.py.
+CREATE TABLE IF NOT EXISTS pokemon_match_games (
+    game_id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    match_id               INTEGER NOT NULL REFERENCES pokemon_matches(match_id),
+    game_num                  INTEGER NOT NULL,   -- 1, 2, or 3
+    entry_method                 TEXT NOT NULL DEFAULT 'manual',   -- 'manual' | 'replay'
+    replay_url                     TEXT,     -- set only when entry_method = 'replay'
+    replay_battle_id                 TEXT,     -- parsed out of the URL, e.g. 'gen9randombattle-2675319655'
+    winner_coach_id                    INTEGER REFERENCES pokemon_season_coaches(coach_id),
+    parse_status                         TEXT,   -- 'pending' | 'parsed' | 'failed' -- NULL when manual
+    parse_error                            TEXT,   -- human-readable reason when parse_status = 'failed'
+    raw_log_uploadtime                       TEXT,   -- the replay JSON's own `uploadtime`, so a later
+                                                     -- re-parse can tell if the source changed
+    created_at TEXT DEFAULT (datetime('now')),
+    UNIQUE (match_id, game_num)
+);
+
+-- Per-Pokemon K/D for one game. A Pokemon that never took the field gets
+-- no row at all, not a zero row.
+CREATE TABLE IF NOT EXISTS pokemon_match_stats (
+    game_id        INTEGER NOT NULL REFERENCES pokemon_match_games(game_id),
+    coach_id         INTEGER NOT NULL REFERENCES pokemon_season_coaches(coach_id),
+    pokemon_id         INTEGER NOT NULL REFERENCES pokemon(pokemon_id),
+    kills                INTEGER NOT NULL DEFAULT 0,
+    deaths                 INTEGER NOT NULL DEFAULT 0,   -- 0 or 1 -- a Pokemon can only faint once/game
+    PRIMARY KEY (game_id, coach_id, pokemon_id)
+);
+CREATE INDEX IF NOT EXISTS idx_match_stats_pokemon ON pokemon_match_stats(pokemon_id);
+
+-- One row per bracket slot (QF1..QF4, SF1..SF2, F -- sized by
+-- playoff_bracket_size). coach_id is filled at seeding time from
+-- regular-season standings (via the fixed tiebreaker order) for round 1,
+-- and from whichever playoff pokemon_schedule match feeds this slot for
+-- later rounds -- advances_to_slot lets the bracket walk forward
+-- automatically as each round's matches confirm.
+CREATE TABLE IF NOT EXISTS pokemon_playoff_bracket (
+    season_id             INTEGER NOT NULL REFERENCES pokemon_seasons(season_id),
+    slot                    TEXT NOT NULL,   -- e.g. 'QF1', 'SF1', 'F'
+    round                     TEXT NOT NULL,   -- 'QF' | 'SF' | 'F'
+    seed                        INTEGER,          -- regular-season seed, first round only
+    coach_id                      INTEGER REFERENCES pokemon_season_coaches(coach_id),
+    advances_to_slot                TEXT,   -- NULL for the final
+    PRIMARY KEY (season_id, slot)
+);

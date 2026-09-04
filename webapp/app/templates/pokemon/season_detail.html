@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}{{ season['name'] }}{% endblock %}
+{% block content %}
+<h1>{{ season['name'] }}</h1>
+<p class="subtle"><a href="/pokemon/seasons">&larr; All seasons</a></p>
+
+<p>
+  <span class="badge {{ 'badge-secondary' if season['status'] == 'active' else 'badge-outline' }}">{{ season['status'] }}</span>
+  <span class="subtle">{{ season['format_name'] }} ({{ season['battle_style'] }}) &middot;
+    commissioner {{ season['commissioner_name'] }}{% if my_seat %} &middot; you're coaching {{ my_seat['team_name'] }}{% endif %}
+  </span>
+</p>
+
+{% if season['format_rules_text'] %}
+<h2>Rules</h2>
+<p style="white-space: pre-line">{{ season['format_rules_text'] }}</p>
+{% endif %}
+
+<h2>Ruleset</h2>
+{% if is_commissioner and not season['draft_locked_at'] %}
+<form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/ruleset">
+  <p><label>Roster size cap<br>
+    <input type="number" name="roster_size_cap" value="{{ season['roster_size_cap'] }}" min="1" max="20"></label></p>
+  <p><label>Point budget<br>
+    <input type="number" name="point_budget" value="{{ season['point_budget'] }}" min="1"></label></p>
+  <p><label><input type="checkbox" name="species_clause_enabled" {{ 'checked' if season['species_clause_enabled'] else '' }}>
+    Species clause (no duplicate species)</label></p>
+  <p><label>FA transactions allowed per coach<br>
+    <input type="number" name="fa_transactions_allowed" value="{{ season['fa_transactions_allowed'] }}" min="0"></label></p>
+  <p><label>Roster freeze week (blank = no freeze yet)<br>
+    <input type="number" name="roster_freeze_week" value="{{ season['roster_freeze_week'] or '' }}" min="1"></label></p>
+  <p><label>Playoff bracket size<br>
+    <select name="playoff_bracket_size">
+      {% for n in [2, 4, 6, 8] %}
+      <option value="{{ n }}" {{ 'selected' if season['playoff_bracket_size'] == n else '' }}>{{ n }} teams</option>
+      {% endfor %}
+    </select></label></p>
+  <p><button type="submit">Save ruleset</button></p>
+</form>
+{% else %}
+<ul>
+  <li>Roster size cap: {{ season['roster_size_cap'] }}</li>
+  <li>Point budget: {{ season['point_budget'] }}</li>
+  <li>Species clause: {{ 'on' if season['species_clause_enabled'] else 'off' }}</li>
+  <li>FA transactions allowed: {{ season['fa_transactions_allowed'] }}</li>
+  <li>Roster freeze week: {{ season['roster_freeze_week'] or 'not set' }}</li>
+  <li>Playoff bracket size: {{ season['playoff_bracket_size'] }}</li>
+</ul>
+{% if season['draft_locked_at'] %}
+<p class="subtle">Draft board locked {{ season['draft_locked_at'] }} -- ruleset is now fixed for this season.</p>
+{% endif %}
+{% endif %}
+
+<h2>Coaches</h2>
+{% if coach_error %}
+<div class="notice notice-error"><p>{{ coach_error }}</p></div>
+{% endif %}
+
+{% if not coaches %}
+<div class="empty-state"><p>No coaches yet.</p></div>
+{% else %}
+<div class="table-scroll">
+  <table class="data-table">
+    <thead><tr><th>Draft order</th><th>Team</th><th>Coach</th>{% if is_commissioner and not season['draft_locked_at'] %}<th></th>{% endif %}</tr></thead>
+    <tbody>
+      {% for c in coaches %}
+      <tr>
+        <td>{{ c['draft_order'] or '—' }}</td>
+        <td>{{ c['team_name'] }}</td>
+        <td>{{ c['username'] }}{% if c['user_id'] == season['commissioner_user_id'] %} <span class="badge badge-outline">commissioner</span>{% endif %}</td>
+        {% if is_commissioner and not season['draft_locked_at'] %}
+        <td>
+          <form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/coaches/{{ c['coach_id'] }}/delete" class="inline-form">
+            <button type="submit" class="link-button">Remove</button>
+          </form>
+        </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if is_commissioner and not season['draft_locked_at'] %}
+<h3>Add a coach</h3>
+<form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/coaches">
+  <p><label>Site username<br><input type="text" name="username" required></label></p>
+  <p><label>Team name<br><input type="text" name="team_name" required maxlength="80"></label></p>
+  <p><button type="submit">Add coach</button></p>
+</form>
+
+{% if coaches|length > 1 %}
+<h3>Draft order</h3>
+<form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/coaches/order">
+  {% for c in coaches %}
+  <p><label>{{ c['team_name'] }}
+    <select name="position_{{ c['coach_id'] }}">
+      {% for n in range(1, coaches|length + 1) %}
+      <option value="{{ n }}" {{ 'selected' if (c['draft_order'] or loop.index) == n else '' }}>{{ n }}</option>
+      {% endfor %}
+    </select>
+  </label></p>
+  {% endfor %}
+  <p><button type="submit">Set draft order</button></p>
+</form>
+{% endif %}
+
+<h3>Season controls</h3>
+<p>
+  {% if season['status'] != 'active' %}
+  <form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/activate" class="inline-form">
+    <button type="submit">Make this the active season</button>
+  </form>
+  {% endif %}
+  {% if season['status'] != 'archived' %}
+  <form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/archive" class="inline-form">
+    <button type="submit" class="link-button">Archive</button>
+  </form>
+  {% endif %}
+</p>
+{% endif %}
+{% endblock %}

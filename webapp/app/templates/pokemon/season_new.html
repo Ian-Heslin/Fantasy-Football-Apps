@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}New Season{% endblock %}
+{% block content %}
+<h1>Start a new season</h1>
+<p class="subtle"><a href="/pokemon/seasons">&larr; All seasons</a></p>
+
+{% if error %}
+<div class="notice notice-error"><p>{{ error }}</p></div>
+{% endif %}
+
+{% if not formats %}
+<div class="empty-state">
+  <p>No formats defined yet. <a href="/pokemon/formats/new">Define one</a> first
+    (e.g. a singles OU ruleset or a VGC doubles ruleset) -- a season is built on top of one.</p>
+</div>
+{% else %}
+<form method="post" action="/pokemon/seasons">
+  <p>
+    <label>Season name<br>
+      <input type="text" name="name" required maxlength="80">
+    </label>
+  </p>
+  <p>
+    <label>Format<br>
+      <select name="format_id" required>
+        {% for f in formats %}
+        <option value="{{ f['format_id'] }}">{{ f['display_name'] }} ({{ f['battle_style'] }})</option>
+        {% endfor %}
+      </select>
+    </label>
+  </p>
+  <p class="subtle">You'll be this season's commissioner -- you can also add yourself as a
+    coach from the season page afterward if there's a spot for you.</p>
+  <p><button type="submit">Create season</button></p>
+</form>
+<p class="subtle"><a href="/pokemon/formats/new">+ Define a new format</a></p>
+{% endif %}
+{% endblock %}
