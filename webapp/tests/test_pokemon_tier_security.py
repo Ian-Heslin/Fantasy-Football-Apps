@@ -152,3 +152,154 @@ def test_site_admin_can_act_as_commissioner_on_any_season(client):
     assert r.status_code == 303
     row = query("SELECT status FROM pokemon_seasons WHERE season_id = ?", (season_id,))[0]
     assert row["status"] == "active"
+
+
+# =====================================================================
+# 4. Draft pool + live draft room
+# =====================================================================
+
+def _pool_pokemon(count=3):
+    from app import db
+    conn = db.get_connection()
+    conn.executemany(
+        """INSERT INTO pokemon (pokemon_id, species_id, slug, display_name, national_dex_number,
+               generation, type1, base_hp, base_atk, base_def, base_spa, base_spd, base_spe)
+           VALUES (?, ?, ?, ?, ?, 1, 'normal', 50, 50, 50, 50, 50, 50)""",
+        [(i, i, f"mon{i}", f"Mon{i}", i) for i in range(1, count + 1)],
+    )
+    conn.commit()
+    conn.close()
+
+
+def test_cannot_add_to_another_seasons_pool(attacker):
+    season_id, _ = make_commissioner_season()
+    _pool_pokemon()
+    r = attacker.post(f"/pokemon/seasons/{season_id}/pool/add",
+                       data={"pokemon_id": "1", "cost": "5"}, follow_redirects=False)
+    assert r.status_code == 403
+    assert query("SELECT count(*) c FROM pokemon_draft_pool")[0]["c"] == 0
+
+
+def test_cannot_bulk_add_generation_to_another_seasons_pool(attacker):
+    season_id, _ = make_commissioner_season()
+    _pool_pokemon()
+    r = attacker.post(f"/pokemon/seasons/{season_id}/pool/add-generation",
+                       data={"generation": "1", "default_cost": "3"}, follow_redirects=False)
+    assert r.status_code == 403
+    assert query("SELECT count(*) c FROM pokemon_draft_pool")[0]["c"] == 0
+
+
+def test_cannot_ban_or_recost_or_remove_from_another_seasons_pool(attacker):
+    from app import db
+    from app.pokemon_draft import draft_pool as pk_pool
+
+    season_id, _ = make_commissioner_season()
+    _pool_pokemon()
+    conn = db.get_connection()
+    pk_pool.add_to_pool(conn, season_id, 1, cost_override=5)
+    conn.close()
+
+    r = attacker.post(f"/pokemon/seasons/{season_id}/pool/1/ban", data={"banned": "1"}, follow_redirects=False)
+    assert r.status_code == 403
+    r = attacker.post(f"/pokemon/seasons/{season_id}/pool/1/cost", data={"cost": "999"}, follow_redirects=False)
+    assert r.status_code == 403
+    r = attacker.post(f"/pokemon/seasons/{season_id}/pool/1/remove", follow_redirects=False)
+    assert r.status_code == 403
+
+    row = query("SELECT is_banned, cost_override FROM pokemon_draft_pool WHERE season_id = ? AND pokemon_id = 1",
+                (season_id,))[0]
+    assert row["is_banned"] == 0 and row["cost_override"] == 5
+
+
+def test_cannot_lock_or_start_another_seasons_draft(attacker):
+    season_id, _ = make_commissioner_season()
+    r = attacker.post(f"/pokemon/seasons/{season_id}/lock", follow_redirects=False)
+    assert r.status_code == 403
+    r = attacker.post(f"/pokemon/seasons/{season_id}/draft/start", follow_redirects=False)
+    assert r.status_code == 403
+    row = query("SELECT draft_locked_at FROM pokemon_seasons WHERE season_id = ?", (season_id,))[0]
+    assert row["draft_locked_at"] is None
+
+
+def _live_draft(commissioner_tier="games"):
+    """A fully set-up, in-progress draft: two coaches (COMMISSIONER and
+    ATTACKER), one pokemon in the pool, drafting not yet done. Returns
+    (season_id, commissioner_user_id, attacker_user_id, attacker_coach_id)."""
+    from app import auth, db
+    from app.pokemon_draft import draft as pk_draft
+    from app.pokemon_draft import draft_pool as pk_pool
+    from app.pokemon_draft import seasons as pk_seasons
+
+    _pool_pokemon(2)
+    conn = db.get_connection()
+    cur = conn.execute(
+        "INSERT INTO users (username, password_hash, tier) VALUES (?, ?, ?)",
+        (COMMISSIONER, auth.hash_password(GOOD_PASSWORD), commissioner_tier))
+    commissioner_id = cur.lastrowid
+    attacker_id = query("SELECT user_id FROM users WHERE username = ?", (ATTACKER,))[0]["user_id"]
+
+    pk_seasons.create_format(conn, "gen9ou", "Gen 9 OU", "singles", "", 2, 20, True)
+    season_id, _ = pk_seasons.create_season(conn, "Live Season", "gen9ou", commissioner_id)
+    pk_seasons.add_coach(conn, season_id, commissioner_id, "Commissioner's Team")
+    pk_seasons.add_coach(conn, season_id, attacker_id, "Attacker's Team")
+    coaches = pk_seasons.list_coaches(conn, season_id)
+    commissioner_coach_id = next(c["coach_id"] for c in coaches if c["user_id"] == commissioner_id)
+    attacker_coach_id = next(c["coach_id"] for c in coaches if c["user_id"] == attacker_id)
+    # Explicit order (commissioner on the clock first) -- list_coaches sorts
+    # alphabetically by team_name when draft_order is unset, which doesn't
+    # reliably put the commissioner first, so this can't be left implicit.
+    pk_seasons.set_draft_order(conn, season_id, [commissioner_coach_id, attacker_coach_id])
+    pk_pool.add_to_pool(conn, season_id, 1, cost_override=5)
+    pk_pool.add_to_pool(conn, season_id, 2, cost_override=5)
+    pk_seasons.lock_draft_board(conn, season_id)
+    pk_draft.start_draft(conn, season_id)
+    conn.close()
+    return season_id, commissioner_id, attacker_id, attacker_coach_id
+
+
+def test_a_real_coach_cannot_pick_out_of_turn(attacker):
+    season_id, commissioner_id, attacker_id, attacker_coach_id = _live_draft()
+    # draft order = [commissioner's coach, attacker's coach] (insertion order);
+    # commissioner is on the clock first, so attacker's own pick is out of turn.
+    r = attacker.post(f"/pokemon/seasons/{season_id}/draft/pick",
+                       data={"pokemon_id": "1"}, follow_redirects=False)
+    assert r.status_code == 303
+    assert "error=" in r.headers["location"]
+    assert query("SELECT count(*) c FROM pokemon_draft_picks")[0]["c"] == 0
+
+
+def test_a_non_coach_cannot_pick_at_all(attacker):
+    """attacker here is signed up but never added as a coach to this
+    season -- distinct from the previous test's real-coach-out-of-turn."""
+    from app import auth, db
+    from app.pokemon_draft import draft as pk_draft
+    from app.pokemon_draft import draft_pool as pk_pool
+    from app.pokemon_draft import seasons as pk_seasons
+
+    _pool_pokemon(1)
+    conn = db.get_connection()
+    cur = conn.execute(
+        "INSERT INTO users (username, password_hash, tier) VALUES (?, ?, ?)",
+        (COMMISSIONER, auth.hash_password(GOOD_PASSWORD), "games"))
+    commissioner_id = cur.lastrowid
+    pk_seasons.create_format(conn, "gen9ou", "Gen 9 OU", "singles", "", 1, 20, True)
+    season_id, _ = pk_seasons.create_season(conn, "Live Season", "gen9ou", commissioner_id)
+    pk_seasons.add_coach(conn, season_id, commissioner_id, "Commissioner's Team")
+    coach = pk_seasons.list_coaches(conn, season_id)[0]
+    pk_seasons.set_draft_order(conn, season_id, [coach["coach_id"]])
+    pk_pool.add_to_pool(conn, season_id, 1, cost_override=5)
+    pk_seasons.lock_draft_board(conn, season_id)
+    pk_draft.start_draft(conn, season_id)
+    conn.close()
+
+    r = attacker.post(f"/pokemon/seasons/{season_id}/draft/pick",
+                       data={"pokemon_id": "1"}, follow_redirects=False)
+    assert "error=" in r.headers["location"]
+    assert query("SELECT count(*) c FROM pokemon_draft_picks")[0]["c"] == 0
+
+
+def test_nonexistent_season_does_not_500_on_pool_or_draft_pages(attacker):
+    assert attacker.get("/pokemon/seasons/999999/pool", follow_redirects=False).status_code == 303
+    assert attacker.get("/pokemon/seasons/999999/draft", follow_redirects=False).status_code == 303
+    r = attacker.post("/pokemon/seasons/999999/draft/pick", data={"pokemon_id": "1"}, follow_redirects=False)
+    assert r.status_code == 303  # redirected with an error, not a 500

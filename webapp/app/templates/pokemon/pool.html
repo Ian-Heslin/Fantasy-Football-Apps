@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}{{ season['name'] }}: Draft Board{% endblock %}
+{% block content %}
+<h1>{{ season['name'] }}: Draft Board</h1>
+<p class="subtle"><a href="/pokemon/seasons/{{ season['season_id'] }}">&larr; {{ season['name'] }}</a></p>
+
+{% if season['draft_locked_at'] %}
+<div class="notice"><p>Draft board locked. <a href="/pokemon/seasons/{{ season['season_id'] }}/draft">Go to the draft room &rarr;</a></p></div>
+{% elif is_commissioner %}
+
+<h2>Add Pokemon</h2>
+<form method="get" action="/pokemon/seasons/{{ season['season_id'] }}/pool">
+  <p><input type="text" name="q" value="{{ query }}" placeholder="Search by name..."> <button type="submit">Search</button></p>
+</form>
+{% if search_results %}
+<div class="table-scroll">
+  <table class="data-table">
+    <thead><tr><th></th><th>Name</th><th>Type</th><th></th></tr></thead>
+    <tbody>
+      {% for p in search_results %}
+      <tr>
+        <td>{% if p['sprite_url'] %}<img src="{{ p['sprite_url'] }}" alt="" width="32" height="32">{% endif %}</td>
+        <td>{{ p['display_name'] }}</td>
+        <td>{{ p['type1'] }}{% if p['type2'] %} / {{ p['type2'] }}{% endif %}</td>
+        <td>
+          <form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/pool/add" class="inline-form">
+            <input type="hidden" name="pokemon_id" value="{{ p['pokemon_id'] }}">
+            <input type="number" name="cost" min="0" required style="width:4em" placeholder="Cost">
+            <button type="submit">Add</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<h3>Bulk add by generation</h3>
+<form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/pool/add-generation">
+  <select name="generation" required>
+    {% for g in generations %}<option value="{{ g }}">Gen {{ g }}</option>{% endfor %}
+  </select>
+  <label>Default cost <input type="number" name="default_cost" value="1" min="0" style="width:4em"></label>
+  <button type="submit">Add generation</button>
+</form>
+<p class="subtle">Adds every not-yet-pooled Pokemon of that generation at a flat cost -- edit individual
+  costs below afterward.</p>
+
+<h2>Pool ({{ pool|length }})</h2>
+{% endif %}
+
+{% if not pool %}
+<div class="empty-state"><p>No Pokemon in the pool yet.</p></div>
+{% else %}
+<div class="table-scroll">
+  <table class="data-table">
+    <thead><tr><th></th><th>Name</th><th>Type</th><th>Cost</th><th>Status</th>{% if is_commissioner and not season['draft_locked_at'] %}<th></th>{% endif %}</tr></thead>
+    <tbody>
+      {% for p in pool %}
+      <tr>
+        <td>{% if p['sprite_url'] %}<img src="{{ p['sprite_url'] }}" alt="" width="32" height="32">{% endif %}</td>
+        <td>{{ p['display_name'] }}</td>
+        <td>{{ p['type1'] }}{% if p['type2'] %} / {{ p['type2'] }}{% endif %}</td>
+        <td>
+          {% if is_commissioner and not season['draft_locked_at'] %}
+          <form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/pool/{{ p['pokemon_id'] }}/cost" class="inline-form">
+            <input type="number" name="cost" value="{{ p['effective_cost'] }}" min="0" style="width:4em" onchange="this.form.submit()">
+          </form>
+          {% else %}{{ p['effective_cost'] }}{% endif %}
+        </td>
+        <td>
+          {% if p['is_drafted'] %}<span class="badge badge-secondary">drafted</span>
+          {% elif p['is_banned'] %}<span class="badge badge-outline">banned</span>
+          {% endif %}
+        </td>
+        {% if is_commissioner and not season['draft_locked_at'] %}
+        <td>
+          <form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/pool/{{ p['pokemon_id'] }}/ban" class="inline-form">
+            <input type="hidden" name="banned" value="{{ '0' if p['is_banned'] else '1' }}">
+            <button type="submit" class="link-button">{{ 'Unban' if p['is_banned'] else 'Ban' }}</button>
+          </form>
+          <form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/pool/{{ p['pokemon_id'] }}/remove" class="inline-form">
+            <button type="submit" class="link-button">Remove</button>
+          </form>
+        </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if is_commissioner and not season['draft_locked_at'] %}
+<h2>Ready to draft?</h2>
+<p class="subtle">Locking the board fixes the pool and every cost -- no more adding, removing, banning,
+  or re-costing Pokemon after this.</p>
+<form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/lock">
+  <button type="submit">Lock draft board</button>
+</form>
+{% elif is_commissioner and season['draft_locked_at'] %}
+<form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/draft/start">
+  <button type="submit">Start the draft</button>
+</form>
+{% endif %}
+{% endblock %}

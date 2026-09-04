@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}{{ season['name'] }}: Draft{% endblock %}
+{% block head_extra %}
+{% if turn is not none and not is_my_turn %}<meta http-equiv="refresh" content="6">{% endif %}
+{% endblock %}
+{% block content %}
+<h1>{{ season['name'] }}: Draft</h1>
+<p class="subtle"><a href="/pokemon/seasons/{{ season['season_id'] }}">&larr; {{ season['name'] }}</a></p>
+
+{% if error %}
+<div class="notice notice-error"><p>{{ error }}</p></div>
+{% endif %}
+
+{% if session is none or session['status'] == 'not_started' %}
+<div class="empty-state"><p>The draft hasn't started yet.
+  <a href="/pokemon/seasons/{{ season['season_id'] }}/pool">Go to the draft board</a> to get it going.</p></div>
+{% elif turn is none %}
+<div class="notice"><p><strong>Draft complete!</strong> Every roster is full.</p></div>
+{% else %}
+
+<p>
+  Round {{ turn['round'] }}, pick {{ turn['pick_number'] }} --
+  <strong>{{ turn['coach']['team_name'] }}</strong> ({{ turn['coach']['username'] }}) is on the clock.
+  <span class="subtle">{{ turn_roster_count }} picked, {{ turn_roster_spent }}/{{ season['point_budget'] }} points spent.</span>
+</p>
+
+{% if is_my_turn %}
+<div class="notice"><p><strong>It's your turn!</strong> Pick a Pokemon below.</p></div>
+{% endif %}
+
+<form method="get" action="/pokemon/seasons/{{ season['season_id'] }}/draft">
+  <p><input type="text" name="q" value="{{ query }}" placeholder="Search available Pokemon..."> <button type="submit">Search</button></p>
+</form>
+
+<div class="table-scroll">
+  <table class="data-table">
+    <thead><tr><th></th><th>Name</th><th>Type</th><th>Cost</th>{% if is_my_turn %}<th></th>{% endif %}</tr></thead>
+    <tbody>
+      {% for p in available %}
+      <tr>
+        <td>{% if p['sprite_url'] %}<img src="{{ p['sprite_url'] }}" alt="" width="32" height="32">{% endif %}</td>
+        <td>{{ p['display_name'] }}</td>
+        <td>{{ p['type1'] }}{% if p['type2'] %} / {{ p['type2'] }}{% endif %}</td>
+        <td>{{ p['effective_cost'] }}</td>
+        {% if is_my_turn %}
+        <td>
+          <form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/draft/pick" class="inline-form">
+            <input type="hidden" name="pokemon_id" value="{{ p['pokemon_id'] }}">
+            <button type="submit">Draft</button>
+          </form>
+        </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<h2>Draft board</h2>
+{% if not picks %}
+<div class="empty-state"><p>No picks yet.</p></div>
+{% else %}
+<div class="table-scroll">
+  <table class="data-table">
+    <thead><tr><th>#</th><th>Team</th><th>Pokemon</th><th>Cost</th></tr></thead>
+    <tbody>
+      {% for pick in picks %}
+      <tr>
+        <td>{{ pick['pick_order'] }}</td>
+        <td>{{ pick['team_name'] }}</td>
+        <td>{{ pick['display_name'] }}</td>
+        <td>{{ pick['cost_paid'] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}

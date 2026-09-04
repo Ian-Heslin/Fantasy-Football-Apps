@@ -27,6 +27,7 @@
       --text-on-tertiary: {{ request.state.colors.text_on_tertiary }};
     }
   </style>
+  {% block head_extra %}{% endblock %}
 </head>
 <body>
   {% set user = request.state.user %}

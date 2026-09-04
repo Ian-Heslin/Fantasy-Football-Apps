@@ -11,6 +11,11 @@
   </span>
 </p>
 
+<p>
+  <a href="/pokemon/seasons/{{ season['season_id'] }}/pool">Draft board</a>
+  {% if season['draft_locked_at'] %}&middot; <a href="/pokemon/seasons/{{ season['season_id'] }}/draft">Draft room</a>{% endif %}
+</p>
+
 {% if season['format_rules_text'] %}
 <h2>Rules</h2>
 <p style="white-space: pre-line">{{ season['format_rules_text'] }}</p>
