@@ -75,6 +75,51 @@ def test_games_tier_can_create_a_format_and_a_season(attacker):
                  (season_id,))[0]["c"] > 0
 
 
+def test_pool_add_routes_leave_cost_unset_when_left_blank(attacker):
+    """Regression test: the add-generation and single-cost pool routes
+    used to force a placeholder into cost_override even when the
+    commissioner left the cost field blank, permanently blocking a later
+    Smogon fetch from ever pricing those entries -- see
+    draft_pool.add_generation_to_pool()'s docstring."""
+    from app import db
+
+    r = attacker.post("/pokemon/formats", data={
+        "format_id": "homebrew", "display_name": "Homebrew", "battle_style": "singles",
+        "rules_text": "", "default_roster_size": "12", "default_point_budget": "125"},
+        follow_redirects=False)
+    assert r.status_code == 303
+    r = attacker.post("/pokemon/seasons", data={"name": "Blank Cost Season", "format_id": "homebrew"},
+                       follow_redirects=False)
+    season_id = int(r.headers["location"].rstrip("/").split("/")[-1])
+
+    conn = db.get_connection()
+    conn.execute(
+        """INSERT INTO pokemon (pokemon_id, species_id, slug, display_name, national_dex_number,
+               generation, type1, base_hp, base_atk, base_def, base_spa, base_spd, base_spe)
+           VALUES (1, 1, 'testmon', 'Testmon', 1, 1, 'normal', 50, 50, 50, 50, 50, 50)""")
+    conn.commit()
+    conn.close()
+
+    r = attacker.post(f"/pokemon/seasons/{season_id}/pool/add-generation",
+                       data={"generation": "1"}, follow_redirects=False)  # default_cost omitted entirely
+    assert r.status_code == 303
+    row = query("SELECT cost_override FROM pokemon_draft_pool WHERE season_id = ? AND pokemon_id = 1",
+                (season_id,))[0]
+    assert row["cost_override"] is None
+
+    r = attacker.post(f"/pokemon/seasons/{season_id}/pool/1/cost", data={"cost": "9"}, follow_redirects=False)
+    assert r.status_code == 303
+    row = query("SELECT cost_override FROM pokemon_draft_pool WHERE season_id = ? AND pokemon_id = 1",
+                (season_id,))[0]
+    assert row["cost_override"] == 9
+
+    r = attacker.post(f"/pokemon/seasons/{season_id}/pool/1/cost", data={"cost": ""}, follow_redirects=False)
+    assert r.status_code == 303
+    row = query("SELECT cost_override FROM pokemon_draft_pool WHERE season_id = ? AND pokemon_id = 1",
+                (season_id,))[0]
+    assert row["cost_override"] is None  # cleared back to letting a later fetch price it
+
+
 def test_games_tier_can_read_the_cost_tiers_page(attacker):
     season_id, _ = make_commissioner_season()
     r = attacker.get(f"/pokemon/seasons/{season_id}/cost-tiers", follow_redirects=False)

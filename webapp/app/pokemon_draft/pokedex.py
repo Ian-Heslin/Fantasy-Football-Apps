@@ -36,6 +36,17 @@ def generations(conn):
     return [r[0] for r in conn.execute("SELECT DISTINCT generation FROM pokemon ORDER BY generation")]
 
 
+def slugify_species_name(species_name):
+    """The PokeAPI-style dash-case slug a battle-log/usage-stat species
+    string would have, e.g. 'Landorus-Therian' -> 'landorus-therian'.
+    Exposed (not just inlined in find_by_species_name() below) so a caller
+    matching many names at once -- see points.fetch_and_apply() -- can
+    bulk-preload {slug: pokemon_id} once instead of paying a query per
+    name for the common exact-match case."""
+    cleaned = species_name.strip().replace("(", " ").replace(")", " ")
+    return " ".join(cleaned.split()).lower().replace(" ", "-").replace("'", "").replace(".", "")
+
+
 def find_by_species_name(conn, species_name):
     """Best-effort match of a Pokemon Showdown battle-log species string
     (e.g. 'Landorus-Therian', from app/pokemon_draft/replay.py's parser)
@@ -44,8 +55,7 @@ def find_by_species_name(conn, species_name):
     one unrecognized name -- most commonly a cosmetic-only form Showdown
     tracks (e.g. a Pikachu cosplay form) that isn't a separate PokeAPI
     entry."""
-    cleaned = species_name.strip().replace("(", " ").replace(")", " ")
-    slug = " ".join(cleaned.split()).lower().replace(" ", "-").replace("'", "").replace(".", "")
+    slug = slugify_species_name(species_name)
     row = conn.execute("SELECT pokemon_id FROM pokemon WHERE slug = ?", (slug,)).fetchone()
     if row:
         return row["pokemon_id"]

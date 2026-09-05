@@ -80,17 +80,7 @@ def available_for_fa(conn, season_id, query=None):
     ledger, so a Pokemon someone drops becomes available again for
     another coach to pick up via free agency."""
     held_ids = {r["pokemon_id"] for r in current_roster(conn, season_id)}
-    sql = """
-        SELECT dp.*, p.slug, p.display_name, p.type1, p.type2, p.sprite_url, p.national_dex_number,
-               COALESCE(dp.cost_override, dp.computed_cost) AS effective_cost
-        FROM pokemon_draft_pool dp
-        JOIN pokemon p ON p.pokemon_id = dp.pokemon_id
-        WHERE dp.season_id = ? AND dp.is_banned = 0
-    """
-    params = [season_id]
-    if query:
-        sql += " AND p.display_name LIKE ?"
-        params.append(f"%{query}%")
+    sql, params = draft_pool.pool_base_query(season_id, query)
     sql += " ORDER BY effective_cost DESC, p.national_dex_number"
     return [r for r in conn.execute(sql, params).fetchall() if r["pokemon_id"] not in held_ids]
 
@@ -115,12 +105,20 @@ def current_week(conn, season_id):
     """The season's current week for roster-freeze purposes: the
     earliest scheduled week that isn't fully confirmed yet, or the last
     scheduled week if the season's wrapped, or None if no schedule
-    exists yet."""
+    exists yet.
+
+    INNER JOINs to pokemon_matches -- not LEFT JOINs -- so a bye row
+    (coach_id_away IS NULL, and per schedule.generate_schedule() no
+    pokemon_matches row is ever created for one) is excluded entirely
+    rather than counting as perpetually "unconfirmed". A LEFT JOIN here
+    previously left every bye week's m.status NULL forever, which pinned
+    MIN(week) on the season's very first bye week even after every real
+    match in every later week was confirmed -- silently disabling
+    roster_freeze_week for any season with an odd number of coaches."""
     row = conn.execute(
         """SELECT MIN(s.week) AS w FROM pokemon_schedule s
-           LEFT JOIN pokemon_matches m ON m.schedule_id = s.schedule_id
-           WHERE s.season_id = ? AND s.week IS NOT NULL
-             AND (m.status IS NULL OR m.status != 'confirmed')""",
+           JOIN pokemon_matches m ON m.schedule_id = s.schedule_id
+           WHERE s.season_id = ? AND s.week IS NOT NULL AND m.status != 'confirmed'""",
         (season_id,),
     ).fetchone()
     if row["w"] is not None:
@@ -349,6 +347,18 @@ def accept_trade(conn, trade_id, accepting_user_id):
         if new_spent > season["point_budget"]:
             return (f"This trade would leave a roster at {new_spent} points, over the "
                     f"{season['point_budget']}-point cap.")
+
+        if season["species_clause_enabled"]:
+            final_ids = [r["pokemon_id"] for r in kept] + incoming[coach_id]
+            if final_ids:
+                placeholders = ",".join("?" for _ in final_ids)
+                species_ids = [r["species_id"] for r in conn.execute(
+                    f"SELECT species_id FROM pokemon WHERE pokemon_id IN ({placeholders})",
+                    final_ids,
+                ).fetchall()]
+                if len(species_ids) != len(set(species_ids)):
+                    return ("Species clause: this trade would leave a roster with two forms of "
+                            "the same species.")
 
     week = current_week(conn, offer["season_id"])
     for item in items:

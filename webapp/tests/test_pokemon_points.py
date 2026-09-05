@@ -175,11 +175,57 @@ def test_fetch_and_apply_writes_computed_cost_without_touching_override(monkeypa
     assert great_tusk["computed_cost"] == 20  # 41.2% clears the 40 tier
     assert great_tusk["usage_percent"] == 41.2348
     assert great_tusk["stats_fetched_at"] is not None
+    assert draft_pool.effective_cost(great_tusk) == 20  # visible -- no override shadowing it
 
     kingambit = draft_pool.get_pool_entry(conn, season_id, 2)
     assert kingambit["computed_cost"] == 17  # 30.1% clears the 30 tier
     assert kingambit["cost_override"] == 99  # never touched
     assert draft_pool.effective_cost(kingambit) == 99  # override still wins
+
+
+def test_pool_added_with_no_cost_can_actually_be_priced_by_a_later_fetch(monkeypatch):
+    """Regression test: add_generation_to_pool()'s bulk-add path (and
+    add_to_pool()'s single-add path) used to always write a placeholder
+    into cost_override -- even when the commissioner left "cost" blank --
+    which permanently shadowed computed_cost via effective_cost()'s
+    COALESCE and made a later Smogon fetch a complete no-op. Both now
+    default to leaving cost_override NULL when no cost is given."""
+    conn, season_id = make_db()
+    _pool_pokemon(conn, 1, "great-tusk", "Great Tusk")
+    _pool_pokemon(conn, 2, "kingambit", "Kingambit")
+    count, error = draft_pool.add_generation_to_pool(conn, season_id, 9)  # no default_cost
+    assert error is None and count == 2
+    for pokemon_id in (1, 2):
+        entry = draft_pool.get_pool_entry(conn, season_id, pokemon_id)
+        assert entry["cost_override"] is None
+        assert draft_pool.effective_cost(entry) is None  # genuinely unpriced, not just "0"
+
+    points.set_cost_tiers(conn, season_id, TIERS)
+    monkeypatch.setattr(points, "fetch_usage_stats", lambda url: SAMPLE_STATS_TEXT)
+    matched, unmatched, error = points.fetch_and_apply(conn, season_id, "2025-01")
+    assert error is None and matched == 2
+
+    great_tusk = draft_pool.get_pool_entry(conn, season_id, 1)
+    assert draft_pool.effective_cost(great_tusk) == 20  # the fetch actually took effect
+
+
+def test_set_cost_override_none_clears_it_back_to_computed_cost(monkeypatch):
+    """Regression test: previously there was no way to undo a manually-set
+    cost_override short of removing and re-adding the pool entry."""
+    conn, season_id = make_db()
+    _pool_pokemon(conn, 1, "great-tusk", "Great Tusk")
+    draft_pool.add_to_pool(conn, season_id, 1, cost_override=1)
+    points.set_cost_tiers(conn, season_id, TIERS)
+    monkeypatch.setattr(points, "fetch_usage_stats", lambda url: SAMPLE_STATS_TEXT)
+    points.fetch_and_apply(conn, season_id, "2025-01")
+
+    entry = draft_pool.get_pool_entry(conn, season_id, 1)
+    assert draft_pool.effective_cost(entry) == 1  # override still shadowing the fetched cost
+
+    draft_pool.set_cost_override(conn, season_id, 1, None)
+    entry = draft_pool.get_pool_entry(conn, season_id, 1)
+    assert entry["cost_override"] is None
+    assert draft_pool.effective_cost(entry) == 20  # computed_cost now visible
 
 
 def test_fetch_and_apply_reports_rows_it_cant_apply_a_cost_to(monkeypatch):

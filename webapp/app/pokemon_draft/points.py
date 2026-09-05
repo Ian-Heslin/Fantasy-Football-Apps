@@ -180,11 +180,20 @@ def fetch_and_apply(conn, season_id, month, rating=1500):
 
     pool_ids = {r["pokemon_id"] for r in conn.execute(
         "SELECT pokemon_id FROM pokemon_draft_pool WHERE season_id = ?", (season_id,))}
+    # Bulk-preload every slug once so the common exact-match case costs no
+    # per-row query -- a full usage file can carry 1000+ rows, and
+    # find_by_species_name() alone would mean up to two SQL round trips
+    # each. Its pure fallback (a bare species name with no exact slug, e.g.
+    # 'Tatsugiri') still goes through find_by_species_name() itself so
+    # there's exactly one place that logic lives.
+    slug_to_id = {r["slug"]: r["pokemon_id"] for r in conn.execute("SELECT slug, pokemon_id FROM pokemon")}
 
     matched = 0
     unmatched = []
     for row in rows:
-        pokemon_id = pokedex.find_by_species_name(conn, row["name"])
+        pokemon_id = slug_to_id.get(pokedex.slugify_species_name(row["name"]))
+        if pokemon_id is None:
+            pokemon_id = pokedex.find_by_species_name(conn, row["name"])
         if pokemon_id is None or pokemon_id not in pool_ids:
             unmatched.append(row["name"])
             continue

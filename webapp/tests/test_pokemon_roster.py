@@ -12,7 +12,7 @@ import sqlite3
 
 from conftest import SQLITE_SCHEMA
 
-from app.pokemon_draft import draft_pool, roster, seasons
+from app.pokemon_draft import draft_pool, matches, roster, schedule, seasons
 
 
 def make_db(n_coaches, roster_size_cap=6, point_budget=20, species_clause_enabled=True,
@@ -195,6 +195,52 @@ def test_a_dropped_pokemon_becomes_available_for_another_coach():
 
 
 # ---------------------------------------------------------------------
+# current_week() -- regression coverage for the bye-week bug: a LEFT JOIN
+# to pokemon_matches used to see a bye row's status as permanently NULL
+# ("not yet confirmed"), pinning current_week() on the season's first bye
+# week forever even after every real match in every later week confirmed.
+# Any season with an odd number of coaches gets exactly one bye per round.
+# ---------------------------------------------------------------------
+
+def test_current_week_advances_past_a_confirmed_week_that_contains_a_bye():
+    conn, season_id, coaches = make_db(3)  # odd coach count -> a bye every round
+    created, error = schedule.generate_schedule(conn, season_id, num_weeks=3)
+    assert error is None
+
+    assert roster.current_week(conn, season_id) == 1
+
+    week1_real = next(r for r in schedule.overview(conn, season_id)
+                       if r["week"] == 1 and r["match_id"] is not None)
+    m = matches.get_match(conn, week1_real["match_id"])
+    matches.report_match(conn, week1_real["match_id"], m["home_user_id"], [
+        {"winner_coach_id": m["coach_id_home"], "stats": []},
+        {"winner_coach_id": m["coach_id_home"], "stats": []},
+    ])
+    matches.confirm_match(conn, week1_real["match_id"], m["away_user_id"])
+
+    # Week 1's only real match is confirmed (its bye has nothing to
+    # confirm) -- current_week() must move on to week 2, not stay stuck.
+    assert roster.current_week(conn, season_id) == 2
+
+
+def test_current_week_reaches_the_last_week_once_every_real_match_is_confirmed():
+    conn, season_id, coaches = make_db(3)
+    schedule.generate_schedule(conn, season_id, num_weeks=3)
+
+    for r in schedule.overview(conn, season_id):
+        if r["match_id"] is None:
+            continue  # bye -- nothing to confirm
+        m = matches.get_match(conn, r["match_id"])
+        matches.report_match(conn, r["match_id"], m["home_user_id"], [
+            {"winner_coach_id": m["coach_id_home"], "stats": []},
+            {"winner_coach_id": m["coach_id_home"], "stats": []},
+        ])
+        matches.confirm_match(conn, r["match_id"], m["away_user_id"])
+
+    assert roster.current_week(conn, season_id) == 3
+
+
+# ---------------------------------------------------------------------
 # Roster freeze
 # ---------------------------------------------------------------------
 
@@ -310,6 +356,44 @@ def test_accept_trade_rejects_when_it_would_exceed_the_point_budget():
     assert {r["pokemon_id"] for r in roster.current_roster(conn, season_id, A)} == {1}
     assert {r["pokemon_id"] for r in roster.current_roster(conn, season_id, B)} == {2}
     assert roster.get_trade_offer(conn, trade_id)[0]["status"] == "pending"
+
+
+def test_accept_trade_enforces_the_species_clause():
+    conn, season_id, coaches = make_db(2, species_clause_enabled=True, point_budget=100, roster_size_cap=10)
+    A, B = coaches[1], coaches[2]
+    add_pokemon(conn, 1, species_id=100, display_name="Landorus (Incarnate)")
+    add_pokemon(conn, 2, species_id=100, display_name="Landorus (Therian)")
+    draft_pool.add_to_pool(conn, season_id, 1, cost_override=5)
+    draft_pool.add_to_pool(conn, season_id, 2, cost_override=5)
+    draft_pick(conn, season_id, A, 1, 5)  # A already has a Landorus form
+    draft_pick(conn, season_id, B, 2, 5)  # B has the other Landorus form
+
+    trade_id, error = roster.propose_trade(conn, season_id, A, B, [
+        {"pokemon_id": 2, "from_coach_id": B, "action": "trade"}])  # B sends theirs to A
+    assert error is None
+
+    error = roster.accept_trade(conn, trade_id, 2)  # B's user_id accepts
+    assert error is not None and "Species clause" in error
+    # Nothing written -- both rosters unchanged, offer still pending.
+    assert {r["pokemon_id"] for r in roster.current_roster(conn, season_id, A)} == {1}
+    assert {r["pokemon_id"] for r in roster.current_roster(conn, season_id, B)} == {2}
+    assert roster.get_trade_offer(conn, trade_id)[0]["status"] == "pending"
+
+
+def test_accept_trade_species_clause_only_blocks_when_enabled():
+    conn, season_id, coaches = make_db(2, species_clause_enabled=False, point_budget=100, roster_size_cap=10)
+    A, B = coaches[1], coaches[2]
+    add_pokemon(conn, 1, species_id=100)
+    add_pokemon(conn, 2, species_id=100)
+    draft_pool.add_to_pool(conn, season_id, 1, cost_override=5)
+    draft_pool.add_to_pool(conn, season_id, 2, cost_override=5)
+    draft_pick(conn, season_id, A, 1, 5)
+    draft_pick(conn, season_id, B, 2, 5)
+
+    trade_id, error = roster.propose_trade(conn, season_id, A, B, [
+        {"pokemon_id": 2, "from_coach_id": B, "action": "trade"}])
+    assert error is None
+    assert roster.accept_trade(conn, trade_id, 2) is None
 
 
 def test_a_bundled_drop_keeps_an_otherwise_over_budget_trade_legal():

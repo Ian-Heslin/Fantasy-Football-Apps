@@ -77,8 +77,10 @@ async def add_generation(request: Request, season_id: int):
     except FileNotFoundError as e:
         return db_missing_response(request, e)
     try:
+        default_cost = form.get("default_cost")
         pk_pool.add_generation_to_pool(
-            conn, season_id, int(form.get("generation")), int(form.get("default_cost", 1) or 1))
+            conn, season_id, int(form.get("generation")),
+            int(default_cost) if default_cost else None)
     finally:
         conn.close()
     return RedirectResponse(f"/pokemon/seasons/{season_id}/pool", status_code=303)
@@ -100,13 +102,15 @@ async def set_ban(request: Request, season_id: int, pokemon_id: int):
 
 
 @router.post("/seasons/{season_id}/pool/{pokemon_id}/cost", dependencies=[Depends(require_commissioner)])
-def set_cost(request: Request, season_id: int, pokemon_id: int, cost: int = Form(...)):
+def set_cost(request: Request, season_id: int, pokemon_id: int, cost: str = Form("")):
+    # cost="" clears the override so a Smogon usage-stat fetch can price
+    # this Pokemon again -- see draft_pool.set_cost_override()'s docstring.
     try:
         conn = get_connection()
     except FileNotFoundError as e:
         return db_missing_response(request, e)
     try:
-        pk_pool.set_cost_override(conn, season_id, pokemon_id, cost)
+        pk_pool.set_cost_override(conn, season_id, pokemon_id, int(cost) if cost.strip() else None)
     finally:
         conn.close()
     return RedirectResponse(f"/pokemon/seasons/{season_id}/pool", status_code=303)
@@ -273,6 +277,5 @@ def make_pick(request: Request, season_id: int, pokemon_id: int = Form(...)):
     finally:
         conn.close()
     if error:
-        from urllib.parse import quote
         return RedirectResponse(f"/pokemon/seasons/{season_id}/draft?error={quote(error)}", status_code=303)
     return RedirectResponse(f"/pokemon/seasons/{season_id}/draft", status_code=303)

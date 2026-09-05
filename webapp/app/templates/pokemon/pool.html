@@ -26,6 +26,9 @@
 </form>
 
 <h2>Add Pokemon</h2>
+<p class="subtle">Leave cost blank on either form below to add a Pokemon unpriced so a later Smogon
+  usage-stat fetch can price it -- entering any cost here (including a bulk "default cost") sets a
+  manual override that a fetch will never touch.</p>
 <form method="get" action="/pokemon/seasons/{{ season['season_id'] }}/pool">
   <p><input type="text" name="q" value="{{ query }}" placeholder="Search by name..."> <button type="submit">Search</button></p>
 </form>
@@ -42,7 +45,7 @@
         <td>
           <form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/pool/add" class="inline-form">
             <input type="hidden" name="pokemon_id" value="{{ p['pokemon_id'] }}">
-            <input type="number" name="cost" min="0" required style="width:4em" placeholder="Cost">
+            <input type="number" name="cost" min="0" style="width:4em" placeholder="Cost">
             <button type="submit">Add</button>
           </form>
         </td>
@@ -58,11 +61,11 @@
   <select name="generation" required>
     {% for g in generations %}<option value="{{ g }}">Gen {{ g }}</option>{% endfor %}
   </select>
-  <label>Default cost <input type="number" name="default_cost" value="1" min="0" style="width:4em"></label>
+  <label>Default cost (optional) <input type="number" name="default_cost" min="0" style="width:4em" placeholder="unpriced"></label>
   <button type="submit">Add generation</button>
 </form>
-<p class="subtle">Adds every not-yet-pooled Pokemon of that generation at a flat cost -- edit individual
-  costs below afterward.</p>
+<p class="subtle">Adds every not-yet-pooled Pokemon of that generation, at the flat cost given or
+  unpriced if left blank -- edit individual costs below afterward.</p>
 
 <h2>Pool ({{ pool|length }})</h2>
 {% endif %}
@@ -82,9 +85,10 @@
         <td>
           {% if is_commissioner and not season['draft_locked_at'] %}
           <form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/pool/{{ p['pokemon_id'] }}/cost" class="inline-form">
-            <input type="number" name="cost" value="{{ p['effective_cost'] }}" min="0" style="width:4em" onchange="this.form.submit()">
+            <input type="number" name="cost" value="{{ p['effective_cost'] if p['effective_cost'] is not none else '' }}"
+                   min="0" style="width:4em" placeholder="unpriced" onchange="this.form.submit()">
           </form>
-          {% else %}{{ p['effective_cost'] }}{% endif %}
+          {% else %}{{ p['effective_cost'] if p['effective_cost'] is not none else '—' }}{% endif %}
         </td>
         <td>
           {% if p['is_drafted'] %}<span class="badge badge-secondary">drafted</span>
