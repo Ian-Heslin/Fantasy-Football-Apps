@@ -4,9 +4,26 @@
 <h1>{{ season['name'] }}: Draft Board</h1>
 <p class="subtle"><a href="/pokemon/seasons/{{ season['season_id'] }}">&larr; {{ season['name'] }}</a></p>
 
+{% if error %}
+<div class="notice notice-error"><p>{{ error }}</p></div>
+{% endif %}
+{% if info %}
+<div class="notice"><p>{{ info }}</p></div>
+{% endif %}
+
 {% if season['draft_locked_at'] %}
 <div class="notice"><p>Draft board locked. <a href="/pokemon/seasons/{{ season['season_id'] }}/draft">Go to the draft room &rarr;</a></p></div>
 {% elif is_commissioner %}
+
+<h2>Fetch costs from Smogon usage stats</h2>
+<p class="subtle">Prices every pooled Pokemon at <a href="/pokemon/seasons/{{ season['season_id'] }}/cost-tiers">its cost tier</a>
+  for its usage% that month -- a manual cost override below always wins over this. Requires the season's
+  format to have a Smogon stats id set.</p>
+<form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/pool/fetch-costs" class="inline-form">
+  <label>Month <input type="text" name="month" placeholder="YYYY-MM" pattern="\d{4}-\d{2}" required style="width:6em"></label>
+  <label>Rating <input type="number" name="rating" value="1500" min="0" style="width:5em"></label>
+  <button type="submit">Fetch costs</button>
+</form>
 
 <h2>Add Pokemon</h2>
 <form method="get" action="/pokemon/seasons/{{ season['season_id'] }}/pool">

@@ -57,13 +57,33 @@ def test_games_tier_can_read_every_pokemon_page(attacker, path):
 def test_games_tier_can_create_a_format_and_a_season(attacker):
     r = attacker.post("/pokemon/formats", data={
         "format_id": "gen9ou", "display_name": "Gen 9 OU", "battle_style": "singles",
-        "rules_text": "", "default_roster_size": "12", "default_point_budget": "125"},
+        "rules_text": "", "default_roster_size": "12", "default_point_budget": "125",
+        "smogon_stats_prefix": "gen9ou"},
         follow_redirects=False)
     assert r.status_code == 303
+    assert query("SELECT smogon_stats_prefix FROM pokemon_formats WHERE format_id = 'gen9ou'"
+                 )[0]["smogon_stats_prefix"] == "gen9ou"
+
     r = attacker.post("/pokemon/seasons", data={"name": "Mallory's Season", "format_id": "gen9ou"},
                        follow_redirects=False)
     assert r.status_code == 303
     assert query("SELECT count(*) c FROM pokemon_seasons")[0]["c"] == 1
+    season_id = query("SELECT season_id FROM pokemon_seasons")[0]["season_id"]
+    # A fresh season gets placeholder cost tiers automatically, so there's
+    # something to fetch usage stats against right away.
+    assert query("SELECT count(*) c FROM pokemon_cost_tiers WHERE season_id = ?",
+                 (season_id,))[0]["c"] > 0
+
+
+def test_games_tier_can_read_the_cost_tiers_page(attacker):
+    season_id, _ = make_commissioner_season()
+    r = attacker.get(f"/pokemon/seasons/{season_id}/cost-tiers", follow_redirects=False)
+    assert r.status_code == 200
+
+
+def test_nonexistent_season_does_not_500_on_cost_tiers_page(attacker):
+    r = attacker.get("/pokemon/seasons/999999/cost-tiers", follow_redirects=False)
+    assert r.status_code == 303
 
 
 # =====================================================================
@@ -209,6 +229,19 @@ def test_cannot_ban_or_recost_or_remove_from_another_seasons_pool(attacker):
     row = query("SELECT is_banned, cost_override FROM pokemon_draft_pool WHERE season_id = ? AND pokemon_id = 1",
                 (season_id,))[0]
     assert row["is_banned"] == 0 and row["cost_override"] == 5
+
+
+def test_cannot_set_another_seasons_cost_tiers_or_fetch_costs(attacker):
+    season_id, _ = make_commissioner_season()
+    r = attacker.post(f"/pokemon/seasons/{season_id}/cost-tiers",
+                       data={"min_pct_0": "40", "cost_0": "20"}, follow_redirects=False)
+    assert r.status_code == 403
+    assert query("SELECT count(*) c FROM pokemon_cost_tiers WHERE season_id = ?",
+                 (season_id,))[0]["c"] == 0
+
+    r = attacker.post(f"/pokemon/seasons/{season_id}/pool/fetch-costs",
+                       data={"month": "2025-01"}, follow_redirects=False)
+    assert r.status_code == 403
 
 
 def test_cannot_lock_or_start_another_seasons_draft(attacker):

@@ -8,6 +8,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from app.auth import require_tier
 from app.common import db_missing_response
 from app.db import get_connection
+from app.pokemon_draft import points as pk_points
 from app.pokemon_draft import seasons as pk_seasons
 from app.pokemon_draft.permissions import require_commissioner
 from app.templating import templates
@@ -83,6 +84,7 @@ def create_season(request: Request, name: str = Form(...), format_id: str = Form
             return templates.TemplateResponse(
                 request, "pokemon/season_new.html",
                 {"formats": formats, "error": error}, status_code=400)
+        pk_points.seed_default_tiers(conn, season_id)
     finally:
         conn.close()
     return RedirectResponse(f"/pokemon/seasons/{season_id}", status_code=303)
@@ -246,6 +248,7 @@ async def create_format(request: Request):
             form.get("battle_style", ""), form.get("rules_text", ""),
             to_int("default_roster_size", 10), to_int("default_point_budget", 100),
             "default_species_clause" in form,
+            smogon_stats_prefix=form.get("smogon_stats_prefix") or None,
         )
         if error:
             return templates.TemplateResponse(

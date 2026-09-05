@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ season['name'] }}: Cost Tiers{% endblock %}
+{% block content %}
+<h1>{{ season['name'] }}: Cost Tiers</h1>
+<p class="subtle"><a href="/pokemon/seasons/{{ season['season_id'] }}/pool">&larr; Draft board</a></p>
+<p class="subtle">A Pokemon's computed cost is the point cost of the highest usage-percent tier its
+  Smogon usage% still clears. These are placeholder boundaries with no real usage data behind them yet --
+  {% if is_commissioner %}retune them below{% else %}the commissioner can retune them{% endif %}
+  before fetching costs and locking the draft board.
+  {% if not format['smogon_stats_prefix'] %}This season's format ({{ format['display_name'] }}) has no
+  Smogon stats id set, so costs can only be entered by hand on the draft board.{% endif %}</p>
+
+{% if error %}
+<div class="notice notice-error"><p>{{ error }}</p></div>
+{% endif %}
+
+{% if is_commissioner and not season['draft_locked_at'] %}
+<form method="post" action="/pokemon/seasons/{{ season['season_id'] }}/cost-tiers">
+  <div class="table-scroll">
+    <table class="data-table">
+      <thead><tr><th>Min usage %</th><th>Point cost</th></tr></thead>
+      <tbody>
+        {% for t in tiers %}
+        <tr>
+          <td><input type="number" step="0.01" min="0" max="100" name="min_pct_{{ loop.index0 }}" value="{{ t['min_usage_percent'] }}" required></td>
+          <td><input type="number" min="0" name="cost_{{ loop.index0 }}" value="{{ t['point_cost'] }}" required></td>
+        </tr>
+        {% endfor %}
+        {% for i in range(tiers|length, tiers|length + 3) %}
+        <tr>
+          <td><input type="number" step="0.01" min="0" max="100" name="min_pct_{{ i }}"></td>
+          <td><input type="number" min="0" name="cost_{{ i }}"></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="subtle">Leave a row blank to drop it. Rows are matched to usage% highest-to-lowest regardless
+    of the order you enter them.</p>
+  <p><button type="submit">Save tiers</button></p>
+</form>
+{% else %}
+{% if not tiers %}
+<div class="empty-state"><p>No cost tiers set up yet.</p></div>
+{% else %}
+<div class="table-scroll">
+  <table class="data-table">
+    <thead><tr><th>Min usage %</th><th>Point cost</th></tr></thead>
+    <tbody>
+      {% for t in tiers %}
+      <tr><td>{{ t['min_usage_percent'] }}%</td><td>{{ t['point_cost'] }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}

@@ -20,8 +20,14 @@ def get_format(conn, format_id):
 
 
 def create_format(conn, format_id, display_name, battle_style, rules_text,
-                   default_roster_size, default_point_budget, default_species_clause):
-    """None on success, or an error string."""
+                   default_roster_size, default_point_budget, default_species_clause,
+                   smogon_stats_prefix=None):
+    """None on success, or an error string. smogon_stats_prefix is the
+    formatid segment of smogon.com/stats/<month>/<formatid>-<rating>.txt
+    (see app/pokemon_draft/points.py) -- kept separate from format_id in
+    case they ever diverge, and optional since a format with no Smogon
+    stats page (or one nobody's set up cost-fetching for) still works
+    fine on hand-typed/overridden costs alone."""
     if battle_style not in ("singles", "doubles"):
         return "Battle style must be 'singles' or 'doubles'."
     if not format_id or not format_id.strip():
@@ -31,10 +37,12 @@ def create_format(conn, format_id, display_name, battle_style, rules_text,
     conn.execute(
         """INSERT INTO pokemon_formats
                (format_id, display_name, battle_style, rules_text,
-                default_roster_size, default_point_budget, default_species_clause)
-           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                default_roster_size, default_point_budget, default_species_clause,
+                smogon_stats_prefix)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
         (format_id.strip(), display_name, battle_style, rules_text,
-         default_roster_size, default_point_budget, int(default_species_clause)),
+         default_roster_size, default_point_budget, int(default_species_clause),
+         smogon_stats_prefix.strip() if smogon_stats_prefix else None),
     )
     conn.commit()
     return None
